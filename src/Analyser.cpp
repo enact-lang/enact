@@ -8,10 +8,6 @@ void Analyser::visitExpressionStmt(Stmt::Expression stmt) {
 
 }
 
-void Analyser::visitPrintStmt(Stmt::Print stmt) {
-
-}
-
 void Analyser::visitVariableStmt(Stmt::Variable stmt) {
 
 }

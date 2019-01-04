@@ -10,15 +10,11 @@ std::string AstPrinter::evaluate(Sp<Expr> expr) {
 }
 
 std::string AstPrinter::visitExpressionStmt(Stmt::Expression stmt) {
-    return "Stmt:Expression " + evaluate(stmt.expr);
-}
-
-std::string AstPrinter::visitPrintStmt(Stmt::Print stmt) {
-    return "Stmt:Print " + evaluate(stmt.expr);
+    return "Stmt::Expression " + evaluate(stmt.expr);
 }
 
 std::string AstPrinter::visitVariableStmt(Stmt::Variable stmt) {
-    return "Stmt:Var " + stmt.name.lexeme + " " + evaluate(stmt.initializer);
+    return "Stmt::Var " + stmt.name.lexeme + " " + evaluate(stmt.initializer);
 }
 
 std::string AstPrinter::visitAssignExpr(Expr::Assign expr) {

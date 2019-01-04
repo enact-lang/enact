@@ -132,7 +132,6 @@ private:
     Sp<Stmt> statement();
 
     // Statement types
-    Sp<Stmt> printStatement();
     Sp<Stmt> expressionStatement();
 
 public:

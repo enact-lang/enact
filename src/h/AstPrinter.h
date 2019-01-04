@@ -8,7 +8,6 @@
 
 class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std::string> {
     std::string visitExpressionStmt(Stmt::Expression stmt) override;
-    std::string visitPrintStmt(Stmt::Print stmt) override;
     std::string visitVariableStmt(Stmt::Variable stmt) override;
 
     std::string visitAssignExpr(Expr::Assign expr) override;

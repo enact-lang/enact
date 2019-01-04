@@ -156,9 +156,6 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "var")     return TokenType::VAR;
     if (candidate == "while")   return TokenType::WHILE;
 
-    // Temporary.
-    if (candidate == "print")   return TokenType::PRINT;
-
     return TokenType::IDENTIFIER;
 }
 

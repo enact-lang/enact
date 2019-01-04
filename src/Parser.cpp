@@ -125,15 +125,8 @@ Sp<Stmt> Parser::variableDeclaration(bool isConst) {
 }
 
 Sp<Stmt> Parser::statement() {
-    if (match(TokenType::PRINT)) return printStatement();
     if (match(TokenType::SEMICOLON)) return statement(); // Null statement;
     return expressionStatement();
-}
-
-Sp<Stmt> Parser::printStatement() {
-    Sp<Expr> expr = expression();
-    consume(TokenType::SEMICOLON, "Expected ';' after print statement.");
-    return std::make_shared<Stmt::Print>(expr);
 }
 
 Sp<Stmt> Parser::expressionStatement() {

@@ -13,7 +13,6 @@ public:
     class Visitor {
     public:
         virtual R visitExpressionStmt(Expression stmt);
-        virtual R visitPrintStmt(Print stmt);
         virtual R visitVariableStmt(Variable stmt);
     };
 
@@ -34,16 +33,6 @@ public:
 
     STMT_ACCEPT_FUNCTION(void, visitExpressionStmt);
     STMT_ACCEPT_FUNCTION(std::string, visitExpressionStmt);
-};
-
-class Stmt::Print : public Stmt {
-public:
-    Sp<Expr> expr;
-
-    Print(Sp<Expr> expr) : expr{expr} {}
-
-    STMT_ACCEPT_FUNCTION(void, visitPrintStmt);
-    STMT_ACCEPT_FUNCTION(std::string, visitPrintStmt);
 };
 
 class Stmt::Variable : public Stmt {

@@ -6,7 +6,6 @@
 
 class Analyser : private Expr::Visitor<void>, private Stmt::Visitor<void> {
     void visitExpressionStmt(Stmt::Expression stmt) override;
-    void visitPrintStmt(Stmt::Print stmt) override;
     void visitVariableStmt(Stmt::Variable stmt) override;
 
     void visitAssignExpr(Expr::Assign expr) override;

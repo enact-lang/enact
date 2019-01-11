@@ -1,5 +1,5 @@
 #include "h/Analyser.h"
-
+/*
 void Analyser::analyse(std::vector<Sp<Stmt>> statements) {
 
 }
@@ -51,3 +51,4 @@ void Analyser::visitUnaryExpr(Expr::Unary expr) {
 void Analyser::visitVariableExpr(Expr::Variable expr) {
 
 }
+*/

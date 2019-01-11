@@ -14,6 +14,7 @@ class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std
     std::string visitBinaryExpr(Expr::Binary expr) override;
     std::string visitBooleanExpr(Expr::Boolean expr) override;
     std::string visitCallExpr(Expr::Call expr) override;
+    std::string visitLogicalExpr(Expr::Logical expr) override;
     std::string visitNilExpr(Expr::Nil expr) override;
     std::string visitNumberExpr(Expr::Number expr) override;
     std::string visitStringExpr(Expr::String expr) override;
@@ -21,9 +22,9 @@ class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std
     std::string visitUnaryExpr(Expr::Unary expr) override;
     std::string visitVariableExpr(Expr::Variable expr) override;
 
-    std::string evaluate(Sp<Expr> expr);
+    std::string evaluate(std::shared_ptr<Expr> expr);
 public:
-    void print(Sp<Stmt> stmt);
+    void print(std::shared_ptr<Stmt> stmt);
 };
 
 #endif //ENACT_ASTPRINTER_H

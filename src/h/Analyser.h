@@ -1,6 +1,6 @@
 #ifndef ENACT_ANALYSER_H
 #define ENACT_ANALYSER_H
-
+/*
 #include "../ast/Expr.h"
 #include "../ast/Stmt.h"
 
@@ -21,5 +21,5 @@ class Analyser : private Expr::Visitor<void>, private Stmt::Visitor<void> {
 public:
     void analyse(std::vector<Sp<Stmt>> statements);
 };
-
+*/
 #endif //ENACT_ANALYSER_H

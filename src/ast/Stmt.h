@@ -1,3 +1,6 @@
+// This file was automatically generated.
+// "See generate.py" for details.
+
 #ifndef ENACT_STMT_H
 #define ENACT_STMT_H
 
@@ -6,7 +9,6 @@
 class Stmt {
 public:
     class Expression;
-    class Print;
     class Variable;
 
     template <class R>
@@ -16,37 +18,42 @@ public:
         virtual R visitVariableStmt(Variable stmt);
     };
 
-    virtual void accept(Stmt::Visitor<void> *visitor) = 0;
     virtual std::string accept(Stmt::Visitor<std::string> *visitor) = 0;
+    virtual void accept(Stmt::Visitor<void> *visitor) = 0;
 };
-
-#define STMT_ACCEPT_FUNCTION(T, name) \
-    T accept(Stmt::Visitor<T> *visitor) override { \
-        return visitor->name(*this); \
-    }
 
 class Stmt::Expression : public Stmt {
 public:
-    Sp<Expr> expr;
+    std::shared_ptr<Expr> expr;
 
-    Expression(Sp<Expr> expr) : expr{expr} {}
+    Expression(std::shared_ptr<Expr> expr) : 
+        expr{expr} {}
 
-    STMT_ACCEPT_FUNCTION(void, visitExpressionStmt);
-    STMT_ACCEPT_FUNCTION(std::string, visitExpressionStmt);
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitExpressionStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitExpressionStmt(*this);
+    }
 };
 
 class Stmt::Variable : public Stmt {
 public:
     Token name;
-    Sp<Expr> initializer;
+    std::shared_ptr<Expr> initializer;
     bool isConst;
 
-    Variable(Token name, Sp<Expr> initializer, bool isConst) : name{std::move(name)}, initializer{initializer}, isConst{isConst} {}
+    Variable(Token name,std::shared_ptr<Expr> initializer,bool isConst) : 
+        name{name},initializer{initializer},isConst{isConst} {}
 
-    STMT_ACCEPT_FUNCTION(void, visitVariableStmt);
-    STMT_ACCEPT_FUNCTION(std::string, visitVariableStmt);
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitVariableStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitVariableStmt(*this);
+    }
 };
 
-#undef STMT_ACCEPT_FUNCTION
-
-#endif //ENACT_STMT_H
+#endif // ENACT_STMT_H

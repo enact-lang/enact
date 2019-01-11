@@ -16,11 +16,11 @@ void Enact::run(const std::string &source) {
     Parser parser{source};
     //if (!compiler.compile()) return InterpretResult::COMPILE_ERROR;
     //std::cout << compiler.currentChunk().disassemble();
-    std::vector<Sp<Stmt>> statements = parser.parse();
+    std::vector<std::shared_ptr<Stmt>> statements = parser.parse();
     if (parser.hadError()) return;
 
     AstPrinter astPrinter;
-    for (const Sp<Stmt>& stmt : statements) {
+    for (const std::shared_ptr<Stmt>& stmt : statements) {
         astPrinter.print(stmt);
         std::cout << "\n";
     }

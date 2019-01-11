@@ -21,6 +21,7 @@ Token Scanner::scanToken() {
         case ')': --m_openParen; return makeToken(TokenType::RIGHT_PAREN);
         case '[': ++m_openSquare; return makeToken(TokenType::LEFT_SQUARE);
         case ']': --m_openSquare; return makeToken(TokenType::RIGHT_SQUARE);
+        case ':': return makeToken(TokenType::COLON);
         case ',': return makeToken(TokenType::COMMA);
         case '.': return makeToken(TokenType::DOT);
         case '-': return makeToken(TokenType::MINUS);
@@ -40,31 +41,8 @@ Token Scanner::scanToken() {
         case '<':
             return makeToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
 
-            // 1 or 2 or 3 character tokens
-        case ':':
-            if (peek() == ':' && peekNext() == '=') {
-                advance();
-                advance();
-                return makeToken(TokenType::COLON_COLON_EQUAL);
-            }
-
-            if (match('=')) {
-                return makeToken(TokenType::COLON_EQUAL);
-            }
-
-            return makeToken(TokenType::COLON);
-
-
         case '"':
             return string();
-
-        case '\n':
-            ++m_line;
-            if (m_openParen == 0 && m_openSquare == 0 &&
-                m_last.type != TokenType::SEMICOLON) {
-                return makeToken(TokenType::SEMICOLON);
-            }
-            return scanToken();
     }
 
     std::string errorMessage = "Unrecognized character '";
@@ -83,6 +61,11 @@ void Scanner::skipWhitespace() {
                 advance();
                 break;
 
+            case '\n':
+                ++m_line;
+                advance();
+                break;
+
             case '/':
                 if (peekNext() == '/') {
                     while (peek() != '\n' && !isAtEnd()) advance();
@@ -95,6 +78,14 @@ void Scanner::skipWhitespace() {
                 return;
         }
     }
+}
+
+bool Scanner::consumeSeparator() {
+    if (previous() == '\n' || previous() == ';') {
+        advance();
+        return true;
+    }
+    return false;
 }
 
 Token Scanner::number() {
@@ -144,7 +135,7 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "else")    return TokenType::ELSE;
     if (candidate == "end")     return TokenType::END;
     if (candidate == "false")   return TokenType::FALSE;
-    if (candidate == "fun")     return TokenType::FUN;
+    if (candidate == "consumeSeparator")     return TokenType::FUN;
     if (candidate == "for")     return TokenType::FOR;
     if (candidate == "if")      return TokenType::IF;
     if (candidate == "nil")     return TokenType::NIL;
@@ -186,6 +177,10 @@ char Scanner::peek() {
 
 char Scanner::peekNext() {
     return m_source[m_current + 1];
+}
+
+char Scanner::previous() {
+    return m_source[m_current - 1];
 }
 
 bool Scanner::match(char expected) {

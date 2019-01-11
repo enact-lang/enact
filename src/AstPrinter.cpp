@@ -1,11 +1,11 @@
 #include <sstream>
 #include "h/AstPrinter.h"
 
-void AstPrinter::print(Sp<Stmt> stmt) {
+void AstPrinter::print(std::shared_ptr<Stmt> stmt) {
     std::cout << stmt->accept(this);
 }
 
-std::string AstPrinter::evaluate(Sp<Expr> expr) {
+std::string AstPrinter::evaluate(std::shared_ptr<Expr> expr) {
     return expr->accept(this);
 }
 
@@ -31,6 +31,10 @@ std::string AstPrinter::visitBooleanExpr(Expr::Boolean expr) {
 
 std::string AstPrinter::visitCallExpr(Expr::Call expr) {
     return "(() " + evaluate(expr.callee) + ")";
+}
+
+std::string AstPrinter::visitLogicalExpr(Expr::Logical expr) {
+    return "(" + expr.oper.lexeme + " " + evaluate(expr.left) + " " + evaluate(expr.right) + ")";
 }
 
 std::string AstPrinter::visitNilExpr(Expr::Nil expr) {

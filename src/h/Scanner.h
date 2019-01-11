@@ -33,6 +33,7 @@ private:
     char advance();
     char peek();
     char peekNext();
+    char previous();
     bool match(char expected);
 
     bool isDigit(char c);
@@ -45,7 +46,7 @@ public:
     std::string getSourceLine(line_t line);
 
     Token scanToken();
-
+    bool consumeSeparator();
 
 };
 

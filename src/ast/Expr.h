@@ -1,9 +1,10 @@
+// This file was automatically generated.
+// "See generate.py" for details.
+
 #ifndef ENACT_EXPR_H
 #define ENACT_EXPR_H
 
 #include "../h/Token.h"
-#include "../h/Value.h"
-
 #include <memory>
 #include <vector>
 
@@ -13,6 +14,7 @@ public:
     class Binary;
     class Boolean;
     class Call;
+    class Logical;
     class Nil;
     class Number;
     class String;
@@ -27,6 +29,7 @@ public:
         virtual R visitBinaryExpr(Binary expr);
         virtual R visitBooleanExpr(Boolean expr);
         virtual R visitCallExpr(Call expr);
+        virtual R visitLogicalExpr(Logical expr);
         virtual R visitNilExpr(Nil expr);
         virtual R visitNumberExpr(Number expr);
         virtual R visitStringExpr(String expr);
@@ -35,122 +38,193 @@ public:
         virtual R visitVariableExpr(Variable expr);
     };
 
-    virtual void accept(Expr::Visitor<void> *visitor) = 0;
     virtual std::string accept(Expr::Visitor<std::string> *visitor) = 0;
+    virtual void accept(Expr::Visitor<void> *visitor) = 0;
 };
-
-#define EXPR_ACCEPT_FUNCTION(T, name) \
-    T accept(Expr::Visitor<T> *visitor) override { \
-        return visitor->name(*this); \
-    }
 
 class Expr::Assign : public Expr {
 public:
-    Sp<Expr> left, right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
     Token oper;
 
-    Assign(Sp<Expr> left, Sp<Expr> right, Token oper) : left{left}, right{right}, oper{std::move(oper)} {}
+    Assign(std::shared_ptr<Expr> left,std::shared_ptr<Expr> right,Token oper) : 
+        left{left},right{right},oper{oper} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitAssignExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitAssignExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitAssignExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitAssignExpr(*this);
+    }
 };
 
 class Expr::Binary : public Expr {
 public:
-    Sp<Expr> left, right;
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
     Token oper;
 
-    Binary(Sp<Expr> left, Sp<Expr> right, Token oper) : left{left}, right{right}, oper{std::move(oper)} {}
+    Binary(std::shared_ptr<Expr> left,std::shared_ptr<Expr> right,Token oper) : 
+        left{left},right{right},oper{oper} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitBinaryExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitBinaryExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitBinaryExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitBinaryExpr(*this);
+    }
 };
 
 class Expr::Boolean : public Expr {
 public:
     bool value;
 
-    Boolean(bool value) : value{value} {}
+    Boolean(bool value) : 
+        value{value} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitBooleanExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitBooleanExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitBooleanExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitBooleanExpr(*this);
+    }
 };
 
 class Expr::Call : public Expr {
 public:
-    Sp<Expr> callee;
-    std::vector<Sp<Expr>> arguments;
+    std::shared_ptr<Expr> callee;
+    std::vector<std::shared_ptr<Expr>> arguments;
     Token paren;
 
-    Call(Sp<Expr> callee, std::vector<Sp<Expr>> arguments, Token paren) : callee{callee}, arguments{std::move(arguments)}, paren{std::move(paren)} {}
+    Call(std::shared_ptr<Expr> callee,std::vector<std::shared_ptr<Expr>> arguments,Token paren) : 
+        callee{callee},arguments{arguments},paren{paren} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitCallExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitCallExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitCallExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitCallExpr(*this);
+    }
+};
+
+class Expr::Logical : public Expr {
+public:
+    std::shared_ptr<Expr> left;
+    std::shared_ptr<Expr> right;
+    Token oper;
+
+    Logical(std::shared_ptr<Expr> left,std::shared_ptr<Expr> right,Token oper) : 
+        left{left},right{right},oper{oper} {}
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitLogicalExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitLogicalExpr(*this);
+    }
 };
 
 class Expr::Nil : public Expr {
 public:
-    Nil() = default;
+    Nil() {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitNilExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitNilExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitNilExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitNilExpr(*this);
+    }
 };
 
 class Expr::Number : public Expr {
 public:
     double value;
 
-    Number(double value) : value{value} {}
+    Number(double value) : 
+        value{value} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitNumberExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitNumberExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitNumberExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitNumberExpr(*this);
+    }
 };
 
 class Expr::String : public Expr {
 public:
     std::string value;
 
-    String(std::string value) : value{std::move(value)} {}
+    String(std::string value) : 
+        value{value} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitStringExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitStringExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitStringExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitStringExpr(*this);
+    }
 };
-
 
 class Expr::Ternary : public Expr {
 public:
-    Sp<Expr> condition;
-    Sp<Expr> thenExpr;
-    Sp<Expr> elseExpr;
+    std::shared_ptr<Expr> condition;
+    std::shared_ptr<Expr> thenExpr;
+    std::shared_ptr<Expr> elseExpr;
     Token oper;
 
-    Ternary(Sp<Expr> condition, Sp<Expr> thenExpr, Sp<Expr> elseExpr, Token oper) : condition{condition}, thenExpr{thenExpr}, elseExpr{elseExpr}, oper{std::move(oper)} {}
+    Ternary(std::shared_ptr<Expr> condition,std::shared_ptr<Expr> thenExpr,std::shared_ptr<Expr> elseExpr,Token oper) : 
+        condition{condition},thenExpr{thenExpr},elseExpr{elseExpr},oper{oper} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitTernaryExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitTernaryExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitTernaryExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitTernaryExpr(*this);
+    }
 };
 
 class Expr::Unary : public Expr {
 public:
-    Sp<Expr> operand;
+    std::shared_ptr<Expr> operand;
     Token oper;
 
-    Unary(Sp<Expr> operand, Token oper) : operand{operand}, oper{std::move(oper)} {}
+    Unary(std::shared_ptr<Expr> operand,Token oper) : 
+        operand{operand},oper{oper} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitUnaryExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitUnaryExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitUnaryExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitUnaryExpr(*this);
+    }
 };
 
 class Expr::Variable : public Expr {
 public:
     Token name;
 
-    explicit Variable(Token name) : name{std::move(name)} {}
+    Variable(Token name) : 
+        name{name} {}
 
-    EXPR_ACCEPT_FUNCTION(void, visitVariableExpr);
-    EXPR_ACCEPT_FUNCTION(std::string, visitVariableExpr);
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitVariableExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitVariableExpr(*this);
+    }
 };
 
-#undef EXPR_ACCEPT_FUNCTION
-
-#endif //ENACT_EXPR_H
+#endif // ENACT_EXPR_H

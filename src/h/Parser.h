@@ -27,8 +27,8 @@ enum class Precedence {
 };
 
 class Parser;
-typedef Sp<Expr> (Parser::*PrefixFn)();
-typedef Sp<Expr> (Parser::*InfixFn)(Sp<Expr>);
+typedef std::shared_ptr<Expr> (Parser::*PrefixFn)();
+typedef std::shared_ptr<Expr> (Parser::*InfixFn)(std::shared_ptr<Expr>);
 
 struct ParseRule {
     PrefixFn prefix;
@@ -38,6 +38,11 @@ struct ParseRule {
 
 class Parser {
 private:
+    class ParseError : public std::runtime_error {
+    public:
+        ParseError() : std::runtime_error{"Internal error. Something went seriously wrong."} {}
+    };
+
     std::string m_source;
     Scanner m_scanner;
 
@@ -49,8 +54,9 @@ private:
 
     void advance();
     bool check(TokenType expected);
-    bool match(TokenType expected);
-    void consume(TokenType type, const std::string &message);
+    bool consume(TokenType expected);
+    void expect(TokenType type, const std::string &message);
+    void expectSeparator(const std::string &message);
     bool isAtEnd();
     
     void errorAt(const Token &token, const std::string &message);
@@ -58,28 +64,30 @@ private:
     void error(const std::string &message);
 
     const ParseRule& getParseRule(TokenType type);
-    Sp<Expr> parsePrecedence(Precedence precedence);
+    std::shared_ptr<Expr> parsePrecedence(Precedence precedence);
 
-    Sp<Expr> expression();
+    std::shared_ptr<Expr> expression();
 
     // Prefix parse rules
-    Sp<Expr> grouping();
-    Sp<Expr> variable();
-    Sp<Expr> number();
-    Sp<Expr> literal();
-    Sp<Expr> string();
-    Sp<Expr> unary();
+    std::shared_ptr<Expr> grouping();
+    std::shared_ptr<Expr> variable();
+    std::shared_ptr<Expr> number();
+    std::shared_ptr<Expr> literal();
+    std::shared_ptr<Expr> string();
+    std::shared_ptr<Expr> unary();
 
     // Infix parse rules
-    Sp<Expr> call(Sp<Expr> callee);
-    Sp<Expr> binary(Sp<Expr> left);
-    Sp<Expr> ternary(Sp<Expr> condition);
+    std::shared_ptr<Expr> call(std::shared_ptr<Expr> callee);
+    std::shared_ptr<Expr> binary(std::shared_ptr<Expr> left);
+    std::shared_ptr<Expr> assignment(std::shared_ptr<Expr> left);
+    std::shared_ptr<Expr> ternary(std::shared_ptr<Expr> condition);
 
     std::array<ParseRule, 47> m_parseRules = {
             ParseRule{&Parser::grouping,   &Parser::call,    Precedence::CALL}, // LEFT_PAREN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RIGHT_PAREN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // LEFT_SQUARE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RIGHT_SQUARE
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // COLON
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // COMMA
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // DOT
             ParseRule{&Parser::unary,      &Parser::binary,  Precedence::TERM}, // MINUS
@@ -90,19 +98,16 @@ private:
             ParseRule{nullptr,               &Parser::binary,  Precedence::FACTOR}, // STAR
             ParseRule{&Parser::unary,      nullptr,            Precedence::UNARY}, // BANG
             ParseRule{nullptr,               &Parser::binary,  Precedence::EQUALITY}, // BANG_EQUAL
-            ParseRule{nullptr,               &Parser::binary,  Precedence::ASSIGNMENT}, // EQUAL
+            ParseRule{nullptr,               &Parser::assignment,  Precedence::ASSIGNMENT}, // EQUAL
             ParseRule{nullptr,               &Parser::binary,  Precedence::EQUALITY}, // EQUAL_EQUAL
             ParseRule{nullptr,               &Parser::binary,  Precedence::COMPARISON}, // GREATER
             ParseRule{nullptr,               &Parser::binary,  Precedence::COMPARISON}, // GREATER_EQUAL
             ParseRule{nullptr,               &Parser::binary,  Precedence::COMPARISON}, // LESS
             ParseRule{nullptr,               &Parser::binary,  Precedence::COMPARISON}, // LESS_EQUAL
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // COLON
-            ParseRule{nullptr,               &Parser::binary,  Precedence::ASSIGNMENT}, // COLON_EQUAL
-            ParseRule{nullptr,               &Parser::binary,  Precedence::ASSIGNMENT}, // COLON_COLON_EQUAL
             ParseRule{&Parser::variable,   nullptr,            Precedence::NONE}, // IDENTIFIER
             ParseRule{&Parser::string,     nullptr,            Precedence::NONE}, // STRING
             ParseRule{&Parser::number,     nullptr,            Precedence::NONE}, // NUMBER
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // AND
+            ParseRule{nullptr,               &Parser::binary,            Precedence::AND}, // AND
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BOOL
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CLASS
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CONST
@@ -113,7 +118,7 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // FOR
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IF
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // NIL
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // OR
+            ParseRule{nullptr,               &Parser::binary,            Precedence::OR}, // OR
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RETURN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SUPER
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // THIS
@@ -124,19 +129,19 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE} // ENDFILE
     };
 
-    Sp<Stmt> declaration();
+    // Declarations
+    std::shared_ptr<Stmt> declaration();
+    std::shared_ptr<Stmt> variableDeclaration(bool isConst);
 
-    // Declaration types
-    Sp<Stmt> variableDeclaration(bool isConst);
+    // Statements
+    std::shared_ptr<Stmt> statement();
+    std::shared_ptr<Stmt> expressionStatement();
 
-    Sp<Stmt> statement();
-
-    // Statement types
-    Sp<Stmt> expressionStatement();
+    void synchronise();
 
 public:
     explicit Parser(std::string source);
-    std::vector<Sp<Stmt>> parse();
+    std::vector<std::shared_ptr<Stmt>> parse();
     bool hadError();
 };
 

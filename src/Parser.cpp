@@ -196,8 +196,21 @@ std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
 }
 
 std::shared_ptr<Stmt> Parser::statement() {
-    if (consume(TokenType::SEMICOLON)) return declaration(); // Null statement;
+    if (consume(TokenType::START)) return blockStatement();
     return expressionStatement();
+}
+
+std::shared_ptr<Stmt> Parser::blockStatement() {
+    expect(TokenType::COLON, "Expected ':' after start of block.");
+
+    std::vector<std::shared_ptr<Stmt>> statements;
+    while (!check(TokenType::END) && !isAtEnd()) {
+        statements.push_back(declaration());
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of block.");
+
+    return std::make_shared<Stmt::Block>(statements);
 }
 
 std::shared_ptr<Stmt> Parser::expressionStatement() {
@@ -290,8 +303,6 @@ void Parser::synchronise() {
     advance();
 
     while (!isAtEnd()) {
-        if (m_previous.type == TokenType::SEMICOLON) return;
-
         switch (m_current.type) {
             case TokenType::CLASS:
             case TokenType::CONST:

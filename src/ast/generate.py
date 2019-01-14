@@ -103,8 +103,9 @@ generate_tree(
 generate_tree(
     "Stmt",
     {
-        "Expression" : ["std::shared_ptr<Expr> expr"],
-        "Variable" : ["Token name", "std::string typeName", "std::shared_ptr<Expr> initializer", "bool isConst"],
+        "Block":        ["std::vector<std::shared_ptr<Stmt>> statements"],
+        "Expression":   ["std::shared_ptr<Expr> expr"],
+        "Variable":     ["Token name", "std::string typeName", "std::shared_ptr<Expr> initializer", "bool isConst"],
     },
     ["std::string", "void"],
     ['"Expr.h"']

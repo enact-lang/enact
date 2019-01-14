@@ -7,6 +7,7 @@
 #include <memory>
 
 class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std::string> {
+    std::string visitBlockStmt(Stmt::Block stmt) override;
     std::string visitExpressionStmt(Stmt::Expression stmt) override;
     std::string visitVariableStmt(Stmt::Variable stmt) override;
 
@@ -26,6 +27,7 @@ class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std
     std::string visitUnaryExpr(Expr::Unary expr) override;
     std::string visitVariableExpr(Expr::Variable expr) override;
 
+    std::string evaluate(std::shared_ptr<Stmt> stmt);
     std::string evaluate(std::shared_ptr<Expr> expr);
 public:
     void print(std::shared_ptr<Stmt> stmt);

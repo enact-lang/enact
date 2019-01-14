@@ -2,11 +2,25 @@
 #include "h/AstPrinter.h"
 
 void AstPrinter::print(std::shared_ptr<Stmt> stmt) {
-    std::cout << stmt->accept(this);
+    std::cout << evaluate(stmt);
+}
+
+std::string AstPrinter::evaluate(std::shared_ptr<Stmt> stmt) {
+    return stmt->accept(this);
 }
 
 std::string AstPrinter::evaluate(std::shared_ptr<Expr> expr) {
     return expr->accept(this);
+}
+
+std::string AstPrinter::visitBlockStmt(Stmt::Block stmt) {
+    std::stringstream s;
+    s << "Stmt::Block [\n";
+    for (auto &statement : stmt.statements) {
+        s << evaluate(statement) << "\n";
+    }
+    s << "]\n";
+    return s.str();
 }
 
 std::string AstPrinter::visitExpressionStmt(Stmt::Expression stmt) {

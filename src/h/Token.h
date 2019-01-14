@@ -9,8 +9,8 @@ enum class TokenType {
     // Single character tokens.
     LEFT_PAREN, RIGHT_PAREN,
     LEFT_SQUARE, RIGHT_SQUARE,
-    COLON, COMMA, DOT, MINUS, PLUS,
-    QUESTION, SEMICOLON, SLASH, STAR,
+    COLON, COMMA, DOT, MINUS,
+    PLUS, QUESTION, SLASH, STAR,
 
     // 1 or 2 character tokens.
     BANG, BANG_EQUAL,
@@ -22,10 +22,10 @@ enum class TokenType {
     IDENTIFIER, STRING, NUMBER,
 
     // Reserved words.
-    AND, BOOL, CLASS, CONST, ELSE, END, FALSE, FUN, FOR, IF,
-    NIL, OR, REF, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
+    AND, BOOL, CLASS, CONST, EACH, ELSE, END, FALSE, FUN, FOR, IF,
+    NIL, OR, REF, RETURN, START, SUPER, THIS, TRUE, VAR, WHILE,
 
-    ERROR, ENDFILE, MAX_TOKEN_TYPES,
+    ERROR, ENDFILE, MAX,
 };
 
 struct Token {

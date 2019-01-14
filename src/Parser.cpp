@@ -58,10 +58,33 @@ std::shared_ptr<Expr> Parser::string() {
     return std::make_shared<Expr::String>(m_previous.lexeme.substr(1, m_previous.lexeme.size() - 2));
 }
 
+std::shared_ptr<Expr> Parser::array() {
+    std::vector<std::shared_ptr<Expr>> elements;
+    if (!consume(TokenType::RIGHT_SQUARE)) {
+        do {
+            elements.push_back(expression());
+        } while (consume(TokenType::COMMA));
+
+        expect(TokenType::RIGHT_SQUARE, "Expected end of array.");
+    }
+
+    return std::make_shared<Expr::Array>(elements);
+}
+
 std::shared_ptr<Expr> Parser::unary() {
     Token oper = m_previous;
 
     std::shared_ptr<Expr> expr = parsePrecedence(Precedence::UNARY);
+
+    if (oper.type == TokenType::REF) {
+        if (typeid(*expr) != typeid(Expr::Variable) &&
+                typeid(*expr) != typeid(Expr::Field) &&
+                typeid(*expr) != typeid(Expr::Subscript)) {
+            errorAt(oper, "Can only reference lvalues.");
+        }
+
+        return std::make_shared<Expr::Reference>(expr, oper);
+    }
 
     return std::make_shared<Expr::Unary>(expr, oper);
 }
@@ -70,15 +93,25 @@ std::shared_ptr<Expr> Parser::call(std::shared_ptr<Expr> callee) {
     Token leftParen = m_previous;
     std::vector<std::shared_ptr<Expr>> arguments;
 
-    while (!consume(TokenType::RIGHT_PAREN)) {
-        arguments.push_back(expression());
-        if (!check(TokenType::RIGHT_PAREN))
-            expect(TokenType::COMMA, "Expected ',' before next argument");
+    if (!consume(TokenType::RIGHT_PAREN)) {
+        do {
+            arguments.push_back(expression());
+        } while (consume(TokenType::COMMA));
+
+        expect(TokenType::RIGHT_PAREN, "Expected end of argument list.");
     }
 
-    if (arguments.size() > UINT8_MAX) errorAt(leftParen, "Too many arguments. Max is 255.");
+    if (arguments.size() > 255) errorAt(leftParen, "Too many arguments. Max is 255.");
 
     return std::make_shared<Expr::Call>(callee, arguments, leftParen);
+}
+
+std::shared_ptr<Expr> Parser::subscript(std::shared_ptr<Expr> object) {
+    Token square = m_previous;
+    std::shared_ptr<Expr> index = expression();
+    expect(TokenType::RIGHT_SQUARE, "Expected ']' after subscript index.");
+
+    return std::make_shared<Expr::Subscript>(object, index, square);
 }
 
 std::shared_ptr<Expr> Parser::binary(std::shared_ptr<Expr> left) {
@@ -102,7 +135,21 @@ std::shared_ptr<Expr> Parser::assignment(std::shared_ptr<Expr> left) {
 
     std::shared_ptr<Expr> right = parsePrecedence(Precedence::ASSIGNMENT);
 
-    return std::make_shared<Expr::Assign>(left, right, oper);
+    if (typeid(*left) == typeid(Expr::Variable) ||
+            typeid(*left) == typeid(Expr::Field) ||
+            typeid(*left) == typeid(Expr::Subscript)) {
+        return std::make_shared<Expr::Assign>(left, right, oper);
+    }
+
+    errorAt(oper, "Invalid assignment target.");
+}
+
+std::shared_ptr<Expr> Parser::field(std::shared_ptr<Expr> object) {
+    Token oper = m_previous;
+    expect(TokenType::IDENTIFIER, "Expected field name after '.'.");
+    Token name = m_previous;
+
+    return std::make_shared<Expr::Field>(object, name, oper);
 }
 
 std::shared_ptr<Expr> Parser::ternary(std::shared_ptr<Expr> condition) {
@@ -131,13 +178,21 @@ std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
     expect(TokenType::IDENTIFIER, "Expected variable name.");
     Token name = m_previous;
 
-    expect(TokenType::EQUAL, "Expected '=' after variable name.");
+    std::string typeName;
+    if (consume(TokenType::REF)) {
+        expect(TokenType::IDENTIFIER, "Expected rest of type name after 'ref'.");
+        typeName = "ref " + m_previous.lexeme;
+    } else if (consume(TokenType::IDENTIFIER)) {
+        typeName = m_previous.lexeme;
+    }
+
+    expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
 
     std::shared_ptr<Expr> initializer = expression();
 
     expectSeparator("Expected newline or ';' after variable declaration.");
 
-    return std::make_shared<Stmt::Variable>(name, initializer, isConst);
+    return std::make_shared<Stmt::Variable>(name, typeName, initializer, isConst);
 }
 
 std::shared_ptr<Stmt> Parser::statement() {
@@ -226,9 +281,7 @@ void Parser::expect(TokenType type, const std::string &message) {
 }
 
 void Parser::expectSeparator(const std::string &message) {
-    if (m_scanner.consumeSeparator()) {
-
-    } else {
+    if (!m_scanner.consumeSeparator()) {
         errorAtCurrent(message);
     }
 }

@@ -135,11 +135,12 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "else")    return TokenType::ELSE;
     if (candidate == "end")     return TokenType::END;
     if (candidate == "false")   return TokenType::FALSE;
-    if (candidate == "consumeSeparator")     return TokenType::FUN;
+    if (candidate == "fun")     return TokenType::FUN;
     if (candidate == "for")     return TokenType::FOR;
     if (candidate == "if")      return TokenType::IF;
     if (candidate == "nil")     return TokenType::NIL;
     if (candidate == "or")      return TokenType::OR;
+    if (candidate == "ref")     return TokenType::REF;
     if (candidate == "return")  return TokenType::RETURN;
     if (candidate == "super")   return TokenType::SUPER;
     if (candidate == "this")    return TokenType::THIS;

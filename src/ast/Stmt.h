@@ -14,8 +14,8 @@ public:
     template <class R>
     class Visitor {
     public:
-        virtual R visitExpressionStmt(Expression stmt);
-        virtual R visitVariableStmt(Variable stmt);
+        virtual R visitExpressionStmt(Expression None);
+        virtual R visitVariableStmt(Variable None);
     };
 
     virtual std::string accept(Stmt::Visitor<std::string> *visitor) = 0;
@@ -41,11 +41,12 @@ public:
 class Stmt::Variable : public Stmt {
 public:
     Token name;
+    std::string typeName;
     std::shared_ptr<Expr> initializer;
     bool isConst;
 
-    Variable(Token name,std::shared_ptr<Expr> initializer,bool isConst) : 
-        name{name},initializer{initializer},isConst{isConst} {}
+    Variable(Token name,std::string typeName,std::shared_ptr<Expr> initializer,bool isConst) : 
+        name{name},typeName{typeName},initializer{initializer},isConst{isConst} {}
 
     std::string accept(Stmt::Visitor<std::string> *visitor) override {
         return visitor->visitVariableStmt(*this);

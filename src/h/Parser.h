@@ -74,22 +74,25 @@ private:
     std::shared_ptr<Expr> number();
     std::shared_ptr<Expr> literal();
     std::shared_ptr<Expr> string();
+    std::shared_ptr<Expr> array();
     std::shared_ptr<Expr> unary();
 
     // Infix parse rules
     std::shared_ptr<Expr> call(std::shared_ptr<Expr> callee);
+    std::shared_ptr<Expr> subscript(std::shared_ptr<Expr> object);
     std::shared_ptr<Expr> binary(std::shared_ptr<Expr> left);
     std::shared_ptr<Expr> assignment(std::shared_ptr<Expr> left);
+    std::shared_ptr<Expr> field(std::shared_ptr<Expr> object);
     std::shared_ptr<Expr> ternary(std::shared_ptr<Expr> condition);
 
     std::array<ParseRule, 47> m_parseRules = {
             ParseRule{&Parser::grouping,   &Parser::call,    Precedence::CALL}, // LEFT_PAREN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RIGHT_PAREN
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // LEFT_SQUARE
+            ParseRule{&Parser::array,      &Parser::subscript,            Precedence::CALL}, // LEFT_SQUARE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RIGHT_SQUARE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // COLON
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // COMMA
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // DOT
+            ParseRule{nullptr,               &Parser::field,            Precedence::CALL}, // DOT
             ParseRule{&Parser::unary,      &Parser::binary,  Precedence::TERM}, // MINUS
             ParseRule{nullptr,               &Parser::binary,  Precedence::TERM}, // PLUS
             ParseRule{nullptr,               &Parser::ternary, Precedence::CONDITIONAL}, // QUESTION
@@ -119,6 +122,7 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IF
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // NIL
             ParseRule{nullptr,               &Parser::binary,            Precedence::OR}, // OR
+            ParseRule{&Parser::unary,               nullptr,            Precedence::UNARY}, // REF
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RETURN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SUPER
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // THIS

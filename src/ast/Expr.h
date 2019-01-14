@@ -10,14 +10,18 @@
 
 class Expr {
 public:
+    class Array;
     class Assign;
     class Binary;
     class Boolean;
     class Call;
+    class Field;
     class Logical;
     class Nil;
     class Number;
+    class Reference;
     class String;
+    class Subscript;
     class Ternary;
     class Unary;
     class Variable;
@@ -25,21 +29,41 @@ public:
     template <class R>
     class Visitor {
     public:
-        virtual R visitAssignExpr(Assign expr);
-        virtual R visitBinaryExpr(Binary expr);
-        virtual R visitBooleanExpr(Boolean expr);
-        virtual R visitCallExpr(Call expr);
-        virtual R visitLogicalExpr(Logical expr);
-        virtual R visitNilExpr(Nil expr);
-        virtual R visitNumberExpr(Number expr);
-        virtual R visitStringExpr(String expr);
-        virtual R visitTernaryExpr(Ternary expr);
-        virtual R visitUnaryExpr(Unary expr);
-        virtual R visitVariableExpr(Variable expr);
+        virtual R visitArrayExpr(Array None);
+        virtual R visitAssignExpr(Assign None);
+        virtual R visitBinaryExpr(Binary None);
+        virtual R visitBooleanExpr(Boolean None);
+        virtual R visitCallExpr(Call None);
+        virtual R visitFieldExpr(Field None);
+        virtual R visitLogicalExpr(Logical None);
+        virtual R visitNilExpr(Nil None);
+        virtual R visitNumberExpr(Number None);
+        virtual R visitReferenceExpr(Reference None);
+        virtual R visitStringExpr(String None);
+        virtual R visitSubscriptExpr(Subscript None);
+        virtual R visitTernaryExpr(Ternary None);
+        virtual R visitUnaryExpr(Unary None);
+        virtual R visitVariableExpr(Variable None);
     };
 
     virtual std::string accept(Expr::Visitor<std::string> *visitor) = 0;
     virtual void accept(Expr::Visitor<void> *visitor) = 0;
+};
+
+class Expr::Array : public Expr {
+public:
+    std::vector<std::shared_ptr<Expr>> value;
+
+    Array(std::vector<std::shared_ptr<Expr>> value) : 
+        value{value} {}
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitArrayExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitArrayExpr(*this);
+    }
 };
 
 class Expr::Assign : public Expr {
@@ -112,6 +136,24 @@ public:
     }
 };
 
+class Expr::Field : public Expr {
+public:
+    std::shared_ptr<Expr> object;
+    Token name;
+    Token oper;
+
+    Field(std::shared_ptr<Expr> object,Token name,Token oper) : 
+        object{object},name{name},oper{oper} {}
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitFieldExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitFieldExpr(*this);
+    }
+};
+
 class Expr::Logical : public Expr {
 public:
     std::shared_ptr<Expr> left;
@@ -132,7 +174,7 @@ public:
 
 class Expr::Nil : public Expr {
 public:
-    Nil() {}
+    Nil() = default;
 
     std::string accept(Expr::Visitor<std::string> *visitor) override {
         return visitor->visitNilExpr(*this);
@@ -159,6 +201,23 @@ public:
     }
 };
 
+class Expr::Reference : public Expr {
+public:
+    std::shared_ptr<Expr> object;
+    Token oper;
+
+    Reference(std::shared_ptr<Expr> object,Token oper) : 
+        object{object},oper{oper} {}
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitReferenceExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitReferenceExpr(*this);
+    }
+};
+
 class Expr::String : public Expr {
 public:
     std::string value;
@@ -172,6 +231,24 @@ public:
 
     void accept(Expr::Visitor<void> *visitor) override {
         return visitor->visitStringExpr(*this);
+    }
+};
+
+class Expr::Subscript : public Expr {
+public:
+    std::shared_ptr<Expr> object;
+    std::shared_ptr<Expr> index;
+    Token square;
+
+    Subscript(std::shared_ptr<Expr> object,std::shared_ptr<Expr> index,Token square) : 
+        object{object},index{index},square{square} {}
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitSubscriptExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitSubscriptExpr(*this);
     }
 };
 

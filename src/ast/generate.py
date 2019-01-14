@@ -1,6 +1,9 @@
 # This script generates the AST classes found in Expr.h/cpp and Stmt.h/cpp.
 
-uncapitalize = lambda s: s[:1].lower() + s[1:] if s else ''
+
+def uncapitalize(s):
+    s[:1].lower() + s[1:] if s else ''
+
 
 def generate_ast_class_visitors(name, type_fields, visitor_types):
     ret = "    template <class R>\n    class Visitor {\n    public:\n"
@@ -10,6 +13,7 @@ def generate_ast_class_visitors(name, type_fields, visitor_types):
     for type in visitor_types:
         ret += f"    virtual {type} accept({name}::Visitor<{type}> *visitor) = 0;\n"
     return ret
+
 
 def generate_ast_subclasses(name, type_fields, vistor_types):
     ret = ""
@@ -28,11 +32,12 @@ def generate_ast_subclasses(name, type_fields, vistor_types):
             ret = ret[:len(ret)-1]
             ret += " {}\n"
         else:
-            ret += f"    {key}() {{}}\n"
+            ret += f"    {key}() = default;\n"
         for visitor_type in vistor_types:
             ret += f"\n    {visitor_type} accept({name}::Visitor<{visitor_type}> *visitor) override {{\n        return visitor->visit{key+name}(*this);\n    }}\n"
         ret += "};\n\n"
     return ret
+
 
 def generate_ast_class_body(name, type_fields, visitor_types):
     ret = ""
@@ -42,11 +47,13 @@ def generate_ast_class_body(name, type_fields, visitor_types):
     ret += "};\n\n"
     return ret
 
+
 def generate_includes(includes):
     ret = ""
     for include in includes:
         ret += f"#include {include}\n"
     return ret
+
 
 def generate_ast_class(name, type_fields, visitor_types, includes):
     ret = ("// This file was automatically generated.\n"
@@ -64,24 +71,30 @@ def generate_ast_class(name, type_fields, visitor_types, includes):
            )
     return ret
 
+
 def generate_tree(name, type_fields, visitor_types, includes):
     with open(name + ".h", "w") as file:
         file.write(generate_ast_class(name, type_fields, visitor_types, includes))
 
+
 generate_tree(
     "Expr",
     {
-        "Assign"    : ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
-        "Binary"    : ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
-        "Boolean"   : ["bool value"],
-        "Call"      : ["std::shared_ptr<Expr> callee", "std::vector<std::shared_ptr<Expr>> arguments", "Token paren"],
-        "Logical"   : ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
-        "Nil"       : [],
-        "Number"    : ["double value"],
-        "String"    : ["std::string value"],
-        "Ternary"   : ["std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> thenExpr", "std::shared_ptr<Expr> elseExpr", "Token oper"],
-        "Unary"     : ["std::shared_ptr<Expr> operand", "Token oper"],
-        "Variable"  : ["Token name"]
+        "Array":    ["std::vector<std::shared_ptr<Expr>> value"],
+        "Assign":   ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
+        "Binary":   ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
+        "Boolean":  ["bool value"],
+        "Call":     ["std::shared_ptr<Expr> callee", "std::vector<std::shared_ptr<Expr>> arguments", "Token paren"],
+        "Field":    ["std::shared_ptr<Expr> object", "Token name", "Token oper"],
+        "Logical":  ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
+        "Nil":      [],
+        "Number":   ["double value"],
+        "Reference":["std::shared_ptr<Expr> object", "Token oper"],
+        "String":   ["std::string value"],
+        "Subscript":["std::shared_ptr<Expr> object", "std::shared_ptr<Expr> index", "Token square"],
+        "Ternary":  ["std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> thenExpr", "std::shared_ptr<Expr> elseExpr", "Token oper"],
+        "Unary":    ["std::shared_ptr<Expr> operand", "Token oper"],
+        "Variable": ["Token name"]
     },
     ["std::string", "void"],
     ['"../h/Token.h"', "<memory>", "<vector>"]
@@ -91,7 +104,7 @@ generate_tree(
     "Stmt",
     {
         "Expression" : ["std::shared_ptr<Expr> expr"],
-        "Variable" : ["Token name", "std::shared_ptr<Expr> initializer", "bool isConst"],
+        "Variable" : ["Token name", "std::string typeName", "std::shared_ptr<Expr> initializer", "bool isConst"],
     },
     ["std::string", "void"],
     ['"Expr.h"']

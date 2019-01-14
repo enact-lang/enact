@@ -17,6 +17,20 @@ std::string AstPrinter::visitVariableStmt(Stmt::Variable stmt) {
     return "Stmt::Var " + stmt.name.lexeme + " " + evaluate(stmt.initializer);
 }
 
+std::string AstPrinter::visitArrayExpr(Expr::Array expr) {
+    std::stringstream s;
+    s << "[";
+
+    std::string separator{""};
+    for (auto &element : expr.value) {
+        s << separator << evaluate(element);
+        separator = ", ";
+    }
+
+    s << "]";
+    return s.str();
+}
+
 std::string AstPrinter::visitAssignExpr(Expr::Assign expr) {
     return "(= " + evaluate(expr.left) + " " + evaluate(expr.right) + ")";
 }
@@ -30,7 +44,17 @@ std::string AstPrinter::visitBooleanExpr(Expr::Boolean expr) {
 }
 
 std::string AstPrinter::visitCallExpr(Expr::Call expr) {
-    return "(() " + evaluate(expr.callee) + ")";
+    std::stringstream s;
+    s << "(() " << evaluate(expr.callee);
+    for (auto &arg : expr.arguments) {
+        s << " " << evaluate(arg);
+    }
+    s << ")";
+    return s.str();
+}
+
+std::string AstPrinter::visitFieldExpr(Expr::Field expr) {
+    return "(. " + evaluate(expr.object) + " " + expr.name.lexeme + ")";
 }
 
 std::string AstPrinter::visitLogicalExpr(Expr::Logical expr) {
@@ -39,6 +63,10 @@ std::string AstPrinter::visitLogicalExpr(Expr::Logical expr) {
 
 std::string AstPrinter::visitNilExpr(Expr::Nil expr) {
     return "nil";
+}
+
+std::string AstPrinter::visitReferenceExpr(Expr::Reference expr) {
+    return "(ref " + evaluate(expr.object) + ")";
 }
 
 std::string AstPrinter::visitNumberExpr(Expr::Number expr) {
@@ -53,6 +81,10 @@ std::string AstPrinter::visitStringExpr(Expr::String expr) {
     return s.str();
 }
 
+std::string AstPrinter::visitSubscriptExpr(Expr::Subscript expr) {
+    return "([] " + evaluate(expr.object) + " " + evaluate(expr.index) + ")";
+}
+
 std::string AstPrinter::visitTernaryExpr(Expr::Ternary expr) {
     return "(?: " + evaluate(expr.condition) + " " + evaluate(expr.thenExpr) + " " + evaluate(expr.elseExpr) + ")";
 }
@@ -62,6 +94,6 @@ std::string AstPrinter::visitUnaryExpr(Expr::Unary expr) {
 }
 
 std::string AstPrinter::visitVariableExpr(Expr::Variable expr) {
-    return "(var " + expr.name.lexeme + ")";
+    return expr.name.lexeme;
 }
 

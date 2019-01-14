@@ -44,6 +44,8 @@ void Enact::runFile(const std::string &path) {
     while (std::getline(file, currentLine)) {
         fileContents << currentLine << "\n";
     }
+
+    run(fileContents.str());
 }
 
 void Enact::runPrompt() {

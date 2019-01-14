@@ -8,18 +8,36 @@
 
 class Stmt {
 public:
+    class Block;
     class Expression;
     class Variable;
 
     template <class R>
     class Visitor {
     public:
+        virtual R visitBlockStmt(Block None);
         virtual R visitExpressionStmt(Expression None);
         virtual R visitVariableStmt(Variable None);
     };
 
     virtual std::string accept(Stmt::Visitor<std::string> *visitor) = 0;
     virtual void accept(Stmt::Visitor<void> *visitor) = 0;
+};
+
+class Stmt::Block : public Stmt {
+public:
+    std::vector<std::shared_ptr<Stmt>> statements;
+
+    Block(std::vector<std::shared_ptr<Stmt>> statements) : 
+        statements{statements} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitBlockStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitBlockStmt(*this);
+    }
 };
 
 class Stmt::Expression : public Stmt {

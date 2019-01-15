@@ -129,7 +129,9 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "false")   return TokenType::FALSE;
     if (candidate == "fun")     return TokenType::FUN;
     if (candidate == "for")     return TokenType::FOR;
+    if (candidate == "given")   return TokenType::GIVEN;
     if (candidate == "if")      return TokenType::IF;
+    if (candidate == "in")      return TokenType::IN;
     if (candidate == "nil")     return TokenType::NIL;
     if (candidate == "or")      return TokenType::OR;
     if (candidate == "ref")     return TokenType::REF;
@@ -138,6 +140,7 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "this")    return TokenType::THIS;
     if (candidate == "true")    return TokenType::TRUE;
     if (candidate == "var")     return TokenType::VAR;
+    if (candidate == "when")    return TokenType::WHEN;
     if (candidate == "while")   return TokenType::WHILE;
 
     return TokenType::IDENTIFIER;

@@ -39,7 +39,11 @@ std::shared_ptr<Expr> Parser::grouping() {
 }
 
 std::shared_ptr<Expr> Parser::variable() {
-    return std::make_shared<Expr::Variable>(m_previous);
+    if (m_previous.lexeme != "_") {
+        return std::make_shared<Expr::Variable>(m_previous);
+    } else {
+        return std::make_shared<Expr::Any>();
+    }
 }
 
 std::shared_ptr<Expr> Parser::number() {
@@ -199,7 +203,9 @@ std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
 
 std::shared_ptr<Stmt> Parser::statement() {
     if (consume(TokenType::BLOCK)) return blockStatement();
+    if (consume(TokenType::EACH)) return eachStatement();
     if (consume(TokenType::FOR)) return forStatement();
+    if (consume(TokenType::GIVEN)) return givenStatement();
     if (consume(TokenType::IF)) return ifStatement();
     if (consume(TokenType::WHILE)) return whileStatement();
     return expressionStatement();
@@ -218,6 +224,28 @@ std::shared_ptr<Stmt> Parser::blockStatement() {
     expectSeparator("Expected newline or ';' after 'end'.");
 
     return std::make_shared<Stmt::Block>(statements);
+}
+
+std::shared_ptr<Stmt> Parser::eachStatement() {
+    expect(TokenType::IDENTIFIER, "Expected item name after 'each'.");
+    Token name = m_previous;
+
+    expect(TokenType::IN, "Expected 'in' after each loop item name.");
+
+    std::shared_ptr<Expr> object = expression();
+
+    expect(TokenType::COLON, "Expected ':' after each loop object.");
+    ignoreNewline();
+
+    std::vector<std::shared_ptr<Stmt>> body;
+    while (!check(TokenType::END) && !isAtEnd()) {
+        body.push_back(declaration());
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of each loop.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    return std::make_shared<Stmt::Each>(name, object, body);
 }
 
 std::shared_ptr<Stmt> Parser::forStatement() {
@@ -262,6 +290,44 @@ std::shared_ptr<Stmt> Parser::forStatement() {
     return std::make_shared<Stmt::For>(initializer, condition, increment, body);
 }
 
+std::shared_ptr<Stmt> Parser::givenStatement() {
+    std::shared_ptr<Expr> value = expression();
+    expect(TokenType::COLON, "Expected ':' after given value.");
+
+    std::vector<GivenCase> cases;
+    while (!check(TokenType::END) && !isAtEnd()) {
+        ignoreNewline();
+
+        if (consume(TokenType::WHEN)) {
+            std::shared_ptr<Expr> caseValue = expression();
+            expect(TokenType::COLON, "Expected ':' after case value.");
+
+            std::vector<std::shared_ptr<Stmt>> caseBody;
+            while (!check(TokenType::WHEN) && !check(TokenType::ELSE) && !check(TokenType::END) && !isAtEnd()) {
+                caseBody.push_back(declaration());
+            }
+
+            cases.push_back(GivenCase{caseValue, caseBody});
+        } else if (consume(TokenType::ELSE)) {
+            expect(TokenType::COLON, "Expected ':' after 'else' case.");
+
+            std::vector<std::shared_ptr<Stmt>> caseBody;
+            while (!check(TokenType::WHEN) && !check(TokenType::END) && !isAtEnd()) {
+                caseBody.push_back(declaration());
+            }
+
+            std::shared_ptr<Expr> caseValue = std::make_shared<Expr::Any>();
+
+            cases.push_back(GivenCase{caseValue, caseBody});
+        }
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of given statement.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    return std::make_shared<Stmt::Given>(value, cases);
+}
+
 std::shared_ptr<Stmt> Parser::ifStatement() {
     std::shared_ptr<Expr> condition = expression();
     expect(TokenType::COLON, "Expected ':' after if condition.");
@@ -298,7 +364,7 @@ std::shared_ptr<Stmt> Parser::whileStatement() {
         body.push_back(declaration());
     }
 
-    expect(TokenType::END, "Expected 'end' at end of while statement.");
+    expect(TokenType::END, "Expected 'end' at end of while loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
     return std::make_shared<Stmt::While>(condition, body);

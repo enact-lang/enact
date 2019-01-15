@@ -2,7 +2,7 @@
 #include "h/AstPrinter.h"
 
 void AstPrinter::print(std::shared_ptr<Stmt> stmt) {
-    std::cout << evaluate(stmt);
+    std::cout << evaluate(stmt) << "\n";
 }
 
 std::string AstPrinter::evaluate(std::shared_ptr<Stmt> stmt) {
@@ -19,7 +19,17 @@ std::string AstPrinter::visitBlockStmt(Stmt::Block stmt) {
     for (auto &statement : stmt.statements) {
         s << evaluate(statement) << "\n";
     }
-    s << "]\n";
+    s << "]";
+    return s.str();
+}
+
+std::string AstPrinter::visitEachStmt(Stmt::Each stmt) {
+    std::stringstream s;
+    s << "Stmt::Each " << stmt.name.lexeme << " in " << evaluate(stmt.object) << " [\n";
+    for (auto &statement : stmt.body) {
+        s << evaluate(statement) << "\n";
+    }
+    s << "]";
     return s.str();
 }
 
@@ -35,7 +45,21 @@ std::string AstPrinter::visitForStmt(Stmt::For stmt) {
     for (auto &statement : stmt.body) {
         s << evaluate(statement) << "\n";
     }
-    s << "]\n";
+    s << "]";
+    return s.str();
+}
+
+std::string AstPrinter::visitGivenStmt(Stmt::Given stmt) {
+    std::stringstream s;
+    s << "Stmt::Given " << evaluate(stmt.value) << " [\n";
+    for (auto &case_ : stmt.cases) {
+        s << "when " << evaluate(case_.value) << " [\n";
+        for (auto &statement: case_.body) {
+            s << evaluate(statement) << "\n";
+        }
+        s << "]\n";
+    }
+    s << "]";
     return s.str();
 }
 
@@ -49,7 +73,7 @@ std::string AstPrinter::visitIfStmt(Stmt::If stmt) {
     for (auto &statement : stmt.elseBlock) {
         s << evaluate(statement) << "\n";
     }
-    s << "]\n";
+    s << "]";
     return s.str();
 }
 
@@ -59,12 +83,16 @@ std::string AstPrinter::visitWhileStmt(Stmt::While stmt) {
     for (auto &statement : stmt.body) {
         s << evaluate(statement) << "\n";
     }
-    s << "]\n";
+    s << "]";
     return s.str();
 }
 
 std::string AstPrinter::visitVariableStmt(Stmt::Variable stmt) {
     return "Stmt::Var " + stmt.name.lexeme + " " + evaluate(stmt.initializer);
+}
+
+std::string AstPrinter::visitAnyExpr(Expr::Any expr) {
+    return "_";
 }
 
 std::string AstPrinter::visitArrayExpr(Expr::Array expr) {

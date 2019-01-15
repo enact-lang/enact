@@ -28,8 +28,11 @@ Token Scanner::scanToken() {
         case '-': return makeToken(TokenType::MINUS);
         case '+': return makeToken(TokenType::PLUS);
         case '?': return makeToken(TokenType::QUESTION);
+        case ';': return makeToken(TokenType::SEMICOLON);
         case '/': return makeToken(TokenType::SLASH);
         case '*': return makeToken(TokenType::STAR);
+
+        case '\n': ++m_line; return makeToken(TokenType::NEWLINE);
 
             // 1 or 2 character tokens.
         case '!':
@@ -61,17 +64,6 @@ void Scanner::skipWhitespace() {
                 advance();
                 break;
 
-            case '\n':
-                m_previousSeparator = m_current;
-                ++m_line;
-                advance();
-                break;
-
-            case ';':
-                m_previousSeparator = m_current;
-                advance();
-                break;
-
             case '/':
                 if (peekNext() == '/') {
                     while (peek() != '\n' && !isAtEnd()) advance();
@@ -84,16 +76,6 @@ void Scanner::skipWhitespace() {
                 return;
         }
     }
-}
-
-bool Scanner::consumeSeparator() {
-    if (m_previousSeparator == 0) return false;
-    size_t position = m_previousSeparator + 1;
-    for (; position < m_source.length(); ++position) {
-        char c = m_source[position];
-        if (!(c == ' ' || c == '\t' || c == '\r')) break;
-    }
-    return position == m_start;
 }
 
 Token Scanner::number() {
@@ -137,6 +119,7 @@ Token Scanner::errorToken(const std::string &what) {
 
 TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "and")     return TokenType::AND;
+    if (candidate == "block")   return TokenType::BLOCK;
     if (candidate == "bool")    return TokenType::BOOL;
     if (candidate == "class")   return TokenType::CLASS;
     if (candidate == "const")   return TokenType::CONST;
@@ -151,7 +134,6 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "or")      return TokenType::OR;
     if (candidate == "ref")     return TokenType::REF;
     if (candidate == "return")  return TokenType::RETURN;
-    if (candidate == "start")   return TokenType::START;
     if (candidate == "super")   return TokenType::SUPER;
     if (candidate == "this")    return TokenType::THIS;
     if (candidate == "true")    return TokenType::TRUE;

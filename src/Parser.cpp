@@ -12,6 +12,7 @@ std::shared_ptr<Expr> Parser::parsePrecedence(Precedence precedence) {
     advance();
     PrefixFn prefixRule = getParseRule(m_previous.type).prefix;
     if (prefixRule == nullptr) {
+        if (m_previous.type == TokenType::NEWLINE) return parsePrecedence(precedence);
         error("Expected expression.");
         return nullptr;
     }
@@ -196,12 +197,14 @@ std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
 }
 
 std::shared_ptr<Stmt> Parser::statement() {
-    if (consume(TokenType::START)) return blockStatement();
+    if (consume(TokenType::BLOCK)) return blockStatement();
+    if (consume(TokenType::IF)) return ifStatement();
     return expressionStatement();
 }
 
 std::shared_ptr<Stmt> Parser::blockStatement() {
     expect(TokenType::COLON, "Expected ':' after start of block.");
+    ignoreNewline();
 
     std::vector<std::shared_ptr<Stmt>> statements;
     while (!check(TokenType::END) && !isAtEnd()) {
@@ -209,6 +212,7 @@ std::shared_ptr<Stmt> Parser::blockStatement() {
     }
 
     expect(TokenType::END, "Expected 'end' at end of block.");
+    expectSeparator("Expected newline or ';' after 'end'.");
 
     return std::make_shared<Stmt::Block>(statements);
 }
@@ -217,6 +221,32 @@ std::shared_ptr<Stmt> Parser::expressionStatement() {
     std::shared_ptr<Expr> expr = expression();
     expectSeparator("Expected newline or ';' after expression.");
     return std::make_shared<Stmt::Expression>(expr);
+}
+
+std::shared_ptr<Stmt> Parser::ifStatement() {
+    std::shared_ptr<Expr> condition = expression();
+    expect(TokenType::COLON, "Expected ':' after if condition.");
+    ignoreNewline();
+
+    std::vector<std::shared_ptr<Stmt>> thenBlock;
+    while (!check(TokenType::END) && !check(TokenType::ELSE) && !isAtEnd()) {
+        thenBlock.push_back(declaration());
+    }
+
+    std::vector<std::shared_ptr<Stmt>> elseBlock;
+
+    if (consume(TokenType::ELSE)) {
+        expect(TokenType::COLON, "Expected ':' after start of else block.");
+        ignoreNewline();
+        while (!check(TokenType::END) && !isAtEnd()) {
+            elseBlock.push_back(declaration());
+        }
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of if statement.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    return std::make_shared<Stmt::If>(condition, thenBlock, elseBlock);
 }
 
 std::vector<std::shared_ptr<Stmt>> Parser::parse() {
@@ -273,6 +303,10 @@ void Parser::advance() {
     }
 }
 
+void Parser::ignoreNewline() {
+    consume(TokenType::NEWLINE);
+}
+
 bool Parser::check(TokenType expected) {
     return m_current.type == expected;
 }
@@ -294,9 +328,9 @@ void Parser::expect(TokenType type, const std::string &message) {
 }
 
 void Parser::expectSeparator(const std::string &message) {
-    if (!m_scanner.consumeSeparator()) {
-        errorAtCurrent(message);
-    }
+    bool found = false;
+    while (consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON)) found = true;
+    if (!found) errorAtCurrent(message);
 }
 
 void Parser::synchronise() {
@@ -304,8 +338,10 @@ void Parser::synchronise() {
 
     while (!isAtEnd()) {
         switch (m_current.type) {
+            case TokenType::BLOCK:
             case TokenType::CLASS:
             case TokenType::CONST:
+            case TokenType::EACH:
             case TokenType::FUN:
             case TokenType::FOR:
             case TokenType::IF:

@@ -10,8 +10,6 @@ private:
     std::string m_source;
     size_t m_start, m_current = 0;
 
-    size_t m_previousSeparator = 0;
-
     line_t m_line = 1;
     col_t m_col = 0;
 
@@ -48,7 +46,6 @@ public:
     std::string getSourceLine(line_t line);
 
     Token scanToken();
-    bool consumeSeparator();
 
 };
 

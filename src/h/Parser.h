@@ -53,6 +53,7 @@ private:
     Token m_current;
 
     void advance();
+    void ignoreNewline();
     bool check(TokenType expected);
     bool consume(TokenType expected);
     void expect(TokenType type, const std::string &message);
@@ -94,8 +95,10 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // COMMA
             ParseRule{nullptr,               &Parser::field,            Precedence::CALL}, // DOT
             ParseRule{&Parser::unary,      &Parser::binary,  Precedence::TERM}, // MINUS
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // NEWLINE
             ParseRule{nullptr,               &Parser::binary,  Precedence::TERM}, // PLUS
             ParseRule{nullptr,               &Parser::ternary, Precedence::CONDITIONAL}, // QUESTION
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SEMICOLON
             ParseRule{nullptr,               &Parser::binary,  Precedence::FACTOR}, // SLASH
             ParseRule{nullptr,               &Parser::binary,  Precedence::FACTOR}, // STAR
             ParseRule{&Parser::unary,      nullptr,            Precedence::UNARY}, // BANG
@@ -110,6 +113,7 @@ private:
             ParseRule{&Parser::string,     nullptr,            Precedence::NONE}, // STRING
             ParseRule{&Parser::number,     nullptr,            Precedence::NONE}, // NUMBER
             ParseRule{nullptr,               &Parser::binary,            Precedence::AND}, // AND
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BLOCK
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BOOL
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CLASS
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CONST
@@ -124,7 +128,6 @@ private:
             ParseRule{nullptr,               &Parser::binary,            Precedence::OR}, // OR
             ParseRule{&Parser::unary,               nullptr,            Precedence::UNARY}, // REF
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RETURN
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // START
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SUPER
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // THIS
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // TRUE
@@ -142,6 +145,7 @@ private:
     std::shared_ptr<Stmt> statement();
     std::shared_ptr<Stmt> blockStatement();
     std::shared_ptr<Stmt> expressionStatement();
+    std::shared_ptr<Stmt> ifStatement();
 
     void synchronise();
 

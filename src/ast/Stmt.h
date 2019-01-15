@@ -10,6 +10,7 @@ class Stmt {
 public:
     class Block;
     class Expression;
+    class For;
     class If;
     class While;
     class Variable;
@@ -19,6 +20,7 @@ public:
     public:
         virtual R visitBlockStmt(Block None);
         virtual R visitExpressionStmt(Expression None);
+        virtual R visitForStmt(For None);
         virtual R visitIfStmt(If None);
         virtual R visitWhileStmt(While None);
         virtual R visitVariableStmt(Variable None);
@@ -57,6 +59,25 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitExpressionStmt(*this);
+    }
+};
+
+class Stmt::For : public Stmt {
+public:
+    std::shared_ptr<Stmt> initializer;
+    std::shared_ptr<Expr> condition;
+    std::shared_ptr<Expr> increment;
+    std::vector<std::shared_ptr<Stmt>> body;
+
+    For(std::shared_ptr<Stmt> initializer,std::shared_ptr<Expr> condition,std::shared_ptr<Expr> increment,std::vector<std::shared_ptr<Stmt>> body) : 
+        initializer{initializer},condition{condition},increment{increment},body{body} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitForStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitForStmt(*this);
     }
 };
 

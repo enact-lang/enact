@@ -105,6 +105,7 @@ generate_tree(
     {
         "Block":        ["std::vector<std::shared_ptr<Stmt>> statements"],
         "Expression":   ["std::shared_ptr<Expr> expr"],
+        "For":          ["std::shared_ptr<Stmt> initializer", "std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> increment", "std::vector<std::shared_ptr<Stmt>> body"],
         "If":           ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> thenBlock", "std::vector<std::shared_ptr<Stmt>> elseBlock"],
         "While":        ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> body"],
         "Variable":     ["Token name", "std::string typeName", "std::shared_ptr<Expr> initializer", "bool isConst"],

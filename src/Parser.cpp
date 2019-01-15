@@ -223,7 +223,7 @@ std::shared_ptr<Stmt> Parser::blockStatement() {
 std::shared_ptr<Stmt> Parser::forStatement() {
     std::shared_ptr<Stmt> initializer;
     if (consume(TokenType::SEMICOLON)) {
-        initializer = nullptr;
+        initializer = std::make_shared<Stmt::Expression>(std::make_shared<Expr::Nil>());
     } else if (consume(TokenType::VAR)) {
         initializer = variableDeclaration(false);
     } else if (consume(TokenType::CONST)) {
@@ -232,15 +232,19 @@ std::shared_ptr<Stmt> Parser::forStatement() {
         initializer = expressionStatement();
     }
 
-    std::shared_ptr<Expr> condition{nullptr};
+    std::shared_ptr<Expr> condition;
     if (!consume(TokenType::SEMICOLON)) {
         condition = expression();
         expect(TokenType::SEMICOLON, "Expected ';' after for loop condition.");
+    } else {
+        condition = std::make_shared<Expr::Boolean>(true);
     }
 
-    std::shared_ptr<Expr> increment{nullptr};
+    std::shared_ptr<Expr> increment;
     if (!check(TokenType::COLON)) {
         increment = expression();
+    } else {
+        increment = std::make_shared<Expr::Nil>();
     }
 
     expect(TokenType::COLON, "Expected ':' before body of for loop.");
@@ -255,25 +259,7 @@ std::shared_ptr<Stmt> Parser::forStatement() {
     expect(TokenType::END, "Expected 'end' at end of for loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    // A for loop is just syntactic sugar for a while loop inside a
-    // block, so we create the "real" representation now.
-    if (increment != nullptr) {
-        body.push_back(std::make_shared<Stmt::Expression>(increment));
-    }
-
-    std::vector<std::shared_ptr<Stmt>> outerBody;
-
-    if (initializer != nullptr) {
-        outerBody.push_back(initializer);
-    }
-
-    if (condition != nullptr) {
-        outerBody.push_back(std::make_shared<Stmt::While>(condition, body));
-    } else {
-        outerBody.push_back(std::make_shared<Stmt::While>(std::make_shared<Expr::Boolean>(true), body));
-    }
-
-    return std::make_shared<Stmt::Block>(outerBody);
+    return std::make_shared<Stmt::For>(initializer, condition, increment, body);
 }
 
 std::shared_ptr<Stmt> Parser::ifStatement() {

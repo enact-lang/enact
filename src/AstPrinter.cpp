@@ -27,9 +27,21 @@ std::string AstPrinter::visitExpressionStmt(Stmt::Expression stmt) {
     return "Stmt::Expression " + evaluate(stmt.expr);
 }
 
+std::string AstPrinter::visitForStmt(Stmt::For stmt) {
+    std::stringstream s;
+    s << "Stmt::For " << evaluate(stmt.initializer) << "; "
+            << evaluate(stmt.condition) << "; "
+            << evaluate(stmt.increment) << " [\n";
+    for (auto &statement : stmt.body) {
+        s << evaluate(statement) << "\n";
+    }
+    s << "]\n";
+    return s.str();
+}
+
 std::string AstPrinter::visitIfStmt(Stmt::If stmt) {
     std::stringstream s;
-    s << "Stmt::If " << evaluate(stmt.condition) << " then [\n";
+    s << "Stmt::If " << evaluate(stmt.condition) << " [\n";
     for (auto &statement : stmt.thenBlock) {
         s << evaluate(statement) << "\n";
     }

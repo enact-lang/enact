@@ -165,6 +165,7 @@ std::shared_ptr<Expr> Parser::ternary(std::shared_ptr<Expr> condition) {
 }
 
 std::shared_ptr<Stmt> Parser::declaration() {
+    ignoreNewline();
     try {
         if (consume(TokenType::VAR)) return variableDeclaration(false);
         if (consume(TokenType::CONST)) return variableDeclaration(true);

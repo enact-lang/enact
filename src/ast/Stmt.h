@@ -11,6 +11,7 @@ public:
     class Block;
     class Expression;
     class If;
+    class While;
     class Variable;
 
     template <class R>
@@ -19,6 +20,7 @@ public:
         virtual R visitBlockStmt(Block None);
         virtual R visitExpressionStmt(Expression None);
         virtual R visitIfStmt(If None);
+        virtual R visitWhileStmt(While None);
         virtual R visitVariableStmt(Variable None);
     };
 
@@ -73,6 +75,23 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitIfStmt(*this);
+    }
+};
+
+class Stmt::While : public Stmt {
+public:
+    std::shared_ptr<Expr> condition;
+    std::vector<std::shared_ptr<Stmt>> body;
+
+    While(std::shared_ptr<Expr> condition,std::vector<std::shared_ptr<Stmt>> body) : 
+        condition{condition},body{body} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitWhileStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitWhileStmt(*this);
     }
 };
 

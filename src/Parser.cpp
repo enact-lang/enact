@@ -200,6 +200,7 @@ std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
 std::shared_ptr<Stmt> Parser::statement() {
     if (consume(TokenType::BLOCK)) return blockStatement();
     if (consume(TokenType::IF)) return ifStatement();
+    if (consume(TokenType::WHILE)) return whileStatement();
     return expressionStatement();
 }
 
@@ -268,6 +269,22 @@ std::shared_ptr<Stmt> Parser::ifStatement() {
     expectSeparator("Expected newline or ';' after 'end'.");
 
     return std::make_shared<Stmt::If>(condition, thenBlock, elseBlock);
+}
+
+std::shared_ptr<Stmt> Parser::whileStatement() {
+    std::shared_ptr<Expr> condition = expression();
+    expect(TokenType::COLON, "Expected ':' after while condition.");
+    ignoreNewline();
+
+    std::vector<std::shared_ptr<Stmt>> body;
+    while (!check(TokenType::END) && !isAtEnd()) {
+        body.push_back(declaration());
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of while statement.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    return std::make_shared<Stmt::While>(condition, body);
 }
 
 std::shared_ptr<Stmt> Parser::expressionStatement() {

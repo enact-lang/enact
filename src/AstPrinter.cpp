@@ -27,6 +27,20 @@ std::string AstPrinter::visitExpressionStmt(Stmt::Expression stmt) {
     return "Stmt::Expression " + evaluate(stmt.expr);
 }
 
+std::string AstPrinter::visitIfStmt(Stmt::If stmt) {
+    std::stringstream s;
+    s << "Stmt::If (" << evaluate(stmt.condition) << ") then [\n";
+    for (auto &statement : stmt.thenBlock) {
+        s << evaluate(statement) << "\n";
+    }
+    s << "] else [\n";
+    for (auto &statement : stmt.elseBlock) {
+        s << evaluate(statement) << "\n";
+    }
+    s << "]\n";
+    return s.str();
+}
+
 std::string AstPrinter::visitVariableStmt(Stmt::Variable stmt) {
     return "Stmt::Var " + stmt.name.lexeme + " " + evaluate(stmt.initializer);
 }
@@ -91,7 +105,7 @@ std::string AstPrinter::visitNumberExpr(Expr::Number expr) {
 
 std::string AstPrinter::visitStringExpr(Expr::String expr) {
     std::stringstream s;
-    s << expr.value;
+    s << "\"" << expr.value << "\"";
     return s.str();
 }
 

@@ -1,0 +1,14 @@
+if 42 == life:
+    var foo = 42; 80 + 40
+    life + 20
+end
+
+
+if 85 + 3 == bar:
+    foo + 84
+    var egg = 90; foo + 90
+    egg(1, 2, 3)
+else:
+    bar[0] = 42
+    [1, 2, 3, 4, 5][0]; bar = bar(1, 2, 3)
+end

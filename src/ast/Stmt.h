@@ -10,6 +10,7 @@ class Stmt {
 public:
     class Block;
     class Expression;
+    class If;
     class Variable;
 
     template <class R>
@@ -17,6 +18,7 @@ public:
     public:
         virtual R visitBlockStmt(Block None);
         virtual R visitExpressionStmt(Expression None);
+        virtual R visitIfStmt(If None);
         virtual R visitVariableStmt(Variable None);
     };
 
@@ -53,6 +55,24 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitExpressionStmt(*this);
+    }
+};
+
+class Stmt::If : public Stmt {
+public:
+    std::shared_ptr<Expr> condition;
+    std::vector<std::shared_ptr<Stmt>> thenBlock;
+    std::vector<std::shared_ptr<Stmt>> elseBlock;
+
+    If(std::shared_ptr<Expr> condition,std::vector<std::shared_ptr<Stmt>> thenBlock,std::vector<std::shared_ptr<Stmt>> elseBlock) : 
+        condition{condition},thenBlock{thenBlock},elseBlock{elseBlock} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitIfStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitIfStmt(*this);
     }
 };
 

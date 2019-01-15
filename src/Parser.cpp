@@ -218,10 +218,30 @@ std::shared_ptr<Stmt> Parser::blockStatement() {
     return std::make_shared<Stmt::Block>(statements);
 }
 
-std::shared_ptr<Stmt> Parser::expressionStatement() {
-    std::shared_ptr<Expr> expr = expression();
-    expectSeparator("Expected newline or ';' after expression.");
-    return std::make_shared<Stmt::Expression>(expr);
+std::shared_ptr<Stmt> Parser::forStatement() {
+    std::shared_ptr<Stmt> initializer;
+    if (consume(TokenType::SEMICOLON)) {
+        initializer = nullptr;
+    } else if (consume(TokenType::VAR)) {
+        initializer = variableDeclaration(false);
+    } else if (consume(TokenType::CONST)) {
+        initializer = variableDeclaration(true);
+    } else {
+        initializer = expressionStatement();
+    }
+
+    std::shared_ptr<Expr> condition{nullptr};
+    if (!consume(TokenType::SEMICOLON)) {
+        condition = expression();
+    }
+
+    std::shared_ptr<Expr> increment{nullptr};
+    if (!check(TokenType::COLON)) {
+        increment = expression();
+    }
+
+    expect(TokenType::COLON, "Expected ':' before body of for loop.")
+
 }
 
 std::shared_ptr<Stmt> Parser::ifStatement() {
@@ -248,6 +268,12 @@ std::shared_ptr<Stmt> Parser::ifStatement() {
     expectSeparator("Expected newline or ';' after 'end'.");
 
     return std::make_shared<Stmt::If>(condition, thenBlock, elseBlock);
+}
+
+std::shared_ptr<Stmt> Parser::expressionStatement() {
+    std::shared_ptr<Expr> expr = expression();
+    expectSeparator("Expected newline or ';' after expression.");
+    return std::make_shared<Stmt::Expression>(expr);
 }
 
 std::vector<std::shared_ptr<Stmt>> Parser::parse() {

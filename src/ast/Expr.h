@@ -24,6 +24,7 @@ public:
     class Subscript;
     class Ternary;
     class Unary;
+    class Any;
     class Variable;
 
     template <class R>
@@ -43,6 +44,7 @@ public:
         virtual R visitSubscriptExpr(Subscript None);
         virtual R visitTernaryExpr(Ternary None);
         virtual R visitUnaryExpr(Unary None);
+        virtual R visitAnyExpr(Any None);
         virtual R visitVariableExpr(Variable None);
     };
 
@@ -285,6 +287,19 @@ public:
 
     void accept(Expr::Visitor<void> *visitor) override {
         return visitor->visitUnaryExpr(*this);
+    }
+};
+
+class Expr::Any : public Expr {
+public:
+    Any() = default;
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitAnyExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitAnyExpr(*this);
     }
 };
 

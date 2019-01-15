@@ -94,6 +94,7 @@ generate_tree(
         "Subscript":["std::shared_ptr<Expr> object", "std::shared_ptr<Expr> index", "Token square"],
         "Ternary":  ["std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> thenExpr", "std::shared_ptr<Expr> elseExpr", "Token oper"],
         "Unary":    ["std::shared_ptr<Expr> operand", "Token oper"],
+        "Any":      [],
         "Variable": ["Token name"]
     },
     ["std::string", "void"],
@@ -104,12 +105,14 @@ generate_tree(
     "Stmt",
     {
         "Block":        ["std::vector<std::shared_ptr<Stmt>> statements"],
+        "Each":         ["Token name", "std::shared_ptr<Expr> object", "std::vector<std::shared_ptr<Stmt>> body"],
         "Expression":   ["std::shared_ptr<Expr> expr"],
         "For":          ["std::shared_ptr<Stmt> initializer", "std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> increment", "std::vector<std::shared_ptr<Stmt>> body"],
+        "Given":        ["std::shared_ptr<Expr> value", "std::vector<GivenCase> cases"],
         "If":           ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> thenBlock", "std::vector<std::shared_ptr<Stmt>> elseBlock"],
         "While":        ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> body"],
         "Variable":     ["Token name", "std::string typeName", "std::shared_ptr<Expr> initializer", "bool isConst"],
     },
     ["std::string", "void"],
-    ['"Expr.h"']
+    ['"Expr.h"', '"../h/GivenCase.h"']
 )

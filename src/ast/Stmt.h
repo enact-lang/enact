@@ -5,12 +5,15 @@
 #define ENACT_STMT_H
 
 #include "Expr.h"
+#include "../h/GivenCase.h"
 
 class Stmt {
 public:
     class Block;
+    class Each;
     class Expression;
     class For;
+    class Given;
     class If;
     class While;
     class Variable;
@@ -19,8 +22,10 @@ public:
     class Visitor {
     public:
         virtual R visitBlockStmt(Block None);
+        virtual R visitEachStmt(Each None);
         virtual R visitExpressionStmt(Expression None);
         virtual R visitForStmt(For None);
+        virtual R visitGivenStmt(Given None);
         virtual R visitIfStmt(If None);
         virtual R visitWhileStmt(While None);
         virtual R visitVariableStmt(Variable None);
@@ -43,6 +48,24 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitBlockStmt(*this);
+    }
+};
+
+class Stmt::Each : public Stmt {
+public:
+    Token name;
+    std::shared_ptr<Expr> object;
+    std::vector<std::shared_ptr<Stmt>> body;
+
+    Each(Token name,std::shared_ptr<Expr> object,std::vector<std::shared_ptr<Stmt>> body) : 
+        name{name},object{object},body{body} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitEachStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitEachStmt(*this);
     }
 };
 
@@ -78,6 +101,23 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitForStmt(*this);
+    }
+};
+
+class Stmt::Given : public Stmt {
+public:
+    std::shared_ptr<Expr> value;
+    std::vector<GivenCase> cases;
+
+    Given(std::shared_ptr<Expr> value,std::vector<GivenCase> cases) : 
+        value{value},cases{cases} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitGivenStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitGivenStmt(*this);
     }
 };
 

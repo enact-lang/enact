@@ -123,7 +123,9 @@ private:
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // FALSE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // FUN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // FOR
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // GIVEN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IF
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IN
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // NIL
             ParseRule{nullptr,               &Parser::binary,            Precedence::OR}, // OR
             ParseRule{&Parser::unary,               nullptr,            Precedence::UNARY}, // REF
@@ -132,6 +134,7 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // THIS
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // TRUE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // VAR
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // WHEN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // WHILE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // ERROR
             ParseRule{nullptr,               nullptr,            Precedence::NONE} // ENDFILE
@@ -144,7 +147,9 @@ private:
     // Statements
     std::shared_ptr<Stmt> statement();
     std::shared_ptr<Stmt> blockStatement();
+    std::shared_ptr<Stmt> eachStatement();
     std::shared_ptr<Stmt> forStatement();
+    std::shared_ptr<Stmt> givenStatement();
     std::shared_ptr<Stmt> ifStatement();
     std::shared_ptr<Stmt> whileStatement();
     std::shared_ptr<Stmt> expressionStatement();

@@ -199,6 +199,7 @@ std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
 
 std::shared_ptr<Stmt> Parser::statement() {
     if (consume(TokenType::BLOCK)) return blockStatement();
+    if (consume(TokenType::FOR)) return forStatement();
     if (consume(TokenType::IF)) return ifStatement();
     if (consume(TokenType::WHILE)) return whileStatement();
     return expressionStatement();
@@ -234,6 +235,7 @@ std::shared_ptr<Stmt> Parser::forStatement() {
     std::shared_ptr<Expr> condition{nullptr};
     if (!consume(TokenType::SEMICOLON)) {
         condition = expression();
+        expect(TokenType::SEMICOLON, "Expected ';' after for loop condition.");
     }
 
     std::shared_ptr<Expr> increment{nullptr};
@@ -241,8 +243,37 @@ std::shared_ptr<Stmt> Parser::forStatement() {
         increment = expression();
     }
 
-    expect(TokenType::COLON, "Expected ':' before body of for loop.")
+    expect(TokenType::COLON, "Expected ':' before body of for loop.");
 
+    ignoreNewline();
+
+    std::vector<std::shared_ptr<Stmt>> body;
+    while (!check(TokenType::END) && !isAtEnd()) {
+        body.push_back(declaration());
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of for loop.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    // A for loop is just syntactic sugar for a while loop inside a
+    // block, so we create the "real" representation now.
+    if (increment != nullptr) {
+        body.push_back(std::make_shared<Stmt::Expression>(increment));
+    }
+
+    std::vector<std::shared_ptr<Stmt>> outerBody;
+
+    if (initializer != nullptr) {
+        outerBody.push_back(initializer);
+    }
+
+    if (condition != nullptr) {
+        outerBody.push_back(std::make_shared<Stmt::While>(condition, body));
+    } else {
+        outerBody.push_back(std::make_shared<Stmt::While>(std::make_shared<Expr::Boolean>(true), body));
+    }
+
+    return std::make_shared<Stmt::Block>(outerBody);
 }
 
 std::shared_ptr<Stmt> Parser::ifStatement() {
@@ -348,7 +379,7 @@ void Parser::advance() {
 }
 
 void Parser::ignoreNewline() {
-    consume(TokenType::NEWLINE);
+    while (consume(TokenType::NEWLINE));
 }
 
 bool Parser::check(TokenType expected) {
@@ -372,9 +403,8 @@ void Parser::expect(TokenType type, const std::string &message) {
 }
 
 void Parser::expectSeparator(const std::string &message) {
-    bool found = false;
-    while (consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON)) found = true;
-    if (!found) errorAtCurrent(message);
+    if (consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON)) return;
+    errorAtCurrent(message);
 }
 
 void Parser::synchronise() {

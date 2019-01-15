@@ -1,0 +1,22 @@
+for var i = 30; i <= 60; i=i+1:
+    print(i)
+    32 + 2; [3][0]
+end
+
+for ; e <= 20; :
+    print(e = e + 1)
+end
+
+for ;; :
+    print("Infinite loop!")
+    2 + 2; 32
+end
+
+for ;; 54 + 32:
+    [1, 2, 3, 4][0].get()
+    foo(1, 2, 3, 4)
+end
+
+for var i = 0;; :
+    i = 10 + 1
+end

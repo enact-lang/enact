@@ -29,12 +29,22 @@ std::string AstPrinter::visitExpressionStmt(Stmt::Expression stmt) {
 
 std::string AstPrinter::visitIfStmt(Stmt::If stmt) {
     std::stringstream s;
-    s << "Stmt::If (" << evaluate(stmt.condition) << ") then [\n";
+    s << "Stmt::If " << evaluate(stmt.condition) << " then [\n";
     for (auto &statement : stmt.thenBlock) {
         s << evaluate(statement) << "\n";
     }
     s << "] else [\n";
     for (auto &statement : stmt.elseBlock) {
+        s << evaluate(statement) << "\n";
+    }
+    s << "]\n";
+    return s.str();
+}
+
+std::string AstPrinter::visitWhileStmt(Stmt::While stmt) {
+    std::stringstream s;
+    s << "Stmt::While " << evaluate(stmt.condition) << " then [\n";
+    for (auto &statement : stmt.body) {
         s << evaluate(statement) << "\n";
     }
     s << "]\n";

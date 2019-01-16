@@ -1,0 +1,13 @@
+fun fooBar():
+    print("e")
+    var foo = 2; foo + 95
+end
+
+fun emptyInside(goof, boof ref i32, list [char]):
+
+end
+
+fun wow(bingo f64, jeff):
+    [1, 2, 4][0]; foo()
+    eat
+end

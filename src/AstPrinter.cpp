@@ -49,6 +49,27 @@ std::string AstPrinter::visitForStmt(Stmt::For stmt) {
     return s.str();
 }
 
+std::string AstPrinter::visitFunctionStmt(Stmt::Function stmt) {
+    std::stringstream s;
+    s << "Stmt::Function " << stmt.name.lexeme << " (";
+
+    std::string separator = "";
+    for (auto &param : stmt.params) {
+        s << separator << param.name.lexeme << " " << param.typeName;
+        separator = ", ";
+    }
+
+    s << ") [\n";
+
+    for (auto &statement : stmt.body) {
+        s << evaluate(statement) << "\n";
+    }
+
+    s << "]";
+
+    return s.str();
+}
+
 std::string AstPrinter::visitGivenStmt(Stmt::Given stmt) {
     std::stringstream s;
     s << "Stmt::Given " << evaluate(stmt.value) << " [\n";

@@ -142,6 +142,7 @@ private:
 
     // Declarations
     std::shared_ptr<Stmt> declaration();
+    std::shared_ptr<Stmt> functionDeclaration();
     std::shared_ptr<Stmt> variableDeclaration(bool isConst);
 
     // Statements
@@ -153,6 +154,8 @@ private:
     std::shared_ptr<Stmt> ifStatement();
     std::shared_ptr<Stmt> whileStatement();
     std::shared_ptr<Stmt> expressionStatement();
+
+    std::string consumeTypeName();
 
     void synchronise();
 

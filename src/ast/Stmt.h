@@ -5,7 +5,7 @@
 #define ENACT_STMT_H
 
 #include "Expr.h"
-#include "../h/GivenCase.h"
+#include "trivialStructs.h"
 
 class Stmt {
 public:
@@ -13,6 +13,7 @@ public:
     class Each;
     class Expression;
     class For;
+    class Function;
     class Given;
     class If;
     class While;
@@ -25,6 +26,7 @@ public:
         virtual R visitEachStmt(Each None);
         virtual R visitExpressionStmt(Expression None);
         virtual R visitForStmt(For None);
+        virtual R visitFunctionStmt(Function None);
         virtual R visitGivenStmt(Given None);
         virtual R visitIfStmt(If None);
         virtual R visitWhileStmt(While None);
@@ -101,6 +103,24 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitForStmt(*this);
+    }
+};
+
+class Stmt::Function : public Stmt {
+public:
+    Token name;
+    std::vector<Parameter> params;
+    std::vector<std::shared_ptr<Stmt>> body;
+
+    Function(Token name,std::vector<Parameter> params,std::vector<std::shared_ptr<Stmt>> body) : 
+        name{name},params{params},body{body} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitFunctionStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitFunctionStmt(*this);
     }
 };
 

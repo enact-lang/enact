@@ -171,6 +171,7 @@ std::shared_ptr<Expr> Parser::ternary(std::shared_ptr<Expr> condition) {
 std::shared_ptr<Stmt> Parser::declaration() {
     ignoreNewline();
     try {
+        if (consume(TokenType::FUN)) return functionDeclaration();
         if (consume(TokenType::VAR)) return variableDeclaration(false);
         if (consume(TokenType::CONST)) return variableDeclaration(true);
         return statement();
@@ -180,17 +181,41 @@ std::shared_ptr<Stmt> Parser::declaration() {
     }
 }
 
+std::shared_ptr<Stmt> Parser::functionDeclaration() {
+    expect(TokenType::IDENTIFIER, "Expected function name.");
+    Token name = m_previous;
+
+    expect(TokenType::LEFT_PAREN, "Expected '(' after function name.");
+
+    std::vector<Parameter> params;
+    if (!consume(TokenType::RIGHT_PAREN)) {
+        do {
+            expect(TokenType::IDENTIFIER, "Expected parameter name.");
+            params.push_back(Parameter{m_previous, consumeTypeName()});
+        } while (consume(TokenType::COMMA));
+
+        expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
+    }
+
+    expect(TokenType::COLON, "Expected ':' before function body.");
+    ignoreNewline();
+
+    std::vector<std::shared_ptr<Stmt>> body;
+    while (!check(TokenType::END) && !isAtEnd()) {
+        body.push_back(declaration());
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of function declaration.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    return std::make_shared<Stmt::Function>(name, params, body);
+}
+
 std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
     expect(TokenType::IDENTIFIER, "Expected variable name.");
     Token name = m_previous;
 
-    std::string typeName;
-    if (consume(TokenType::REF)) {
-        expect(TokenType::IDENTIFIER, "Expected rest of type name after 'ref'.");
-        typeName = "ref " + m_previous.lexeme;
-    } else if (consume(TokenType::IDENTIFIER)) {
-        typeName = m_previous.lexeme;
-    }
+    std::string typeName { consumeTypeName() };
 
     expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
 
@@ -212,7 +237,7 @@ std::shared_ptr<Stmt> Parser::statement() {
 }
 
 std::shared_ptr<Stmt> Parser::blockStatement() {
-    expect(TokenType::COLON, "Expected ':' after start of block.");
+    expect(TokenType::COLON, "Expected ':' before block body.");
     ignoreNewline();
 
     std::vector<std::shared_ptr<Stmt>> statements;
@@ -234,7 +259,7 @@ std::shared_ptr<Stmt> Parser::eachStatement() {
 
     std::shared_ptr<Expr> object = expression();
 
-    expect(TokenType::COLON, "Expected ':' after each loop object.");
+    expect(TokenType::COLON, "Expected ':' before each loop body.");
     ignoreNewline();
 
     std::vector<std::shared_ptr<Stmt>> body;
@@ -292,7 +317,7 @@ std::shared_ptr<Stmt> Parser::forStatement() {
 
 std::shared_ptr<Stmt> Parser::givenStatement() {
     std::shared_ptr<Expr> value = expression();
-    expect(TokenType::COLON, "Expected ':' after given value.");
+    expect(TokenType::COLON, "Expected ':' before given statement body.");
 
     std::vector<GivenCase> cases;
     while (!check(TokenType::END) && !isAtEnd()) {
@@ -300,7 +325,7 @@ std::shared_ptr<Stmt> Parser::givenStatement() {
 
         if (consume(TokenType::WHEN)) {
             std::shared_ptr<Expr> caseValue = expression();
-            expect(TokenType::COLON, "Expected ':' after case value.");
+            expect(TokenType::COLON, "Expected ':' before case body");
 
             std::vector<std::shared_ptr<Stmt>> caseBody;
             while (!check(TokenType::WHEN) && !check(TokenType::ELSE) && !check(TokenType::END) && !isAtEnd()) {
@@ -309,7 +334,7 @@ std::shared_ptr<Stmt> Parser::givenStatement() {
 
             cases.push_back(GivenCase{caseValue, caseBody});
         } else if (consume(TokenType::ELSE)) {
-            expect(TokenType::COLON, "Expected ':' after 'else' case.");
+            expect(TokenType::COLON, "Expected ':' before 'else' case body.");
 
             std::vector<std::shared_ptr<Stmt>> caseBody;
             while (!check(TokenType::WHEN) && !check(TokenType::END) && !isAtEnd()) {
@@ -457,6 +482,33 @@ void Parser::expect(TokenType type, const std::string &message) {
 void Parser::expectSeparator(const std::string &message) {
     if (consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON)) return;
     errorAtCurrent(message);
+}
+
+std::string Parser::consumeTypeName() {
+    std::string typeName;
+
+    // May be enclosed in square brackets to signify list type
+    bool isList = false;
+    if (consume(TokenType::LEFT_SQUARE)) {
+        isList = true;
+        typeName += "[";
+    }
+
+    // May start with 'ref'
+    if (consume(TokenType::REF)) {
+        expect(TokenType::IDENTIFIER, "Expected rest of type name after 'ref'.");
+        typeName += "ref " + m_previous.lexeme;
+    } else if (consume(TokenType::IDENTIFIER)) {
+        typeName += m_previous.lexeme;
+    }
+
+    // Expect the closing ']' if we were consuming a list type.
+    if (isList) {
+        expect(TokenType::RIGHT_SQUARE, "Expected ']' after list type name.");
+        typeName += "]";
+    }
+
+    return typeName;
 }
 
 void Parser::synchronise() {

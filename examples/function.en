@@ -9,5 +9,5 @@ end
 
 fun wow(bingo f64, jeff) i32:
     [1, 2, 4][0]; foo()
-    eat
+    return eat
 end

@@ -98,6 +98,10 @@ std::string AstPrinter::visitIfStmt(Stmt::If stmt) {
     return s.str();
 }
 
+std::string AstPrinter::visitReturnStmt(Stmt::Return stmt) {
+    return "Stmt::Return " + evaluate(stmt.value);
+}
+
 std::string AstPrinter::visitStructStmt(Stmt::Struct stmt) {
     std::stringstream s;
     s << "Stmt::Struct " << stmt.name.lexeme << " ";

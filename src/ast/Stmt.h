@@ -16,6 +16,7 @@ public:
     class Function;
     class Given;
     class If;
+    class Return;
     class Struct;
     class Trait;
     class While;
@@ -31,6 +32,7 @@ public:
         virtual R visitFunctionStmt(Function None);
         virtual R visitGivenStmt(Given None);
         virtual R visitIfStmt(If None);
+        virtual R visitReturnStmt(Return None);
         virtual R visitStructStmt(Struct None);
         virtual R visitTraitStmt(Trait None);
         virtual R visitWhileStmt(While None);
@@ -161,6 +163,23 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitIfStmt(*this);
+    }
+};
+
+class Stmt::Return : public Stmt {
+public:
+    Token keyword;
+    std::shared_ptr<Expr> value;
+
+    Return(Token keyword,std::shared_ptr<Expr> value) : 
+        keyword{keyword},value{value} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitReturnStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitReturnStmt(*this);
     }
 };
 

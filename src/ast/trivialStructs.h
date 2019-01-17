@@ -15,4 +15,9 @@ struct Parameter {
     std::string typeName;
 };
 
+struct Field {
+    Token name;
+    std::string typeName;
+};
+
 #endif //ENACT_GIVENCASE_H

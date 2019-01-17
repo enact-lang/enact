@@ -59,7 +59,7 @@ std::string AstPrinter::visitFunctionStmt(Stmt::Function stmt) {
         separator = ", ";
     }
 
-    s << ") [\n";
+    s << ") " << stmt.typeName << " [\n";
 
     for (auto &statement : stmt.body) {
         s << evaluate(statement) << "\n";
@@ -95,6 +95,35 @@ std::string AstPrinter::visitIfStmt(Stmt::If stmt) {
         s << evaluate(statement) << "\n";
     }
     s << "]";
+    return s.str();
+}
+
+std::string AstPrinter::visitStructStmt(Stmt::Struct stmt) {
+    std::stringstream s;
+    s << "Stmt::Struct " << stmt.name.lexeme << " ";
+
+    std::string separator = "";
+    for (auto &trait : stmt.traits) {
+        s << separator << "is " << trait.lexeme;
+        separator = ", ";
+    }
+
+    s << "[\n";
+
+    for (auto &field : stmt.fields) {
+        s << "field " << field.name.lexeme << " " << field.typeName << "\n";
+    }
+
+    for (auto &method : stmt.methods) {
+        s << evaluate(method) << "\n";
+    }
+
+    for (auto &function : stmt.assocFunctions) {
+        s << "assoc " << evaluate(function) << "\n";
+    }
+
+    s << "]";
+
     return s.str();
 }
 

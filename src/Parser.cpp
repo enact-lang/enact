@@ -172,6 +172,7 @@ std::shared_ptr<Stmt> Parser::declaration() {
     ignoreNewline();
     try {
         if (consume(TokenType::FUN)) return functionDeclaration();
+        if (consume(TokenType::STRUCT)) return structDeclaration();
         if (consume(TokenType::VAR)) return variableDeclaration(false);
         if (consume(TokenType::CONST)) return variableDeclaration(true);
         return statement();
@@ -197,6 +198,9 @@ std::shared_ptr<Stmt> Parser::functionDeclaration() {
         expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
     }
 
+    // Get the return type
+    std::string typeName = consumeTypeName();
+
     expect(TokenType::COLON, "Expected ':' before function body.");
     ignoreNewline();
 
@@ -208,7 +212,58 @@ std::shared_ptr<Stmt> Parser::functionDeclaration() {
     expect(TokenType::END, "Expected 'end' at end of function declaration.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::Function>(name, params, body);
+    return std::make_shared<Stmt::Function>(name, typeName, params, body);
+}
+
+std::shared_ptr<Stmt> Parser::structDeclaration() {
+    expect(TokenType::IDENTIFIER, "Expected struct name.");
+    Token name = m_previous;
+
+    std::vector<Token> traits;
+    if (consume(TokenType::IS)) {
+        expect(TokenType::IDENTIFIER, "Expected trait name.");
+        traits.push_back(m_previous);
+
+        while (consume(TokenType::COMMA)) {
+            expect(TokenType::IDENTIFIER, "Expected trait name.");
+            traits.push_back(m_previous);
+        }
+    }
+
+    expect(TokenType::COLON, "Expected ':' before struct body.");
+    ignoreNewline();
+
+    std::vector<Field> fields;
+    std::vector<std::shared_ptr<Stmt::Function>> methods;
+    std::vector<std::shared_ptr<Stmt::Function>> assocFunctions;
+
+    while (!check(TokenType::END) && !isAtEnd()) {
+        ignoreNewline();
+        if (consume(TokenType::IDENTIFIER)) {
+            // Field declaration
+            Token fieldName = m_previous;
+            std::string fieldType = consumeTypeName();
+
+            fields.push_back(Field{m_previous, fieldType});
+
+            expectSeparator("Expected newline or ';' after field declaration.");
+        } else if (consume(TokenType::FUN)) {
+            // Method declaration
+            std::shared_ptr<Stmt::Function> method = std::static_pointer_cast<Stmt::Function>(functionDeclaration());
+            methods.push_back(method);
+        } else if (consume(TokenType::ASSOC)) {
+            // Associated function declaration
+            std::shared_ptr<Stmt::Function> function = std::static_pointer_cast<Stmt::Function>(functionDeclaration());
+            assocFunctions.push_back(function);
+        } else {
+            errorAtCurrent("Expected field or method declaration.");
+        }
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of struct declaration.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    return std::make_shared<Stmt::Struct>(name, traits, fields, methods, assocFunctions);
 }
 
 std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {

@@ -10,5 +10,7 @@ while true == 32.5:
         [0, 1, 2]; 40
     end
 
+    break; continue
+
     var mesh = egg(1, 2, 4, "e")
 end

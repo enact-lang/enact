@@ -105,6 +105,8 @@ generate_tree(
     "Stmt",
     {
         "Block":        ["std::vector<std::shared_ptr<Stmt>> statements"],
+        "Break":        ["Token keyword"],
+        "Continue":     ["Token keyword"],
         "Each":         ["Token name", "std::shared_ptr<Expr> object", "std::vector<std::shared_ptr<Stmt>> body"],
         "Expression":   ["std::shared_ptr<Expr> expr"],
         "For":          ["std::shared_ptr<Stmt> initializer", "std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> increment", "std::vector<std::shared_ptr<Stmt>> body"],

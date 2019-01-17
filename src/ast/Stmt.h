@@ -10,6 +10,8 @@
 class Stmt {
 public:
     class Block;
+    class Break;
+    class Continue;
     class Each;
     class Expression;
     class For;
@@ -26,6 +28,8 @@ public:
     class Visitor {
     public:
         virtual R visitBlockStmt(Block None);
+        virtual R visitBreakStmt(Break None);
+        virtual R visitContinueStmt(Continue None);
         virtual R visitEachStmt(Each None);
         virtual R visitExpressionStmt(Expression None);
         virtual R visitForStmt(For None);
@@ -56,6 +60,38 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitBlockStmt(*this);
+    }
+};
+
+class Stmt::Break : public Stmt {
+public:
+    Token keyword;
+
+    Break(Token keyword) : 
+        keyword{keyword} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitBreakStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitBreakStmt(*this);
+    }
+};
+
+class Stmt::Continue : public Stmt {
+public:
+    Token keyword;
+
+    Continue(Token keyword) : 
+        keyword{keyword} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitContinueStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitContinueStmt(*this);
     }
 };
 

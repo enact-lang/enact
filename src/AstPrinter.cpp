@@ -23,6 +23,14 @@ std::string AstPrinter::visitBlockStmt(Stmt::Block stmt) {
     return s.str();
 }
 
+std::string AstPrinter::visitBreakStmt(Stmt::Break stmt) {
+    return "Stmt::Break";
+}
+
+std::string AstPrinter::visitContinueStmt(Stmt::Continue stmt) {
+    return "Stmt::Continue";
+}
+
 std::string AstPrinter::visitEachStmt(Stmt::Each stmt) {
     std::stringstream s;
     s << "Stmt::Each " << stmt.name.lexeme << " in " << evaluate(stmt.object) << " [\n";

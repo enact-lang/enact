@@ -116,9 +116,10 @@ private:
             ParseRule{nullptr,               &Parser::binary,            Precedence::AND}, // AND
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // ASSOC
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BLOCK
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BOOL
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BREAK
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CLASS
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CONST
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CONTINUE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // EACH
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // ELSE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // END
@@ -160,6 +161,8 @@ private:
     std::shared_ptr<Stmt> eachStatement();
     std::shared_ptr<Stmt> givenStatement();
     std::shared_ptr<Stmt> returnStatement();
+    std::shared_ptr<Stmt> breakStatement();
+    std::shared_ptr<Stmt> continueStatement();
     std::shared_ptr<Stmt> expressionStatement();
 
     std::string consumeTypeName();

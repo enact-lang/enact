@@ -14,13 +14,14 @@
   <component name="ChangeListManager">
     <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/function.en" beforeDir="false" afterPath="$PROJECT_DIR$/examples/function.en" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/AstPrinter.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/AstPrinter.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Parser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Parser.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Scanner.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Scanner.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ast/Stmt.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/ast/Stmt.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ast/generate.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ast/generate.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/h/AstPrinter.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/AstPrinter.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/h/Parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Parser.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/h/Token.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Token.h" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -49,8 +50,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/h/Parser.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="437">
-              <caret line="161" column="44" selection-start-line="161" selection-start-column="44" selection-end-line="161" selection-end-column="44" />
+            <state relative-caret-position="754">
+              <caret line="166" selection-start-line="166" selection-end-line="166" />
               <folding>
                 <element signature="e#47#63#0" expanded="true" />
               </folding>
@@ -61,8 +62,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Scanner.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2">
-              <caret line="155" lean-forward="true" selection-start-line="155" selection-end-line="155" />
+            <state relative-caret-position="814">
+              <caret line="147" column="33" selection-start-line="147" selection-start-column="33" selection-end-line="147" selection-end-column="33" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -73,8 +74,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/h/Token.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="315">
-              <caret line="26" column="55" selection-start-line="26" selection-start-column="55" selection-end-line="26" selection-end-column="55" />
+            <state relative-caret-position="345">
+              <caret line="25" column="22" selection-start-line="25" selection-start-column="22" selection-end-line="25" selection-end-column="22" />
             </state>
           </provider>
         </entry>
@@ -103,8 +104,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Parser.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="332">
-              <caret line="488" column="71" selection-start-line="488" selection-start-column="71" selection-end-line="488" selection-end-column="71" />
+            <state relative-caret-position="287">
+              <caret line="323" column="65" selection-start-line="323" selection-start-column="65" selection-end-line="323" selection-end-column="65" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -115,8 +116,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/h/AstPrinter.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="60" selection-start-line="16" selection-start-column="60" selection-end-line="16" selection-end-column="60" />
+            <state relative-caret-position="165">
+              <caret line="11" column="64" selection-start-line="11" selection-start-column="64" selection-end-line="11" selection-end-column="64" />
               <folding>
                 <element signature="e#55#79#0" expanded="true" />
               </folding>
@@ -127,8 +128,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/AstPrinter.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="287">
-              <caret line="95" column="5" selection-start-line="95" selection-start-column="5" selection-end-line="95" selection-end-column="5" />
+            <state relative-caret-position="315">
+              <caret line="30" column="28" selection-start-line="30" selection-start-column="28" selection-end-line="30" selection-end-column="28" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -139,8 +140,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/ast/generate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="288">
-              <caret line="107" column="114" lean-forward="true" selection-start-line="107" selection-start-column="114" selection-end-line="107" selection-end-column="114" />
+            <state relative-caret-position="589">
+              <caret line="108" column="39" selection-start-line="108" selection-start-column="39" selection-end-line="108" selection-end-column="39" />
             </state>
           </provider>
         </entry>
@@ -231,11 +232,11 @@
         <option value="$PROJECT_DIR$/src/h/GivenCase.h" />
         <option value="$PROJECT_DIR$/src/h/trivialStructs.h" />
         <option value="$PROJECT_DIR$/src/ast/trivialStructs.h" />
-        <option value="$PROJECT_DIR$/src/h/Token.h" />
-        <option value="$PROJECT_DIR$/src/Scanner.cpp" />
-        <option value="$PROJECT_DIR$/src/ast/generate.py" />
         <option value="$PROJECT_DIR$/src/h/AstPrinter.h" />
         <option value="$PROJECT_DIR$/src/AstPrinter.cpp" />
+        <option value="$PROJECT_DIR$/src/ast/generate.py" />
+        <option value="$PROJECT_DIR$/src/h/Token.h" />
+        <option value="$PROJECT_DIR$/src/Scanner.cpp" />
         <option value="$PROJECT_DIR$/src/h/Parser.h" />
         <option value="$PROJECT_DIR$/src/Parser.cpp" />
       </list>
@@ -366,7 +367,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="194663000" />
+    <option name="totallyTimeSpent" value="195720000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -654,13 +655,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/h/Token.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="26" column="55" selection-start-line="26" selection-start-column="55" selection-end-line="26" selection-end-column="55" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/ast/Expr.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-525">
@@ -671,17 +665,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/ast/generate.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="288">
-          <caret line="107" column="114" lean-forward="true" selection-start-line="107" selection-start-column="114" selection-end-line="107" selection-end-column="114" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/h/AstPrinter.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="60" selection-start-line="16" selection-start-column="60" selection-end-line="16" selection-end-column="60" />
+        <state relative-caret-position="165">
+          <caret line="11" column="64" selection-start-line="11" selection-start-column="64" selection-end-line="11" selection-end-column="64" />
           <folding>
             <element signature="e#55#79#0" expanded="true" />
           </folding>
@@ -690,38 +677,52 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/AstPrinter.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="287">
-          <caret line="95" column="5" selection-start-line="95" selection-start-column="5" selection-end-line="95" selection-end-column="5" />
+        <state relative-caret-position="315">
+          <caret line="30" column="28" selection-start-line="30" selection-start-column="28" selection-end-line="30" selection-end-column="28" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Scanner.cpp">
+    <entry file="file://$PROJECT_DIR$/src/ast/generate.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2">
-          <caret line="155" lean-forward="true" selection-start-line="155" selection-end-line="155" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="589">
+          <caret line="108" column="39" selection-start-line="108" selection-start-column="39" selection-end-line="108" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/h/Token.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="25" column="22" selection-start-line="25" selection-start-column="22" selection-end-line="25" selection-end-column="22" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/h/Parser.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="437">
-          <caret line="161" column="44" selection-start-line="161" selection-start-column="44" selection-end-line="161" selection-end-column="44" />
+        <state relative-caret-position="754">
+          <caret line="166" selection-start-line="166" selection-end-line="166" />
           <folding>
             <element signature="e#47#63#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/Scanner.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="814">
+          <caret line="147" column="33" selection-start-line="147" selection-start-column="33" selection-end-line="147" selection-end-column="33" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/Parser.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="332">
-          <caret line="488" column="71" selection-start-line="488" selection-start-column="71" selection-end-line="488" selection-end-column="71" />
+        <state relative-caret-position="287">
+          <caret line="323" column="65" selection-start-line="323" selection-start-column="65" selection-end-line="323" selection-end-column="65" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>

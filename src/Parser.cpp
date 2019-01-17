@@ -320,6 +320,8 @@ std::shared_ptr<Stmt> Parser::statement() {
     if (consume(TokenType::EACH)) return eachStatement();
     if (consume(TokenType::GIVEN)) return givenStatement();
     if (consume(TokenType::RETURN)) return returnStatement();
+    if (consume(TokenType::BREAK)) return breakStatement();
+    if (consume(TokenType::CONTINUE)) return continueStatement();
     return expressionStatement();
 }
 
@@ -489,6 +491,16 @@ std::shared_ptr<Stmt> Parser::returnStatement() {
     expectSeparator("Expected newline or ';' after return statement.");
 
     return std::make_shared<Stmt::Return>(keyword, value);
+}
+
+std::shared_ptr<Stmt> Parser::breakStatement() {
+    expectSeparator("Expected newline or ';' after break statement.");
+    return std::make_shared<Stmt::Break>(m_previous);
+}
+
+std::shared_ptr<Stmt> Parser::continueStatement() {
+    expectSeparator("Expected newline or ';' after continue statement.");
+    return std::make_shared<Stmt::Continue>(m_previous);
 }
 
 std::shared_ptr<Stmt> Parser::expressionStatement() {

@@ -8,6 +8,8 @@
 
 class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std::string> {
     std::string visitBlockStmt(Stmt::Block stmt) override;
+    std::string visitBreakStmt(Stmt::Break stmt) override;
+    std::string visitContinueStmt(Stmt::Continue stmt) override;
     std::string visitEachStmt(Stmt::Each stmt) override;
     std::string visitExpressionStmt(Stmt::Expression stmt) override;
     std::string visitForStmt(Stmt::For stmt) override;

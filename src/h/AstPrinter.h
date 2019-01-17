@@ -15,6 +15,7 @@ class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std
     std::string visitGivenStmt(Stmt::Given stmt) override;
     std::string visitIfStmt(Stmt::If stmt) override;
     std::string visitStructStmt(Stmt::Struct stmt) override;
+    std::string visitTraitStmt(Stmt::Trait stmt) override;
     std::string visitWhileStmt(Stmt::While stmt) override;
     std::string visitVariableStmt(Stmt::Variable stmt) override;
 

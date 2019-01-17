@@ -56,6 +56,7 @@ private:
     void ignoreNewline();
     bool check(TokenType expected);
     bool consume(TokenType expected);
+    bool consumeSeparator();
     void expect(TokenType type, const std::string &message);
     void expectSeparator(const std::string &message);
     bool isAtEnd();
@@ -133,8 +134,8 @@ private:
             ParseRule{&Parser::unary,               nullptr,            Precedence::UNARY}, // REF
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RETURN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // STRUCT
-            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SUPER
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // THIS
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // TRAIT
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // TRUE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // VAR
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // WHEN
@@ -145,8 +146,9 @@ private:
 
     // Declarations
     std::shared_ptr<Stmt> declaration();
-    std::shared_ptr<Stmt> functionDeclaration();
+    std::shared_ptr<Stmt> functionDeclaration(bool mustParseBody = true);
     std::shared_ptr<Stmt> structDeclaration();
+    std::shared_ptr<Stmt> traitDeclaration();
     std::shared_ptr<Stmt> variableDeclaration(bool isConst);
 
     // Statements

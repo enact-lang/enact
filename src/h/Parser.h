@@ -113,6 +113,7 @@ private:
             ParseRule{&Parser::string,     nullptr,            Precedence::NONE}, // STRING
             ParseRule{&Parser::number,     nullptr,            Precedence::NONE}, // NUMBER
             ParseRule{nullptr,               &Parser::binary,            Precedence::AND}, // AND
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // ASSOC
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BLOCK
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BOOL
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CLASS
@@ -126,10 +127,12 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // GIVEN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IF
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IN
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IS
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // NIL
             ParseRule{nullptr,               &Parser::binary,            Precedence::OR}, // OR
             ParseRule{&Parser::unary,               nullptr,            Precedence::UNARY}, // REF
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RETURN
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // STRUCT
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SUPER
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // THIS
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // TRUE
@@ -143,6 +146,7 @@ private:
     // Declarations
     std::shared_ptr<Stmt> declaration();
     std::shared_ptr<Stmt> functionDeclaration();
+    std::shared_ptr<Stmt> structDeclaration();
     std::shared_ptr<Stmt> variableDeclaration(bool isConst);
 
     // Statements

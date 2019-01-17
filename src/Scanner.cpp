@@ -119,6 +119,7 @@ Token Scanner::errorToken(const std::string &what) {
 
 TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "and")     return TokenType::AND;
+    if (candidate == "assoc")   return TokenType::ASSOC;
     if (candidate == "block")   return TokenType::BLOCK;
     if (candidate == "bool")    return TokenType::BOOL;
     if (candidate == "class")   return TokenType::CLASS;
@@ -132,10 +133,12 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "given")   return TokenType::GIVEN;
     if (candidate == "if")      return TokenType::IF;
     if (candidate == "in")      return TokenType::IN;
+    if (candidate == "is")      return TokenType::IS;
     if (candidate == "nil")     return TokenType::NIL;
     if (candidate == "or")      return TokenType::OR;
     if (candidate == "ref")     return TokenType::REF;
     if (candidate == "return")  return TokenType::RETURN;
+    if (candidate == "struct")  return TokenType::STRUCT;
     if (candidate == "super")   return TokenType::SUPER;
     if (candidate == "this")    return TokenType::THIS;
     if (candidate == "true")    return TokenType::TRUE;

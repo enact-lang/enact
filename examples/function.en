@@ -7,7 +7,7 @@ fun emptyInside(goof, boof ref i32, list [char]):
 
 end
 
-fun wow(bingo f64, jeff):
+fun wow(bingo f64, jeff) i32:
     [1, 2, 4][0]; foo()
     eat
 end

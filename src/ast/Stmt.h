@@ -16,6 +16,7 @@ public:
     class Function;
     class Given;
     class If;
+    class Struct;
     class While;
     class Variable;
 
@@ -29,6 +30,7 @@ public:
         virtual R visitFunctionStmt(Function None);
         virtual R visitGivenStmt(Given None);
         virtual R visitIfStmt(If None);
+        virtual R visitStructStmt(Struct None);
         virtual R visitWhileStmt(While None);
         virtual R visitVariableStmt(Variable None);
     };
@@ -109,11 +111,12 @@ public:
 class Stmt::Function : public Stmt {
 public:
     Token name;
+    std::string typeName;
     std::vector<Parameter> params;
     std::vector<std::shared_ptr<Stmt>> body;
 
-    Function(Token name,std::vector<Parameter> params,std::vector<std::shared_ptr<Stmt>> body) : 
-        name{name},params{params},body{body} {}
+    Function(Token name,std::string typeName,std::vector<Parameter> params,std::vector<std::shared_ptr<Stmt>> body) : 
+        name{name},typeName{typeName},params{params},body{body} {}
 
     std::string accept(Stmt::Visitor<std::string> *visitor) override {
         return visitor->visitFunctionStmt(*this);
@@ -156,6 +159,26 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitIfStmt(*this);
+    }
+};
+
+class Stmt::Struct : public Stmt {
+public:
+    Token name;
+    std::vector<Token> traits;
+    std::vector<Field> fields;
+    std::vector<std::shared_ptr<Stmt::Function>> methods;
+    std::vector<std::shared_ptr<Stmt::Function>> assocFunctions;
+
+    Struct(Token name,std::vector<Token> traits,std::vector<Field> fields,std::vector<std::shared_ptr<Stmt::Function>> methods,std::vector<std::shared_ptr<Stmt::Function>> assocFunctions) : 
+        name{name},traits{traits},fields{fields},methods{methods},assocFunctions{assocFunctions} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitStructStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitStructStmt(*this);
     }
 };
 

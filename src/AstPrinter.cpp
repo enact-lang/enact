@@ -127,6 +127,19 @@ std::string AstPrinter::visitStructStmt(Stmt::Struct stmt) {
     return s.str();
 }
 
+std::string AstPrinter::visitTraitStmt(Stmt::Trait stmt) {
+    std::stringstream s;
+    s << "Stmt::Trait " << stmt.name.lexeme << " [\n";
+
+    for (auto &method : stmt.methods) {
+        s << evaluate(method) << "\n";
+    }
+
+    s << "]";
+
+    return s.str();
+}
+
 std::string AstPrinter::visitWhileStmt(Stmt::While stmt) {
     std::stringstream s;
     s << "Stmt::While " << evaluate(stmt.condition) << " then [\n";
@@ -149,7 +162,7 @@ std::string AstPrinter::visitArrayExpr(Expr::Array expr) {
     std::stringstream s;
     s << "[";
 
-    std::string separator{""};
+    std::string separator = "";
     for (auto &element : expr.value) {
         s << separator << evaluate(element);
         separator = ", ";

@@ -112,6 +112,7 @@ generate_tree(
         "Given":        ["std::shared_ptr<Expr> value", "std::vector<GivenCase> cases"],
         "If":           ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> thenBlock", "std::vector<std::shared_ptr<Stmt>> elseBlock"],
         "Struct":       ["Token name", "std::vector<Token> traits", "std::vector<Field> fields", "std::vector<std::shared_ptr<Stmt::Function>> methods", "std::vector<std::shared_ptr<Stmt::Function>> assocFunctions"],
+        "Trait":        ["Token name", "std::vector<std::shared_ptr<Stmt::Function>> methods"],
         "While":        ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> body"],
         "Variable":     ["Token name", "std::string typeName", "std::shared_ptr<Expr> initializer", "bool isConst"],
     },

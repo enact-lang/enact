@@ -17,6 +17,7 @@ public:
     class Given;
     class If;
     class Struct;
+    class Trait;
     class While;
     class Variable;
 
@@ -31,6 +32,7 @@ public:
         virtual R visitGivenStmt(Given None);
         virtual R visitIfStmt(If None);
         virtual R visitStructStmt(Struct None);
+        virtual R visitTraitStmt(Trait None);
         virtual R visitWhileStmt(While None);
         virtual R visitVariableStmt(Variable None);
     };
@@ -179,6 +181,23 @@ public:
 
     void accept(Stmt::Visitor<void> *visitor) override {
         return visitor->visitStructStmt(*this);
+    }
+};
+
+class Stmt::Trait : public Stmt {
+public:
+    Token name;
+    std::vector<std::shared_ptr<Stmt::Function>> methods;
+
+    Trait(Token name,std::vector<std::shared_ptr<Stmt::Function>> methods) : 
+        name{name},methods{methods} {}
+
+    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+        return visitor->visitTraitStmt(*this);
+    }
+
+    void accept(Stmt::Visitor<void> *visitor) override {
+        return visitor->visitTraitStmt(*this);
     }
 };
 

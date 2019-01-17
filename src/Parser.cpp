@@ -173,6 +173,7 @@ std::shared_ptr<Stmt> Parser::declaration() {
     try {
         if (consume(TokenType::FUN)) return functionDeclaration();
         if (consume(TokenType::STRUCT)) return structDeclaration();
+        if (consume(TokenType::TRAIT)) return traitDeclaration();
         if (consume(TokenType::VAR)) return variableDeclaration(false);
         if (consume(TokenType::CONST)) return variableDeclaration(true);
         return statement();
@@ -182,7 +183,7 @@ std::shared_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::shared_ptr<Stmt> Parser::functionDeclaration() {
+std::shared_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
     expect(TokenType::IDENTIFIER, "Expected function name.");
     Token name = m_previous;
 
@@ -201,16 +202,22 @@ std::shared_ptr<Stmt> Parser::functionDeclaration() {
     // Get the return type
     std::string typeName = consumeTypeName();
 
+    std::vector<std::shared_ptr<Stmt>> body;
+
+    if (!mustParseBody && consumeSeparator()) {
+        return std::make_shared<Stmt::Function>(name, typeName, params, body);
+    }
+
     expect(TokenType::COLON, "Expected ':' before function body.");
     ignoreNewline();
 
-    std::vector<std::shared_ptr<Stmt>> body;
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
     }
 
     expect(TokenType::END, "Expected 'end' at end of function declaration.");
-    expectSeparator("Expected newline or ';' after 'end'.");
+
+    expectSeparator("Expected newline or ';' after function declaration.");
 
     return std::make_shared<Stmt::Function>(name, typeName, params, body);
 }
@@ -253,7 +260,7 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
             methods.push_back(method);
         } else if (consume(TokenType::ASSOC)) {
             // Associated function declaration
-            std::shared_ptr<Stmt::Function> function = std::static_pointer_cast<Stmt::Function>(functionDeclaration());
+            auto function = std::static_pointer_cast<Stmt::Function>(functionDeclaration());
             assocFunctions.push_back(function);
         } else {
             errorAtCurrent("Expected field or method declaration.");
@@ -264,6 +271,30 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
     expectSeparator("Expected newline or ';' after 'end'.");
 
     return std::make_shared<Stmt::Struct>(name, traits, fields, methods, assocFunctions);
+}
+
+std::shared_ptr<Stmt> Parser::traitDeclaration() {
+    expect(TokenType::IDENTIFIER, "Expected trait name.");
+    Token name = m_previous;
+
+    expect(TokenType::COLON, "Expected ':' after trait name.");
+    ignoreNewline();
+
+    std::vector<std::shared_ptr<Stmt::Function>> methods;
+    while (!check(TokenType::END) && !isAtEnd()) {
+        ignoreNewline();
+        if (consume(TokenType::FUN)) {
+            auto method = std::static_pointer_cast<Stmt::Function>(functionDeclaration(false));
+            methods.push_back(method);
+        } else {
+            errorAtCurrent("Expected method declaration.");
+        }
+    }
+
+    expect(TokenType::END, "Expected 'end' at end of trait declaration.");
+    expectSeparator("Expected newline or ';' after 'end'.");
+
+    return std::make_shared<Stmt::Trait>(name, methods);
 }
 
 std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
@@ -526,6 +557,10 @@ bool Parser::consume(TokenType expected) {
     return false;
 }
 
+bool Parser::consumeSeparator() {
+    return consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON);
+}
+
 void Parser::expect(TokenType type, const std::string &message) {
     if (m_current.type == type) {
         advance();
@@ -535,7 +570,7 @@ void Parser::expect(TokenType type, const std::string &message) {
 }
 
 void Parser::expectSeparator(const std::string &message) {
-    if (consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON)) return;
+    if (consumeSeparator()) return;
     errorAtCurrent(message);
 }
 

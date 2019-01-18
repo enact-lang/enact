@@ -8,8 +8,8 @@ This repository contains source for a program that compiles Enact source code (`
 this bytecode on a virtual machine.
 
 Enact has a planned 5 pass interpreter:
-- First, the source is parsed and converted into an AST. \[ in progress 🚧 \]
-- Next, the AST is walked to resolve variables and check types. \[ not implemented ❌ \]
+- First, the source is parsed and converted into an AST. \[ done ✔️ \]
+- Next, the AST is walked to resolve variables and check types. \[ in progress 🚧 \]
 - Afterwards, the AST is walked again and compiled down to bytecode. \[ not implemented ❌ \]
 - This bytecode is optimized by yet another pass. \[ not implemented ❌ \]
 - Finally, the VM takes the bytecode and runs it. \[ not implemented ❌ \]

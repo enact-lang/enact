@@ -14,5 +14,4 @@ Enact has a planned 5 pass interpreter:
 - This bytecode is optimized by yet another pass. \[ not implemented ❌ \]
 - Finally, the VM takes the bytecode and runs it. \[ not implemented ❌ \]
 
-Currently, the focus of development is parsing the full syntax (as described by 
-[the specification](https://github.com/enact-lang/spec)) down to an AST.
+Currently, the focus of development is typechecking and semantic analysis in the AST.

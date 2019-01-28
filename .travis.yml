@@ -7,4 +7,4 @@ before_install:
 
 compiler: clang
 
-script: cmake --build ./cmake-build-debug --target enact -- -j 2
+script: cmake ./ && cmake --build ./ --target enact -- -j 2

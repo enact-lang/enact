@@ -6,4 +6,4 @@ before_install:
 
 compiler: clang
 
-script: clang++ -std=c++14 src/*.cpp
+script: clang++ -std=c++14 src/*.cpp -v

@@ -2,6 +2,7 @@
 <img src="./docs/img/enact-logo-text.png" alt="Enact logo" width="60%" height="60%"></img>
 </p>
 <p align="center">
+<a href="https://travis-ci.com/enact-lang/enact"><img src="https://travis-ci.com/enact-lang/enact.svg?branch=master" alt="Build Status" /></a>
 <a href="https://www.codefactor.io/repository/github/enact-lang/enact"><img src="https://www.codefactor.io/repository/github/enact-lang/enact/badge" alt="CodeFactor" /></a><br>
 </p>
 <p align="center">

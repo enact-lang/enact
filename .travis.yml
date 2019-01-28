@@ -1,0 +1,10 @@
+language: cpp
+
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq clang
+- sudo apt-get install -qq cmake
+
+compiler: clang
+
+script: cmake --build ./cmake-build-debug --target enact -- -j 2

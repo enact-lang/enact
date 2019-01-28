@@ -9,6 +9,7 @@
 
 class Stmt {
 public:
+
     class Block;
     class Break;
     class Continue;

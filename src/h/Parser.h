@@ -40,7 +40,7 @@ class Parser {
 private:
     class ParseError : public std::runtime_error {
     public:
-        ParseError() : std::runtime_error{"Internal error. Something went seriously wrong."} {}
+        ParseError() : std::runtime_error{"Uncaught ParseError: Internal"} {}
     };
 
     std::string m_source;
@@ -61,9 +61,9 @@ private:
     void expectSeparator(const std::string &message);
     bool isAtEnd();
     
-    void errorAt(const Token &token, const std::string &message);
-    void errorAtCurrent(const std::string &message);
-    void error(const std::string &message);
+    ParseError errorAt(const Token &token, const std::string &message);
+    ParseError errorAtCurrent(const std::string &message);
+    ParseError error(const std::string &message);
 
     const ParseRule& getParseRule(TokenType type);
     std::shared_ptr<Expr> parsePrecedence(Precedence precedence);
@@ -112,7 +112,8 @@ private:
             ParseRule{nullptr,               &Parser::binary,  Precedence::COMPARISON}, // LESS_EQUAL
             ParseRule{&Parser::variable,   nullptr,            Precedence::NONE}, // IDENTIFIER
             ParseRule{&Parser::string,     nullptr,            Precedence::NONE}, // STRING
-            ParseRule{&Parser::number,     nullptr,            Precedence::NONE}, // NUMBER
+            ParseRule{&Parser::number,     nullptr,            Precedence::NONE}, // INTEGER
+            ParseRule{&Parser::number,     nullptr,            Precedence::NONE}, // FLOAT
             ParseRule{nullptr,               &Parser::binary,            Precedence::AND}, // AND
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // ASSOC
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // BLOCK

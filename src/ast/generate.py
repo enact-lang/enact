@@ -56,6 +56,13 @@ def generate_includes(includes):
 
 
 def generate_ast_class(name, type_fields, visitor_types, includes):
+    type_field = ""
+    type_getter = ""
+
+    if name == "Expr":
+        type_field = "    std::shared_ptr<Type> m_type = nullptr;\n"
+        type_getter = "    virtual std::shared_ptr<Type> type() { return m_type; }\n"
+
     ret = ("// This file was automatically generated.\n"
            "// \"See generate.py\" for details.\n\n"
            f"#ifndef ENACT_{name.upper()}_H\n"
@@ -64,7 +71,13 @@ def generate_ast_class(name, type_fields, visitor_types, includes):
            f"{generate_includes(includes)}\n"
            
            f"class {name} {{\n"
+           
+           f"{type_field}"
+           
            "public:\n"
+           
+           f"{type_getter}\n"
+
            f"{generate_ast_class_body(name, type_fields, visitor_types)}"
            f"{generate_ast_subclasses(name, type_fields, visitor_types)}"
            f"#endif // ENACT_{name.upper()}_H\n"
@@ -80,15 +93,16 @@ def generate_tree(name, type_fields, visitor_types, includes):
 generate_tree(
     "Expr",
     {
-        "Array":    ["std::vector<std::shared_ptr<Expr>> value"],
+        "Array":    ["std::vector<std::shared_ptr<Expr>> value", "Token square"],
         "Assign":   ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
         "Binary":   ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
         "Boolean":  ["bool value"],
         "Call":     ["std::shared_ptr<Expr> callee", "std::vector<std::shared_ptr<Expr>> arguments", "Token paren"],
         "Field":    ["std::shared_ptr<Expr> object", "Token name", "Token oper"],
+        "Float":    ["double value"],
+        "Integer":  ["int value"],
         "Logical":  ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
         "Nil":      [],
-        "Number":   ["double value"],
         "Reference":["std::shared_ptr<Expr> object", "Token oper"],
         "String":   ["std::string value"],
         "Subscript":["std::shared_ptr<Expr> object", "std::shared_ptr<Expr> index", "Token square"],
@@ -98,7 +112,7 @@ generate_tree(
         "Variable": ["Token name"]
     },
     ["std::string", "void"],
-    ['"../h/Token.h"', "<memory>", "<vector>"]
+    ['"../h/Token.h"', '"../h/Type.h"', "<memory>", "<vector>"]
 )
 
 generate_tree(

@@ -1,6 +1,7 @@
 #include "h/Parser.h"
 #include "h/Token.h"
 #include "h/Chunk.h"
+#include "h/Enact.h"
 
 Parser::Parser(std::string source) : m_source{std::move(source)}, m_scanner{m_source} {}
 
@@ -13,7 +14,7 @@ std::shared_ptr<Expr> Parser::parsePrecedence(Precedence precedence) {
     PrefixFn prefixRule = getParseRule(m_previous.type).prefix;
     if (prefixRule == nullptr) {
         if (m_previous.type == TokenType::NEWLINE) return parsePrecedence(precedence);
-        error("Expected expression.");
+        throw error("Expected expression.");
         return nullptr;
     }
 
@@ -47,8 +48,12 @@ std::shared_ptr<Expr> Parser::variable() {
 }
 
 std::shared_ptr<Expr> Parser::number() {
+    if (m_previous.type == TokenType::INTEGER) {
+        int value = std::stoi(m_previous.lexeme);
+        return std::make_shared<Expr::Integer>(value);
+    }
     double value = std::stod(m_previous.lexeme);
-    return std::make_shared<Expr::Number>(value);
+    return std::make_shared<Expr::Float>(value);
 }
 
 std::shared_ptr<Expr> Parser::literal() {
@@ -64,6 +69,8 @@ std::shared_ptr<Expr> Parser::string() {
 }
 
 std::shared_ptr<Expr> Parser::array() {
+    Token square = m_previous;
+
     std::vector<std::shared_ptr<Expr>> elements;
     if (!consume(TokenType::RIGHT_SQUARE)) {
         do {
@@ -73,7 +80,7 @@ std::shared_ptr<Expr> Parser::array() {
         expect(TokenType::RIGHT_SQUARE, "Expected end of array.");
     }
 
-    return std::make_shared<Expr::Array>(elements);
+    return std::make_shared<Expr::Array>(elements, square);
 }
 
 std::shared_ptr<Expr> Parser::unary() {
@@ -85,7 +92,7 @@ std::shared_ptr<Expr> Parser::unary() {
         if (typeid(*expr) != typeid(Expr::Variable) &&
                 typeid(*expr) != typeid(Expr::Field) &&
                 typeid(*expr) != typeid(Expr::Subscript)) {
-            errorAt(oper, "Can only reference lvalues.");
+            throw errorAt(oper, "Can only reference lvalues.");
         }
 
         return std::make_shared<Expr::Reference>(expr, oper);
@@ -106,7 +113,7 @@ std::shared_ptr<Expr> Parser::call(std::shared_ptr<Expr> callee) {
         expect(TokenType::RIGHT_PAREN, "Expected end of argument list.");
     }
 
-    if (arguments.size() > 255) errorAt(leftParen, "Too many arguments. Max is 255.");
+    if (arguments.size() > 255) throw errorAt(leftParen, "Too many arguments. Max is 255.");
 
     return std::make_shared<Expr::Call>(callee, arguments, leftParen);
 }
@@ -146,7 +153,7 @@ std::shared_ptr<Expr> Parser::assignment(std::shared_ptr<Expr> left) {
         return std::make_shared<Expr::Assign>(left, right, oper);
     }
 
-    errorAt(oper, "Invalid assignment target.");
+    throw errorAt(oper, "Invalid assignment target.");
 }
 
 std::shared_ptr<Expr> Parser::field(std::shared_ptr<Expr> object) {
@@ -263,7 +270,7 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
             auto function = std::static_pointer_cast<Stmt::Function>(functionDeclaration());
             assocFunctions.push_back(function);
         } else {
-            errorAtCurrent("Expected field or method declaration.");
+            throw errorAtCurrent("Expected field or method declaration.");
         }
     }
 
@@ -287,7 +294,7 @@ std::shared_ptr<Stmt> Parser::traitDeclaration() {
             auto method = std::static_pointer_cast<Stmt::Function>(functionDeclaration(false));
             methods.push_back(method);
         } else {
-            errorAtCurrent("Expected method declaration.");
+            throw errorAtCurrent("Expected method declaration.");
         }
     }
 
@@ -520,36 +527,18 @@ std::vector<std::shared_ptr<Stmt>> Parser::parse() {
     return statements;
 }
 
-void Parser::errorAt(const Token &token, const std::string &message) {
-    std::cerr << "[line " << token.line << "] Error";
-
-    if (token.type == TokenType::ENDFILE) {
-        std::cerr << " at end: " << message << "\n\n";
-    } else {
-        if (token.type == TokenType::ERROR) {
-            std::cerr << ":\n";
-        } else {
-            std::cerr << " at " << (token.lexeme == "\n" ? "newline" : "'" + token.lexeme + "'") << ":\n";
-        }
-
-        std::cerr << "    " << m_scanner.getSourceLine(token.lexeme == "\n" ? token.line - 1 : token.line) << "\n";
-        for (int i = 1; i < token.col; ++i) {
-            std::cerr << " ";
-        }
-        std::cerr << "    ^\n";
-        std::cerr << message << "\n\n";
-    }
-
+Parser::ParseError Parser::errorAt(const Token &token, const std::string &message) {
+    Enact::reportErrorAt(token, message);
     m_hadError = true;
-    if (token.type != TokenType::ERROR) throw ParseError{};
+    return ParseError{};
 }
 
-void Parser::errorAtCurrent(const std::string &message) {
-    errorAt(m_current, message);
+Parser::ParseError Parser::errorAtCurrent(const std::string &message) {
+    return errorAt(m_current, message);
 }
 
-void Parser::error(const std::string &message) {
-    errorAt(m_previous, message);
+Parser::ParseError Parser::error(const std::string &message) {
+    return errorAt(m_previous, message);
 }
 
 void Parser::advance() {
@@ -559,7 +548,7 @@ void Parser::advance() {
         m_current = m_scanner.scanToken();
         if (m_current.type != TokenType::ERROR) break;
 
-        errorAtCurrent(m_current.lexeme);
+        Enact::reportErrorAt(m_current, m_current.lexeme);
     }
 }
 
@@ -587,13 +576,13 @@ void Parser::expect(TokenType type, const std::string &message) {
     if (m_current.type == type) {
         advance();
     } else {
-        errorAtCurrent(message);
+        throw errorAtCurrent(message);
     }
 }
 
 void Parser::expectSeparator(const std::string &message) {
     if (consumeSeparator()) return;
-    errorAtCurrent(message);
+    throw errorAtCurrent(message);
 }
 
 std::string Parser::consumeTypeName() {

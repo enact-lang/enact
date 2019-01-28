@@ -29,9 +29,10 @@ class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std
     std::string visitBooleanExpr(Expr::Boolean expr) override;
     std::string visitCallExpr(Expr::Call expr) override;
     std::string visitFieldExpr(Expr::Field expr) override;
+    std::string visitFloatExpr(Expr::Float expr) override;
+    std::string visitIntegerExpr(Expr::Integer expr) override;
     std::string visitLogicalExpr(Expr::Logical expr) override;
     std::string visitNilExpr(Expr::Nil expr) override;
-    std::string visitNumberExpr(Expr::Number expr) override;
     std::string visitReferenceExpr(Expr::Reference expr) override;
     std::string visitStringExpr(Expr::String expr) override;
     std::string visitSubscriptExpr(Expr::Subscript expr) override;

@@ -81,12 +81,15 @@ void Scanner::skipWhitespace() {
 Token Scanner::number() {
     while (isDigit(peek())) advance();
 
+    TokenType type = TokenType::INTEGER;
+
     if (peek() == '.') {
+        type = TokenType::FLOAT;
         advance();
         while (isDigit(peek())) advance();
     }
 
-    return makeToken(TokenType::NUMBER);
+    return makeToken(type);
 }
 
 Token Scanner::identifier() {
@@ -148,18 +151,6 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "while")    return TokenType::WHILE;
 
     return TokenType::IDENTIFIER;
-}
-
-std::string Scanner::getSourceLine(line_t line) {
-    std::istringstream source{m_source};
-    line_t lineNumber{1};
-    std::string lineContents;
-
-    while (std::getline(source, lineContents) && lineNumber < line) {
-        ++lineNumber;
-    }
-
-    return lineContents;
 }
 
 bool Scanner::isAtEnd() {

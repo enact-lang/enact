@@ -210,6 +210,14 @@ std::string AstPrinter::visitFieldExpr(Expr::Field expr) {
     return "(. " + evaluate(expr.object) + " " + expr.name.lexeme + ")";
 }
 
+std::string AstPrinter::visitFloatExpr(Expr::Float expr) {
+    return std::to_string(expr.value);
+}
+
+std::string AstPrinter::visitIntegerExpr(Expr::Integer expr) {
+    return std::to_string(expr.value);
+}
+
 std::string AstPrinter::visitLogicalExpr(Expr::Logical expr) {
     return "(" + expr.oper.lexeme + " " + evaluate(expr.left) + " " + evaluate(expr.right) + ")";
 }
@@ -220,12 +228,6 @@ std::string AstPrinter::visitNilExpr(Expr::Nil expr) {
 
 std::string AstPrinter::visitReferenceExpr(Expr::Reference expr) {
     return "(ref " + evaluate(expr.object) + ")";
-}
-
-std::string AstPrinter::visitNumberExpr(Expr::Number expr) {
-    std::stringstream s;
-    s << expr.value;
-    return s.str();
 }
 
 std::string AstPrinter::visitStringExpr(Expr::String expr) {

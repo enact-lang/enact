@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10.2)
 project(enact)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -21,4 +21,4 @@ add_executable( enact
         src/h/Object.h 
         src/Object.cpp
         src/ast/Expr.h
-        src/ast/Stmt.h src/AstPrinter.cpp src/h/AstPrinter.h src/Analyser.cpp src/h/Analyser.h src/h/GivenCase.h)
+        src/ast/Stmt.h src/AstPrinter.cpp src/h/AstPrinter.h src/Analyser.cpp src/h/Analyser.h src/h/Type.h src/Type.cpp)

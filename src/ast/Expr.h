@@ -5,20 +5,25 @@
 #define ENACT_EXPR_H
 
 #include "../h/Token.h"
+#include "../h/Type.h"
 #include <memory>
 #include <vector>
 
 class Expr {
+    std::shared_ptr<Type> m_type = nullptr;
 public:
+    virtual std::shared_ptr<Type> type() { return m_type; }
+
     class Array;
     class Assign;
     class Binary;
     class Boolean;
     class Call;
     class Field;
+    class Float;
+    class Integer;
     class Logical;
     class Nil;
-    class Number;
     class Reference;
     class String;
     class Subscript;
@@ -36,9 +41,10 @@ public:
         virtual R visitBooleanExpr(Boolean None);
         virtual R visitCallExpr(Call None);
         virtual R visitFieldExpr(Field None);
+        virtual R visitFloatExpr(Float None);
+        virtual R visitIntegerExpr(Integer None);
         virtual R visitLogicalExpr(Logical None);
         virtual R visitNilExpr(Nil None);
-        virtual R visitNumberExpr(Number None);
         virtual R visitReferenceExpr(Reference None);
         virtual R visitStringExpr(String None);
         virtual R visitSubscriptExpr(Subscript None);
@@ -55,9 +61,10 @@ public:
 class Expr::Array : public Expr {
 public:
     std::vector<std::shared_ptr<Expr>> value;
+    Token square;
 
-    Array(std::vector<std::shared_ptr<Expr>> value) : 
-        value{value} {}
+    Array(std::vector<std::shared_ptr<Expr>> value,Token square) : 
+        value{value},square{square} {}
 
     std::string accept(Expr::Visitor<std::string> *visitor) override {
         return visitor->visitArrayExpr(*this);
@@ -156,6 +163,38 @@ public:
     }
 };
 
+class Expr::Float : public Expr {
+public:
+    double value;
+
+    Float(double value) : 
+        value{value} {}
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitFloatExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitFloatExpr(*this);
+    }
+};
+
+class Expr::Integer : public Expr {
+public:
+    int value;
+
+    Integer(int value) : 
+        value{value} {}
+
+    std::string accept(Expr::Visitor<std::string> *visitor) override {
+        return visitor->visitIntegerExpr(*this);
+    }
+
+    void accept(Expr::Visitor<void> *visitor) override {
+        return visitor->visitIntegerExpr(*this);
+    }
+};
+
 class Expr::Logical : public Expr {
 public:
     std::shared_ptr<Expr> left;
@@ -184,22 +223,6 @@ public:
 
     void accept(Expr::Visitor<void> *visitor) override {
         return visitor->visitNilExpr(*this);
-    }
-};
-
-class Expr::Number : public Expr {
-public:
-    double value;
-
-    Number(double value) : 
-        value{value} {}
-
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
-        return visitor->visitNumberExpr(*this);
-    }
-
-    void accept(Expr::Visitor<void> *visitor) override {
-        return visitor->visitNumberExpr(*this);
     }
 };
 

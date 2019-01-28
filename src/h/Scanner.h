@@ -40,10 +40,8 @@ private:
     bool isIdentifierStart(char c);
     bool isIdentifier(char c);
 public:
-    Scanner(std::string source);
+    explicit Scanner(std::string source);
     ~Scanner() = default;
-
-    std::string getSourceLine(line_t line);
 
     Token scanToken();
 

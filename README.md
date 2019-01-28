@@ -1,8 +1,10 @@
 <p align="center">
-<img src="./docs/img/enact-logo-text.png" alt="Enact logo" width="60%" height="60%"></img><br>
-
+<img src="./docs/img/enact-logo-text.png" alt="Enact logo" width="60%" height="60%"></img>
+</p>
+<p align="center">
 <a href="https://www.codefactor.io/repository/github/enact-lang/enact"><img src="https://www.codefactor.io/repository/github/enact-lang/enact/badge" alt="CodeFactor" /></a><br>
-
+</p>
+<p align="center">
 Enact is a new programming language that's not designed to be unique or groundbreaking. Instead, Enact takes already 
 established technologies and paradigms and just makes them <strong>nicer</strong>.
 </p>

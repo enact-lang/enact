@@ -8,7 +8,7 @@ def uncapitalize(s):
 def generate_ast_class_visitors(name, type_fields, visitor_types):
     ret = "    template <class R>\n    class Visitor {\n    public:\n"
     for key in type_fields:
-        ret += f"        virtual R visit{key+name}({key} {uncapitalize(name)});\n"
+        ret += f"        virtual R visit{key+name}({key} {uncapitalize(name)}) = 0;\n"
     ret += "    };\n\n"
     for type in visitor_types:
         ret += f"    virtual {type} accept({name}::Visitor<{type}> *visitor) = 0;\n"

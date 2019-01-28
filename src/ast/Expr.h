@@ -30,22 +30,22 @@ public:
     template <class R>
     class Visitor {
     public:
-        virtual R visitArrayExpr(Array None);
-        virtual R visitAssignExpr(Assign None);
-        virtual R visitBinaryExpr(Binary None);
-        virtual R visitBooleanExpr(Boolean None);
-        virtual R visitCallExpr(Call None);
-        virtual R visitFieldExpr(Field None);
-        virtual R visitLogicalExpr(Logical None);
-        virtual R visitNilExpr(Nil None);
-        virtual R visitNumberExpr(Number None);
-        virtual R visitReferenceExpr(Reference None);
-        virtual R visitStringExpr(String None);
-        virtual R visitSubscriptExpr(Subscript None);
-        virtual R visitTernaryExpr(Ternary None);
-        virtual R visitUnaryExpr(Unary None);
-        virtual R visitAnyExpr(Any None);
-        virtual R visitVariableExpr(Variable None);
+        virtual R visitArrayExpr(Array None) = 0;
+        virtual R visitAssignExpr(Assign None) = 0;
+        virtual R visitBinaryExpr(Binary None) = 0;
+        virtual R visitBooleanExpr(Boolean None) = 0;
+        virtual R visitCallExpr(Call None) = 0;
+        virtual R visitFieldExpr(Field None) = 0;
+        virtual R visitLogicalExpr(Logical None) = 0;
+        virtual R visitNilExpr(Nil None) = 0;
+        virtual R visitNumberExpr(Number None) = 0;
+        virtual R visitReferenceExpr(Reference None) = 0;
+        virtual R visitStringExpr(String None) = 0;
+        virtual R visitSubscriptExpr(Subscript None) = 0;
+        virtual R visitTernaryExpr(Ternary None) = 0;
+        virtual R visitUnaryExpr(Unary None) = 0;
+        virtual R visitAnyExpr(Any None) = 0;
+        virtual R visitVariableExpr(Variable None) = 0;
     };
 
     virtual std::string accept(Expr::Visitor<std::string> *visitor) = 0;

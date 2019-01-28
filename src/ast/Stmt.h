@@ -27,20 +27,20 @@ public:
     template <class R>
     class Visitor {
     public:
-        virtual R visitBlockStmt(Block None);
-        virtual R visitBreakStmt(Break None);
-        virtual R visitContinueStmt(Continue None);
-        virtual R visitEachStmt(Each None);
-        virtual R visitExpressionStmt(Expression None);
-        virtual R visitForStmt(For None);
-        virtual R visitFunctionStmt(Function None);
-        virtual R visitGivenStmt(Given None);
-        virtual R visitIfStmt(If None);
-        virtual R visitReturnStmt(Return None);
-        virtual R visitStructStmt(Struct None);
-        virtual R visitTraitStmt(Trait None);
-        virtual R visitWhileStmt(While None);
-        virtual R visitVariableStmt(Variable None);
+        virtual R visitBlockStmt(Block None) = 0;
+        virtual R visitBreakStmt(Break None) = 0;
+        virtual R visitContinueStmt(Continue None) = 0;
+        virtual R visitEachStmt(Each None) = 0;
+        virtual R visitExpressionStmt(Expression None) = 0;
+        virtual R visitForStmt(For None) = 0;
+        virtual R visitFunctionStmt(Function None) = 0;
+        virtual R visitGivenStmt(Given None) = 0;
+        virtual R visitIfStmt(If None) = 0;
+        virtual R visitReturnStmt(Return None) = 0;
+        virtual R visitStructStmt(Struct None) = 0;
+        virtual R visitTraitStmt(Trait None) = 0;
+        virtual R visitWhileStmt(While None) = 0;
+        virtual R visitVariableStmt(Variable None) = 0;
     };
 
     virtual std::string accept(Stmt::Visitor<std::string> *visitor) = 0;

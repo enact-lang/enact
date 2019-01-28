@@ -21,4 +21,4 @@ add_executable( enact
         src/h/Object.h 
         src/Object.cpp
         src/ast/Expr.h
-        src/ast/Stmt.h src/AstPrinter.cpp src/h/AstPrinter.h src/Analyser.cpp src/h/Analyser.h src/h/GivenCase.h)
+        src/ast/Stmt.h src/AstPrinter.cpp src/h/AstPrinter.h src/Analyser.cpp src/h/Analyser.h src/ast/trivialStructs.h)

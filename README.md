@@ -28,6 +28,12 @@ each i in 1..20:
 end
 ```
 
+## Features
+- A convenient optional static type system
+- Composition-based user defined types
+- Easy interop and modularity
+- Clean and simple syntax
+
 ## Goals
 - Enact aims to make dealing with data easier through a variety of high-level but high-performance constructs.
 - It should be powerful, but shouldn't have a giant learning curve.

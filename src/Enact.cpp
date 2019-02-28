@@ -11,8 +11,10 @@
 #include "h/Enact.h"
 #include "h/VM.h"
 #include "h/AstPrinter.h"
+#include "h/Analyser.h"
 
 std::string Enact::m_source = "";
+Analyser Enact::m_analyser{};
 
 void Enact::run(const std::string &source) {
     m_source = source;
@@ -20,11 +22,14 @@ void Enact::run(const std::string &source) {
     Parser parser{m_source};
     //if (!compiler.compile()) return InterpretResult::COMPILE_ERROR;
     //std::cout << compiler.currentChunk().disassemble();
-    std::vector<std::shared_ptr<Stmt>> statements = parser.parse();
-    if (parser.hadError()) return;
+    std::vector<Stmt> statements = parser.parse();
+
+    m_analyser.analyse(statements);
+
+    if (parser.hadError() || m_analyser.hadError()) return;
 
     AstPrinter astPrinter;
-    for (const std::shared_ptr<Stmt>& stmt : statements) {
+    for (const Stmt& stmt : statements) {
         astPrinter.print(stmt);
         std::cout << "\n";
     }

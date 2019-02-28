@@ -1,6 +1,6 @@
 #ifndef ENACT_OBJECT_H
 #define ENACT_OBJECT_H
-
+/*
 #include <iostream>
 #include <string>
 
@@ -47,5 +47,5 @@ public:
     explicit IdentifierObject(std::string value);
     const std::string& asStdString() const;
 };
-
+*/
 #endif //ENACT_OBJECT_H

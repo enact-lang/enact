@@ -1,158 +1,342 @@
 #include "h/Type.h"
 
-Type::Type(Kind kind) : m_kind{kind} {
+#include "ast/Stmt.h"
 
-}
+#include <algorithm>
+#include <sstream>
 
-Type::Kind Type::getKind() const {
+TypeBase::TypeBase(TypeKind kind) :
+        m_kind{kind} {}
+
+TypeKind TypeBase::getKind() const {
     return m_kind;
 }
 
-bool Type::operator==(const Type &type) const {
+bool TypeBase::operator==(const TypeBase &type) const {
     if (type.getKind() != m_kind) return false;
 
     switch (m_kind) {
-        case Kind::PRIMITIVE: {
-            auto left = this->as<Type::Primitive>();
-            auto right = type.as<Type::Primitive>();
-            return left.getPrimitiveKind() == right.getPrimitiveKind();
+        case TypeKind::PRIMITIVE: {
+            auto left = this->as<PrimitiveType>();
+            auto right = type.as<PrimitiveType>();
+            return left->getPrimitiveKind() == right->getPrimitiveKind();
         }
-        case Kind::ARRAY: {
-            auto left = this->as<Type::Array>();
-            auto right = type.as<Type::Array>();
-            return *(left.getElementType()) == *(right.getElementType());
+        case TypeKind::ARRAY: {
+            auto left = this->as<ArrayType>();
+            auto right = type.as<ArrayType>();
+            return *(left->getElementType()) == *(right->getElementType());
         }
-        case Kind::FUNCTION: {
-            auto left = this->as<Type::Function>();
-            auto right = type.as<Type::Function>();
+        case TypeKind::FUNCTION: {
+            auto left = this->as<FunctionType>();
+            auto right = type.as<FunctionType>();
 
-            if (*(left.getReturnType()) != *(right.getReturnType())) return false;
-            if (left.getArgumentTypes().size() != right.getArgumentTypes().size()) return false;
+            if (*(left->getReturnType()) != *(right->getReturnType())) return false;
+            if (left->getArgumentTypes().size() != right->getArgumentTypes().size()) return false;
 
-            for (int i = 0; i < left.getArgumentTypes().size(); ++i) {
-                if (*(left.getArgumentTypes()[i]) != *(right.getArgumentTypes()[i])) return false;
+            for (int i = 0; i < left->getArgumentTypes().size(); ++i) {
+                if (*(left->getArgumentTypes()[i]) != *(right->getArgumentTypes()[i])) return false;
             }
 
             return true;
         }
-        case Kind::TRAIT: {
-            auto left = this->as<Type::Trait>();
-            auto right = type.as<Type::Trait>();
+        case TypeKind::TRAIT: {
+            auto left = this->as<TraitType>();
+            auto right = type.as<TraitType>();
 
-            return left.getName() == right.getName();
+            return left->getName() == right->getName();
         }
-        case Kind::STRUCT: {
-            auto left = this->as<Type::Struct>();
-            auto right = type.as<Type::Struct>();
+        case TypeKind::STRUCT: {
+            auto left = this->as<StructType>();
+            auto right = type.as<StructType>();
 
-            return left.getName() == right.getName();
+            return left->getName() == right->getName();
         }
 
-        // Unreachable
+            // Unreachable
         default: return false;
     }
 }
 
-bool Type::operator!=(const Type &type) const {
+bool TypeBase::operator!=(const TypeBase &type) const {
     return !(*this == type);
 }
 
-std::string Type::toString() const {
-    return std::__cxx11::string();
+bool TypeBase::looselyEquals(const TypeBase &type) const {
+    if (this->isTrait() && type.isStruct()) {
+        return type.as<StructType>()->getTrait(*this) != std::nullopt;
+    }
+    if (type.isTrait() && this->isStruct()) {
+        return this->as<StructType>()->getTrait(type) != std::nullopt;
+    }
+
+    return this->isDynamic() || type.isDynamic() || (this->isNumeric() && type.isNumeric()) || *this == type;
 }
 
-bool Type::isNumeric() const {
-    if (m_kind != Kind::PRIMITIVE) return false;
-    auto primitiveKind = this->as<Type::Primitive>().getPrimitiveKind();
-    return primitiveKind == Primitive::Kind::INT || primitiveKind == Primitive::Kind::FLOAT;
+std::string TypeBase::toString() const {
+    switch (m_kind) {
+        case TypeKind::PRIMITIVE: {
+            auto primType = this->as<PrimitiveType>();
+            switch (primType->getPrimitiveKind()) {
+                case PrimitiveKind::INT: return "int";
+                case PrimitiveKind::FLOAT: return "float";
+                case PrimitiveKind::BOOL: return "bool";
+                case PrimitiveKind::STRING: return "string";
+                case PrimitiveKind::NOTHING: return "nothing";
+                case PrimitiveKind::DYNAMIC: return "any";
+                default: return "";
+            }
+        }
+        case TypeKind::ARRAY: {
+            auto arrType = this->as<ArrayType>();
+            return "[" + arrType->getElementType()->toString() + "]";
+        }
+        case TypeKind::FUNCTION: {
+            auto funType = this->as<FunctionType>();
+
+            std::stringstream ret{"fun ("};
+            std::string separator = "";
+            for (const Type& argType : funType->getArgumentTypes()) {
+                ret << separator << argType->toString();
+                separator = ", ";
+            }
+
+            ret << ") " << funType->getReturnType()->toString();
+
+            return ret.str();
+        }
+        case TypeKind::TRAIT: {
+            return this->as<TraitType>()->getName();
+        }
+        case TypeKind::STRUCT: {
+            return this->as<StructType>()->getName();
+        }
+
+        // Unreachable
+        default: return "";
+    }
 }
 
-bool Type::isBool() const {
-    if (m_kind != Kind::PRIMITIVE) return false;
-    return this->as<Type::Primitive>().getPrimitiveKind() == Primitive::Kind::BOOL;
+bool TypeBase::isInt() const {
+    return m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::INT;
 }
 
-bool Type::isString() const {
-    if (m_kind != Kind::PRIMITIVE) return false;
-    return this->as<Type::Primitive>().getPrimitiveKind() == Primitive::Kind::STRING;
+bool TypeBase::isFloat() const {
+    return m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::FLOAT;
 }
 
-bool Type::isDynamic() const {
-    if (m_kind != Kind::PRIMITIVE) return false;
-    return this->as<Type::Primitive>().getPrimitiveKind() == Primitive::Kind::DYNAMIC;
+bool TypeBase::isNumeric() const {
+    return isInt() || isFloat();
 }
 
-bool Type::isNothing() const {
-    if (m_kind != Kind::PRIMITIVE) return false;
-    return this->as<Type::Primitive>().getPrimitiveKind() == Primitive::Kind::NOTHING;
+bool TypeBase::isBool() const {
+    return m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::BOOL;
 }
 
-bool Type::isArray() const {
-    return m_kind == Kind::ARRAY;
+bool TypeBase::isString() const {
+    return m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::STRING;
 }
 
-bool Type::isFunction() const {
-    return m_kind == Kind::FUNCTION;
+bool TypeBase::isDynamic() const {
+    return m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::DYNAMIC;
 }
 
-bool Type::isTrait() const {
-    return m_kind == Kind::TRAIT;
+bool TypeBase::isNothing() const {
+    return m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::NOTHING;
 }
 
-bool Type::isStruct() const {
-    return m_kind == Kind::STRUCT;
+bool TypeBase::maybeInt() const {
+    return isInt() || isDynamic();
 }
 
-template<typename T>
-inline const T& Type::as() const {
-    return *static_cast<const T*>(this);
+bool TypeBase::maybeFloat() const {
+    return isFloat() || isDynamic();
 }
 
-Type::Primitive::Primitive(Type::Primitive::Kind kind) :
-        Type{Type::Kind::PRIMITIVE},
+bool TypeBase::maybeNumeric() const {
+    return isNumeric() || isDynamic();
+}
+
+bool TypeBase::maybeBool() const {
+    return isBool() || isDynamic();
+}
+
+bool TypeBase::maybeString() const {
+    return isString() || isDynamic();
+}
+
+bool TypeBase::isArray() const {
+    return m_kind == TypeKind::ARRAY;
+}
+
+bool TypeBase::isFunction() const {
+    return m_kind == TypeKind::FUNCTION;
+}
+
+bool TypeBase::isTrait() const {
+    return m_kind == TypeKind::TRAIT;
+}
+
+bool TypeBase::isStruct() const {
+    return m_kind == TypeKind::STRUCT;
+}
+
+bool TypeBase::isConstructor() const {
+    return m_kind == TypeKind::CONSTRUCTOR;
+}
+
+bool TypeBase::maybeArray() const {
+    return isArray() || isDynamic();
+}
+
+bool TypeBase::maybeFunction() const {
+    return isFunction() || isDynamic();
+}
+
+bool TypeBase::maybeTrait() const {
+    return isTrait() || isDynamic();
+}
+
+bool TypeBase::maybeStruct() const {
+    return isStruct() || isDynamic();
+}
+
+
+// Primitive types
+
+PrimitiveType::PrimitiveType(PrimitiveKind kind) :
+        TypeBase{TypeKind::PRIMITIVE},
         m_kind{kind} {}
 
-Type::Primitive::Kind Type::Primitive::getPrimitiveKind() const {
+PrimitiveKind PrimitiveType::getPrimitiveKind() const {
     return m_kind;
 }
 
-Type::Array::Array(Type *elementType) :
-        Type{Type::Kind::ARRAY},
+
+ArrayType::ArrayType(Type elementType) :
+        TypeBase{TypeKind::ARRAY},
         m_elementType{elementType} {}
 
-const Type *const Type::Array::getElementType() const {
+const Type ArrayType::getElementType() const {
     return m_elementType;
 }
 
-Type::Function::Function(Type *returnType, std::vector<Type *> argumentTypes) :
-        Type{Type::Kind::FUNCTION},
+FunctionType::FunctionType(Type returnType, std::vector<Type> argumentTypes) :
+        TypeBase{TypeKind::FUNCTION},
         m_returnType{returnType},
         m_argumentTypes{argumentTypes} {}
 
-const Type *const Type::Function::getReturnType() const {
+const Type FunctionType::getReturnType() const {
     return m_returnType;
 }
 
-const std::vector<Type *> &Type::Function::getArgumentTypes() const {
+const std::vector<Type>& FunctionType::getArgumentTypes() const {
     return m_argumentTypes;
 }
 
-Type::Struct::Struct(std::string name, std::vector<Type *> traits) :
-        Type{Type::Kind::STRUCT},
+TraitType::TraitType(std::string name, std::unordered_map<std::string, Type> methods) :
+        TypeBase{TypeKind::TRAIT},
         m_name{name},
-        m_traits{traits} {}
+        m_methods{methods} {}
 
-const std::string &Type::Struct::getName() const {
+const std::string& TraitType::getName() const {
     return m_name;
 }
 
-const std::vector<Type *> Type::Struct::getTraits() const {
+const std::unordered_map<std::string, Type>& TraitType::getMethods() const {
+    return m_methods;
+}
+
+std::optional<Type> TraitType::getMethod(const std::string &name) const {
+    if (m_methods.count(name) > 0) {
+        return std::make_optional(m_methods.at(name));
+    }
+
+    return {};
+}
+
+StructType::StructType(std::string name, std::vector<Type> traits,
+                       std::unordered_map<std::string, Type> fields,
+                       std::unordered_map<std::string, Type> methods,
+                       std::unordered_map<std::string, Type> assocFunctions) :
+        TypeBase{TypeKind::STRUCT},
+        m_name{name},
+        m_traits{traits},
+        m_fields{fields},
+        m_methods{methods},
+        m_assocFunctions{assocFunctions} {}
+
+const std::string& StructType::getName() const {
+    return m_name;
+}
+
+const std::vector<Type>& StructType::getTraits() const {
     return m_traits;
 }
 
-bool Type::Struct::hasTrait(Type *trait) const {
-    for (Type* thisTrait : m_traits) {
-        if (*thisTrait == *trait) return true;
+const std::unordered_map<std::string, Type>& StructType::getFields() const {
+    return m_fields;
+}
+
+const std::unordered_map<std::string, Type>& StructType::getMethods() const {
+    return m_methods;
+}
+
+const std::unordered_map<std::string, Type>& StructType::getAssocFunctions() const {
+    return m_assocFunctions;
+}
+
+std::optional<Type> StructType::getTrait(const TypeBase& trait) const {
+    for (const Type& myTrait : m_traits) {
+        if (*myTrait == trait) return myTrait;
     }
-    return false;
+    return {};
+}
+
+std::optional<Type> StructType::getField(const std::string &name) const {
+    if (m_fields.count(name) > 0) {
+        return std::make_optional(m_fields.at(name));
+    }
+    return {};
+}
+
+std::optional<Type> StructType::getMethod(const std::string &name) const {
+    if (m_methods.count(name) > 0) {
+        return std::make_optional(m_methods.at(name));
+    }
+
+    return {};
+}
+
+std::optional<Type> StructType::getFieldOrMethod(const std::string &name) const {
+    if (std::optional<Type> type; type = getField(name)) {
+        return type;
+    }
+    return getMethod(name);
+}
+
+std::optional<Type> StructType::getAssocFunction(const std::string &name) const {
+    if (m_assocFunctions.count(name) > 0) {
+        return std::make_optional(m_assocFunctions.at(name));
+    }
+    return {};
+}
+
+ConstructorType::ConstructorType(StructType structType) :
+        TypeBase{TypeKind::CONSTRUCTOR},
+        m_structType{structType},
+        m_functionType{FunctionType(std::make_shared<StructType>(structType), getMapValues(structType.getFields()))} {
+}
+
+const StructType &ConstructorType::getStructType() const {
+    return m_structType;
+}
+
+const FunctionType &ConstructorType::getFunctionType() const {
+    return m_functionType;
 }

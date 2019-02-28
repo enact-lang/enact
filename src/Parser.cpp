@@ -351,6 +351,8 @@ Stmt Parser::blockStatement() {
 }
 
 Stmt Parser::ifStatement() {
+    Token keyword = m_previous;
+
     Expr condition = expression();
     expect(TokenType::COLON, "Expected ':' after if condition.");
     ignoreNewline();
@@ -373,7 +375,7 @@ Stmt Parser::ifStatement() {
     expect(TokenType::END, "Expected 'end' at end of if statement.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<IfStmt>(condition, thenBlock, elseBlock);
+    return std::make_shared<IfStmt>(condition, thenBlock, elseBlock, keyword);
 }
 
 Stmt Parser::whileStatement() {

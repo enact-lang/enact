@@ -146,7 +146,7 @@ generate_tree(
         "For":          ["Stmt initializer", "Expr condition", "Expr increment", "std::vector<Stmt> body"],
         "Function":     ["Token name", "std::string returnTypeName", "std::vector<NamedTypename> params", "std::vector<Stmt> body"],
         "Given":        ["Expr value", "std::vector<GivenCase> cases"],
-        "If":           ["Expr condition", "std::vector<Stmt> thenBlock", "std::vector<Stmt> elseBlock"],
+        "If":           ["Expr condition", "std::vector<Stmt> thenBlock", "std::vector<Stmt> elseBlock", "Token keyword"],
         "Return":       ["Token keyword", "Expr value"],
         "Struct":       ["Token name", "std::vector<Token> traits", "std::vector<NamedTypename> fields", "std::vector<std::shared_ptr<FunctionStmt>> methods", "std::vector<std::shared_ptr<FunctionStmt>> assocFunctions"],
         "Trait":        ["Token name", "std::vector<std::shared_ptr<FunctionStmt>> methods"],

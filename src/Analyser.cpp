@@ -122,6 +122,10 @@ void Analyser::visitGivenStmt(GivenStmt& stmt) {
 void Analyser::visitIfStmt(IfStmt& stmt) {
     analyse(stmt.condition);
 
+    if (!stmt.condition->getType()->maybeBool()) {
+        throw errorAt(stmt.keyword, "If condition must be a bool.");
+    }
+
     beginScope();
     for (Stmt& statement : stmt.thenBlock) {
         analyse(statement);
@@ -177,7 +181,7 @@ void Analyser::visitStructStmt(StructStmt& stmt) {
     for (const NamedTypename& field : stmt.fields) {
         // Check if the field has the same name as another field
         if (fields.count(field.name.lexeme) > 0) {
-            throw errorAt(field.name, "Struct fieldield '" + field.name.lexeme +
+            throw errorAt(field.name, "Struct field '" + field.name.lexeme +
                     "' cannot have the same name as another field.");
         }
 
@@ -359,8 +363,12 @@ void Analyser::visitBinaryExpr(BinaryExpr& expr) {
         case TokenType::MINUS:
         case TokenType::STAR:
         case TokenType::SLASH:
+        case TokenType::LESS:
+        case TokenType::LESS_EQUAL:
+        case TokenType::GREATER:
+        case TokenType::GREATER_EQUAL:
             if (!left->maybeNumeric() ||
-                    !expr.right->getType()->maybeNumeric()) {
+                    !right->maybeNumeric()) {
                 throw errorAt(expr.oper, "Operator '" + expr.oper.lexeme + "' may only be applied to numbers.");
             }
 
@@ -375,10 +383,10 @@ void Analyser::visitBinaryExpr(BinaryExpr& expr) {
             break;
 
         case TokenType::PLUS:
-            if (!(expr.left->getType()->maybeNumeric() &&
-                    expr.right->getType()->maybeNumeric()) &&
-                    !(expr.left->getType()->maybeString() &&
-                    expr.right->getType()->maybeString())) {
+            if (!((left->maybeNumeric() &&
+                    right->maybeNumeric()) ||
+                    (left->maybeString() &&
+                    right->maybeString()))) {
                 throw errorAt(expr.oper, "Can only add two numbers or two strings.");
             }
 
@@ -392,6 +400,16 @@ void Analyser::visitBinaryExpr(BinaryExpr& expr) {
                 expr.setType(m_types["any"]);
             }
 
+            break;
+
+        case TokenType::EQUAL_EQUAL:
+        case TokenType::BANG_EQUAL:
+            if (!left->looselyEquals(*right)) {
+                throw errorAt(expr.oper, "Cannot check for equality between mismatched types '"
+                        + left->toString() + "' and '" + right->toString() + "'.");
+            }
+
+            expr.setType(m_types["bool"]);
             break;
 
         default: throw errorAt(expr.oper, "Unreachable.");
@@ -492,7 +510,18 @@ void Analyser::visitIntegerExpr(IntegerExpr& expr) {
 }
 
 void Analyser::visitLogicalExpr(LogicalExpr& expr) {
+    analyse(expr.left);
+    analyse(expr.right);
 
+    Type left = expr.left->getType();
+    Type right = expr.right->getType();
+
+    if (!left->maybeBool() &&
+            !right->maybeBool()) {
+        throw errorAt(expr.oper, "Operator '" + expr.oper.lexeme + "' may only be applied to booleans.");
+    }
+
+    expr.setType(m_types["bool"]);
 }
 
 void Analyser::visitNilExpr(NilExpr& expr) {

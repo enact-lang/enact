@@ -195,9 +195,10 @@ public:
     Expr condition;
     std::vector<Stmt> thenBlock;
     std::vector<Stmt> elseBlock;
+    Token keyword;
 
-    IfStmt(Expr condition,std::vector<Stmt> thenBlock,std::vector<Stmt> elseBlock) : 
-        condition{condition},thenBlock{thenBlock},elseBlock{elseBlock} {}
+    IfStmt(Expr condition,std::vector<Stmt> thenBlock,std::vector<Stmt> elseBlock,Token keyword) : 
+        condition{condition},thenBlock{thenBlock},elseBlock{elseBlock},keyword{keyword} {}
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitIfStmt(*this);

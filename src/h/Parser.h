@@ -53,6 +53,7 @@ private:
     Token m_current;
 
     void advance();
+    void undoAdvance();
     void ignoreNewline();
     bool check(TokenType expected);
     bool consume(TokenType expected);

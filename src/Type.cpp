@@ -69,7 +69,7 @@ bool TypeBase::looselyEquals(const TypeBase &type) const {
         return this->as<StructType>()->getTrait(type) != std::nullopt;
     }
 
-    return this->isDynamic() || type.isDynamic() || (this->isNumeric() && type.isNumeric()) || *this == type;
+    return this->isDynamic() || type.isDynamic() || (this->isInt() && type.isNumeric()) || *this == type;
 }
 
 std::string TypeBase::toString() const {

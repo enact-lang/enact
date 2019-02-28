@@ -537,11 +537,38 @@ void Analyser::visitStringExpr(StringExpr& expr) {
 }
 
 void Analyser::visitSubscriptExpr(SubscriptExpr& expr) {
+    analyse(expr.object);
+    analyse(expr.index);
 
+    if (!expr.object->getType()->maybeArray()) {
+        throw errorAt(expr.square, "Only arrays can be subscripted.");
+    }
+
+    if (!expr.index->getType()->maybeInt()) {
+        throw errorAt(expr.square, "Subscript index must be an integer.");
+    }
+
+    if (expr.object->getType()->isDynamic()) {
+        expr.setType(m_types["any"]);
+        return;
+    }
+
+    expr.setType(expr.object->getType()->as<ArrayType>()->getElementType());
 }
 
 void Analyser::visitTernaryExpr(TernaryExpr& expr) {
+    analyse(expr.condition);
+    if (!expr.condition->getType()->maybeBool()) {
+        throw errorAt(expr.oper, "Conditional operator condition must be a boolean.");
+    }
 
+    analyse(expr.thenExpr);
+    analyse(expr.elseExpr);
+
+    if (!expr.thenExpr->getType()->looselyEquals(*expr.elseExpr->getType())) {
+        throw errorAt(expr.oper, "Mismatched types in conditional operation: '" + expr.thenExpr->getType()->toString()
+                + "' and '" + expr.elseExpr->getType()->toString() + "'.");
+    }
 }
 
 void Analyser::visitUnaryExpr(UnaryExpr& expr) {

@@ -195,3 +195,9 @@ bool Scanner::isIdentifierStart(char c) {
 bool Scanner::isIdentifier(char c) {
     return isIdentifierStart(c) || isDigit(c);
 }
+
+Token Scanner::backtrack() {
+    m_current -= m_last.lexeme.size();
+    m_start = m_current;
+    return m_last;
+}

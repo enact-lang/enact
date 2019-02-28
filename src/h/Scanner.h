@@ -44,7 +44,7 @@ public:
     ~Scanner() = default;
 
     Token scanToken();
-
+    Token backtrack();
 };
 
 

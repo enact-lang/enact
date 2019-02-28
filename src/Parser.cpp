@@ -562,6 +562,11 @@ void Parser::advance() {
     }
 }
 
+void Parser::undoAdvance() {
+    m_current = m_previous;
+    m_previous = m_scanner.backtrack();
+}
+
 void Parser::ignoreNewline() {
     while (consume(TokenType::NEWLINE));
 }
@@ -599,10 +604,21 @@ std::string Parser::consumeTypeName() {
     std::string typeName;
 
     // May be enclosed in square brackets to signify list type
-    bool isList = false;
     if (consume(TokenType::LEFT_SQUARE)) {
-        isList = true;
         typeName += "[";
+
+        std::string elementType = consumeTypeName();
+        if (elementType.empty()) {
+            undoAdvance();
+            return "";
+        }
+
+        typeName += elementType;
+
+        expect(TokenType::RIGHT_SQUARE, "Expected ']' after list type name.");
+
+        typeName += "]";
+        return typeName;
     }
 
     // May start with 'ref'
@@ -611,12 +627,6 @@ std::string Parser::consumeTypeName() {
         typeName += "ref " + m_previous.lexeme;
     } else if (consume(TokenType::IDENTIFIER)) {
         typeName += m_previous.lexeme;
-    }
-
-    // Expect the closing ']' if we were consuming a list type.
-    if (isList) {
-        expect(TokenType::RIGHT_SQUARE, "Expected ']' after list type name.");
-        typeName += "]";
     }
 
     return typeName;

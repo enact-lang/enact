@@ -55,7 +55,7 @@ void Analyser::visitContinueStmt(ContinueStmt& stmt) {
 }
 
 void Analyser::visitEachStmt(EachStmt& stmt) {
-    throw errorAt(stmt.name, "Unsupported feature.");
+    throw errorAt(stmt.name, "Currently unsupported! Waiting for implementation of generics.");
 }
 
 void Analyser::visitExpressionStmt(ExpressionStmt& stmt) {
@@ -83,7 +83,7 @@ void Analyser::visitFunctionStmt(FunctionStmt& stmt) {
     declareVariable(stmt.name.lexeme, Variable{type, true});
 
     beginScope();
-    m_currentFunction = type->as<FunctionType>();
+    m_currentFunction = *type->as<FunctionType>();
 
     for (int i = 0; i < stmt.params.size(); ++i) {
         declareVariable(stmt.params[i].name.lexeme, Variable{functionType->getArgumentTypes()[i]});
@@ -93,7 +93,7 @@ void Analyser::visitFunctionStmt(FunctionStmt& stmt) {
         analyse(statement);
     }
 
-    m_currentFunction = nullptr;
+    m_currentFunction = {};
     endScope();
 
 }
@@ -140,7 +140,7 @@ void Analyser::visitIfStmt(IfStmt& stmt) {
 }
 
 void Analyser::visitReturnStmt(ReturnStmt& stmt) {
-    if (m_currentFunction == nullptr) {
+    if (!m_currentFunction) {
         throw errorAt(stmt.keyword, "Return is only allowed inside functions.");
     }
 
@@ -605,7 +605,7 @@ Type Analyser::getFunctionType(const FunctionStmt &stmt) {
 }
 
 Type Analyser::lookUpType(const Token &name) {
-    lookUpType(name.lexeme, name);
+    return lookUpType(name.lexeme, name);
 }
 
 Type Analyser::lookUpType(const std::string &name, const Token &where) {

@@ -35,7 +35,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
     bool m_insideLoop = false;
 
     // Keep track of the current function type to see if return statements are valid
-    const FunctionType* m_currentFunction = nullptr;
+    std::optional<FunctionType> m_currentFunction = {};
 
     void analyse(Stmt stmt);
     void analyse(Expr expr);

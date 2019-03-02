@@ -1,8 +1,5 @@
 language: cpp
 
-before_install:
-- sudo apt-get update -qq
-
 compiler: gcc
 
 matrix:
@@ -17,5 +14,9 @@ matrix:
             - gcc-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        
+
+before_install:
+- eval "${MATRIX_EVAL}"
 
 script: cmake ./ && cmake --build ./ --target enact -- -j 2

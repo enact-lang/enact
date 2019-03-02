@@ -14,8 +14,8 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - clang++-7
+            - clang-7
       env:
-        - MATRIX_EVAL="CC=clang++-7 && CXX=clang++-7"
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
 
 script: cmake ./ && cmake --build ./ --target enact -- -j 2

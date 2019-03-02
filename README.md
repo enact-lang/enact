@@ -35,7 +35,7 @@ end
 - Clean and simple syntax
 
 ## Goals
-- Enact aims to make dealing with data easier through a variety of high-level but high-performance constructs.
-- It should be powerful, but shouldn't have a giant learning curve.
-- Code should be logical and pretty, not hacky and weird.
-- Existing, proven ideas are what make up the language, not strange, foriegn concepts.
+- Not multi-paradigm, rather a blend of paradigms
+- Familiar to both functional and imperative programmers
+- Interop with C, C++ and Python
+- Full ecosystem with tooling and packaging

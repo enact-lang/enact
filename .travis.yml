@@ -6,4 +6,4 @@ before_install:
 
 compiler: clang
 
-script: cmake ./ && cmake --build ./ --target enact -- -j 2
+script: clang++ -std=c++17 src/*.cpp

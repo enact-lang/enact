@@ -1,23 +1,20 @@
-language: cpp
+dist: trusty
+sudo: require
 
+language: cpp
 compiler: gcc
 
-matrix:
-  include:
-    # works on Precise and Trusty
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-8
-      env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
-        
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-8
+      - g++-8
+      - cmake
 
-before_install:
-- eval "${MATRIX_EVAL}"
-- which g++-8
-
-script: cmake ./ && cmake --build ./ --target enact -- -j 2
+script:
+    - sudo ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
+    - sudo ln -s /usr/bin/g++-6 /usr/local/bin/g++
+    - cmake ./
+    - cmake --build ./ --target enact -- -j 2

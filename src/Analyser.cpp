@@ -94,7 +94,6 @@ void Analyser::visitFunctionStmt(FunctionStmt& stmt) {
 
     m_currentFunction = {};
     endScope();
-
 }
 
 void Analyser::visitGivenStmt(GivenStmt& stmt) {

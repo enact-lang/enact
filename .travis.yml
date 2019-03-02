@@ -2,8 +2,7 @@ language: cpp
 
 before_install:
 - sudo apt-get update -qq
-- sudo apt-get install -qq clang
 
-compiler: clang
+compiler: gcc
 
-script: clang++ -std=c++17 src/*.cpp
+script: cmake ./ && cmake --build ./ --target enact -- -j 2

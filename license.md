@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) Daniel Boulton and contributors 2018 
+Copyright (c) 2018 Daniel Boulton and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

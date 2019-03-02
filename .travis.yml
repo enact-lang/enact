@@ -3,7 +3,7 @@ language: cpp
 before_install:
 - sudo apt-get update -qq
 
-compiler: clang
+compiler: gcc
 
 matrix:
   include:
@@ -14,8 +14,8 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - clang-7
+            - g++-8.2
       env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        - MATRIX_EVAL="CC=gcc8.2 && CXX=g++8.2"
 
 script: cmake ./ && cmake --build ./ --target enact -- -j 2

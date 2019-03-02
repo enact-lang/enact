@@ -1,5 +1,4 @@
 dist: trusty
-sudo: require
 
 language: cpp
 compiler: gcc
@@ -14,7 +13,7 @@ addons:
       - cmake
 
 script:
-    - sudo ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
-    - sudo ln -s /usr/bin/g++-6 /usr/local/bin/g++
+    - export CC=gcc-8
+    - export CXX=g++-8
     - cmake ./
     - cmake --build ./ --target enact -- -j 2

@@ -2,8 +2,20 @@ language: cpp
 
 before_install:
 - sudo apt-get update -qq
-- sudo apt-get install clang++7 -qq
 
 compiler: clang
+
+matrix:
+  include:
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang++-7
+      env:
+        - MATRIX_EVAL="CC=clang++-7 && CXX=clang++-7"
 
 script: cmake ./ && cmake --build ./ --target enact -- -j 2

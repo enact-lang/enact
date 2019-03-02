@@ -67,7 +67,6 @@ void Scanner::skipWhitespace() {
             case '/':
                 if (peekNext() == '/') {
                     while (peek() != '\n' && !isAtEnd()) advance();
-                    match('\n');
                 } else {
                     return;
                 }

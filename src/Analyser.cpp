@@ -7,17 +7,16 @@ void Analyser::analyse(std::vector<Stmt> program) {
     m_hadError = false;
 
     for (auto &stmt : program) {
-        // We catch errors at the top level.
-        try {
-            analyse(stmt);
-        } catch (const AnalysisError& error) {
-            continue;
-        }
+        analyse(stmt);
     }
 }
 
 void Analyser::analyse(Stmt stmt) {
-     stmt->accept(this);
+    try {
+        stmt->accept(this);
+    } catch (const AnalysisError& error) {
+        m_hadError = true;
+    }
 }
 
 void Analyser::analyse(Expr expr) {
@@ -350,6 +349,13 @@ void Analyser::visitAssignExpr(AssignExpr& expr) {
         throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.left->getType()->toString() +
                 "' with initializer of type '" + expr.right->getType()->toString() + "'.");
     }
+
+    if (typeid(*expr.left) == typeid(VariableExpr)) {
+        auto name = std::static_pointer_cast<VariableExpr>(expr.left)->name;
+        if (lookUpVariable(name).isConst) {
+            throw errorAt(name, "Cannot assign to constant variable.");
+        }
+    }
 }
 
 void Analyser::visitBinaryExpr(BinaryExpr& expr) {
@@ -529,7 +535,7 @@ void Analyser::visitNilExpr(NilExpr& expr) {
 }
 
 void Analyser::visitReferenceExpr(ReferenceExpr& expr) {
-    throw errorAt(expr.oper, "Unsupported feature.");
+    throw errorAt(expr.oper, "Reserved word.");
 }
 
 void Analyser::visitStringExpr(StringExpr& expr) {
@@ -575,7 +581,10 @@ void Analyser::visitUnaryExpr(UnaryExpr& expr) {
     analyse(expr.operand);
     switch (expr.oper.type) {
         case TokenType::BANG:
-            expr.setType(m_types["bool"]);
+            if (!(expr.operand->getType()->maybeBool())) {
+                throw errorAt(expr.oper, "Only booleans can be inverted.");
+            }
+            expr.setType(expr.operand->getType());
             break;
 
         case TokenType::MINUS:

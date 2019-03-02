@@ -11,16 +11,25 @@
 #include "h/Enact.h"
 #include "h/VM.h"
 #include "h/AstPrinter.h"
+#include "h/Analyser.h"
+
+std::string Enact::m_source = "";
+Analyser Enact::m_analyser{};
 
 void Enact::run(const std::string &source) {
-    Parser parser{source};
+    m_source = source;
+
+    Parser parser{m_source};
     //if (!compiler.compile()) return InterpretResult::COMPILE_ERROR;
     //std::cout << compiler.currentChunk().disassemble();
-    std::vector<std::shared_ptr<Stmt>> statements = parser.parse();
-    if (parser.hadError()) return;
+    std::vector<Stmt> statements = parser.parse();
+
+    m_analyser.analyse(statements);
+
+    if (parser.hadError() || m_analyser.hadError()) return;
 
     AstPrinter astPrinter;
-    for (const std::shared_ptr<Stmt>& stmt : statements) {
+    for (const Stmt& stmt : statements) {
         astPrinter.print(stmt);
         std::cout << "\n";
     }
@@ -56,6 +65,39 @@ void Enact::runPrompt() {
         std::getline(std::cin, input);
 
         run(input + "\n");
+    }
+}
+
+std::string Enact::getSourceLine(const line_t line) {
+    std::istringstream source{m_source};
+    line_t lineNumber{1};
+    std::string lineContents;
+
+    while (std::getline(source, lineContents) && lineNumber < line) {
+        ++lineNumber;
+    }
+
+    return lineContents;
+}
+
+void Enact::reportErrorAt(const Token &token, const std::string &message) {
+    std::cerr << "[line " << token.line << "] Error";
+
+    if (token.type == TokenType::ENDFILE) {
+        std::cerr << " at end: " << message << "\n\n";
+    } else {
+        if (token.type == TokenType::ERROR) {
+            std::cerr << ":\n";
+        } else {
+            std::cerr << " at " << (token.lexeme == "\n" ? "newline" : "'" + token.lexeme + "'") << ":\n";
+        }
+
+        std::cerr << "    " << getSourceLine(token.lexeme == "\n" ? token.line - 1 : token.line) << "\n";
+        for (int i = 1; i < token.col; ++i) {
+            std::cerr << " ";
+        }
+        std::cerr << "    ^\n";
+        std::cerr << message << "\n\n";
     }
 }
 

@@ -1,6 +1,7 @@
 #include "h/Parser.h"
 #include "h/Token.h"
 #include "h/Chunk.h"
+#include "h/Enact.h"
 
 Parser::Parser(std::string source) : m_source{std::move(source)}, m_scanner{m_source} {}
 
@@ -8,16 +9,16 @@ const ParseRule& Parser::getParseRule(TokenType type) {
     return m_parseRules[(size_t)type];
 }
 
-std::shared_ptr<Expr> Parser::parsePrecedence(Precedence precedence) {
+Expr Parser::parsePrecedence(Precedence precedence) {
     advance();
     PrefixFn prefixRule = getParseRule(m_previous.type).prefix;
     if (prefixRule == nullptr) {
         if (m_previous.type == TokenType::NEWLINE) return parsePrecedence(precedence);
-        error("Expected expression.");
+        throw error("Expected expression.");
         return nullptr;
     }
 
-    std::shared_ptr<Expr> expr = (this->*(prefixRule))();
+    Expr expr = (this->*(prefixRule))();
 
     while (precedence <= getParseRule(m_current.type).precedence) {
         advance();
@@ -28,43 +29,49 @@ std::shared_ptr<Expr> Parser::parsePrecedence(Precedence precedence) {
     return expr;
 }
 
-std::shared_ptr<Expr> Parser::expression() {
+Expr Parser::expression() {
     return parsePrecedence(Precedence::ASSIGNMENT);
 }
 
-std::shared_ptr<Expr> Parser::grouping() {
-    std::shared_ptr<Expr> expr = expression();
+Expr Parser::grouping() {
+    Expr expr = expression();
     expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");
     return expr;
 }
 
-std::shared_ptr<Expr> Parser::variable() {
+Expr Parser::variable() {
     if (m_previous.lexeme != "_") {
-        return std::make_shared<Expr::Variable>(m_previous);
+        return std::make_shared<VariableExpr>(m_previous);
     } else {
-        return std::make_shared<Expr::Any>();
+        return std::make_shared<AnyExpr>();
     }
 }
 
-std::shared_ptr<Expr> Parser::number() {
+Expr Parser::number() {
+    if (m_previous.type == TokenType::INTEGER) {
+        int value = std::stoi(m_previous.lexeme);
+        return std::make_shared<IntegerExpr>(value);
+    }
     double value = std::stod(m_previous.lexeme);
-    return std::make_shared<Expr::Number>(value);
+    return std::make_shared<FloatExpr>(value);
 }
 
-std::shared_ptr<Expr> Parser::literal() {
+Expr Parser::literal() {
     switch (m_previous.type) {
-        case TokenType::TRUE: return std::make_shared<Expr::Boolean>(true);
-        case TokenType::FALSE: return std::make_shared<Expr::Boolean>(false);
-        case TokenType::NIL: return std::make_shared<Expr::Nil>();
+        case TokenType::TRUE: return std::make_shared<BooleanExpr>(true);
+        case TokenType::FALSE: return std::make_shared<BooleanExpr>(false);
+        case TokenType::NIL: return std::make_shared<NilExpr>();
     }
 }
 
-std::shared_ptr<Expr> Parser::string() {
-    return std::make_shared<Expr::String>(m_previous.lexeme.substr(1, m_previous.lexeme.size() - 2));
+Expr Parser::string() {
+    return std::make_shared<StringExpr>(m_previous.lexeme.substr(1, m_previous.lexeme.size() - 2));
 }
 
-std::shared_ptr<Expr> Parser::array() {
-    std::vector<std::shared_ptr<Expr>> elements;
+Expr Parser::array() {
+    Token square = m_previous;
+
+    std::vector<Expr> elements;
     if (!consume(TokenType::RIGHT_SQUARE)) {
         do {
             elements.push_back(expression());
@@ -73,30 +80,33 @@ std::shared_ptr<Expr> Parser::array() {
         expect(TokenType::RIGHT_SQUARE, "Expected end of array.");
     }
 
-    return std::make_shared<Expr::Array>(elements);
+    // Optional type name for empty array literals like []int
+    std::string typeName = consumeTypeName();
+
+    return std::make_shared<ArrayExpr>(elements, square, typeName);
 }
 
-std::shared_ptr<Expr> Parser::unary() {
+Expr Parser::unary() {
     Token oper = m_previous;
 
-    std::shared_ptr<Expr> expr = parsePrecedence(Precedence::UNARY);
+    Expr expr = parsePrecedence(Precedence::UNARY);
 
     if (oper.type == TokenType::REF) {
-        if (typeid(*expr) != typeid(Expr::Variable) &&
-                typeid(*expr) != typeid(Expr::Field) &&
-                typeid(*expr) != typeid(Expr::Subscript)) {
-            errorAt(oper, "Can only reference lvalues.");
+        if (typeid(*expr) != typeid(VariableExpr) &&
+                typeid(*expr) != typeid(FieldExpr) &&
+                typeid(*expr) != typeid(SubscriptExpr)) {
+            throw errorAt(oper, "Can only reference lvalues.");
         }
 
-        return std::make_shared<Expr::Reference>(expr, oper);
+        return std::make_shared<ReferenceExpr>(expr, oper);
     }
 
-    return std::make_shared<Expr::Unary>(expr, oper);
+    return std::make_shared<UnaryExpr>(expr, oper);
 }
 
-std::shared_ptr<Expr> Parser::call(std::shared_ptr<Expr> callee) {
+Expr Parser::call(Expr callee) {
     Token leftParen = m_previous;
-    std::vector<std::shared_ptr<Expr>> arguments;
+    std::vector<Expr> arguments;
 
     if (!consume(TokenType::RIGHT_PAREN)) {
         do {
@@ -106,69 +116,69 @@ std::shared_ptr<Expr> Parser::call(std::shared_ptr<Expr> callee) {
         expect(TokenType::RIGHT_PAREN, "Expected end of argument list.");
     }
 
-    if (arguments.size() > 255) errorAt(leftParen, "Too many arguments. Max is 255.");
+    if (arguments.size() > 255) throw errorAt(leftParen, "Too many arguments. Max is 255.");
 
-    return std::make_shared<Expr::Call>(callee, arguments, leftParen);
+    return std::make_shared<CallExpr>(callee, arguments, leftParen);
 }
 
-std::shared_ptr<Expr> Parser::subscript(std::shared_ptr<Expr> object) {
+Expr Parser::subscript(Expr object) {
     Token square = m_previous;
-    std::shared_ptr<Expr> index = expression();
+    Expr index = expression();
     expect(TokenType::RIGHT_SQUARE, "Expected ']' after subscript index.");
 
-    return std::make_shared<Expr::Subscript>(object, index, square);
+    return std::make_shared<SubscriptExpr>(object, index, square);
 }
 
-std::shared_ptr<Expr> Parser::binary(std::shared_ptr<Expr> left) {
+Expr Parser::binary(Expr left) {
     Token oper = m_previous;
 
     const ParseRule &rule = getParseRule(oper.type);
-    std::shared_ptr<Expr> right = parsePrecedence((Precedence)((int)rule.precedence + 1));
+    Expr right = parsePrecedence((Precedence)((int)rule.precedence + 1));
 
     switch (oper.type) {
         case TokenType::AND:
         case TokenType::OR:
-            return std::make_shared<Expr::Logical>(left, right, oper);
+            return std::make_shared<LogicalExpr>(left, right, oper);
 
         default:
-            return std::make_shared<Expr::Binary>(left, right, oper);
+            return std::make_shared<BinaryExpr>(left, right, oper);
     }
 }
 
-std::shared_ptr<Expr> Parser::assignment(std::shared_ptr<Expr> left) {
+Expr Parser::assignment(Expr left) {
     Token oper = m_previous;
 
-    std::shared_ptr<Expr> right = parsePrecedence(Precedence::ASSIGNMENT);
+    Expr right = parsePrecedence(Precedence::ASSIGNMENT);
 
-    if (typeid(*left) == typeid(Expr::Variable) ||
-            typeid(*left) == typeid(Expr::Field) ||
-            typeid(*left) == typeid(Expr::Subscript)) {
-        return std::make_shared<Expr::Assign>(left, right, oper);
+    if (typeid(*left) == typeid(VariableExpr) ||
+            typeid(*left) == typeid(FieldExpr) ||
+            typeid(*left) == typeid(SubscriptExpr)) {
+        return std::make_shared<AssignExpr>(left, right, oper);
     }
 
-    errorAt(oper, "Invalid assignment target.");
+    throw errorAt(oper, "Invalid assignment target.");
 }
 
-std::shared_ptr<Expr> Parser::field(std::shared_ptr<Expr> object) {
+Expr Parser::field(Expr object) {
     Token oper = m_previous;
     expect(TokenType::IDENTIFIER, "Expected field name after '.'.");
     Token name = m_previous;
 
-    return std::make_shared<Expr::Field>(object, name, oper);
+    return std::make_shared<FieldExpr>(object, name, oper);
 }
 
-std::shared_ptr<Expr> Parser::ternary(std::shared_ptr<Expr> condition) {
-    std::shared_ptr<Expr> thenBranch = parsePrecedence(Precedence::CONDITIONAL);
+Expr Parser::ternary(Expr condition) {
+    Expr thenBranch = parsePrecedence(Precedence::CONDITIONAL);
 
     expect(TokenType::COLON, "Expected ':' after then value of conditional expression.");
     Token oper = m_previous;
 
-    std::shared_ptr<Expr> elseBranch = parsePrecedence(Precedence::ASSIGNMENT);
+    Expr elseBranch = parsePrecedence(Precedence::ASSIGNMENT);
 
-    return std::make_shared<Expr::Ternary>(condition, thenBranch, elseBranch, oper);
+    return std::make_shared<TernaryExpr>(condition, thenBranch, elseBranch, oper);
 }
 
-std::shared_ptr<Stmt> Parser::declaration() {
+Stmt Parser::declaration() {
     ignoreNewline();
     try {
         if (consume(TokenType::FUN)) return functionDeclaration();
@@ -183,17 +193,17 @@ std::shared_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::shared_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
+Stmt Parser::functionDeclaration(bool mustParseBody) {
     expect(TokenType::IDENTIFIER, "Expected function name.");
     Token name = m_previous;
 
     expect(TokenType::LEFT_PAREN, "Expected '(' after function name.");
 
-    std::vector<Parameter> params;
+    std::vector<NamedTypename> params;
     if (!consume(TokenType::RIGHT_PAREN)) {
         do {
             expect(TokenType::IDENTIFIER, "Expected parameter name.");
-            params.push_back(Parameter{m_previous, consumeTypeName()});
+            params.push_back(NamedTypename{m_previous, consumeTypeName()});
         } while (consume(TokenType::COMMA));
 
         expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
@@ -202,10 +212,10 @@ std::shared_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
     // Get the return type
     std::string typeName = consumeTypeName();
 
-    std::vector<std::shared_ptr<Stmt>> body;
+    std::vector<Stmt> body;
 
     if (!mustParseBody && consumeSeparator()) {
-        return std::make_shared<Stmt::Function>(name, typeName, params, body);
+        return std::make_shared<FunctionStmt>(name, typeName, params, body);
     }
 
     expect(TokenType::COLON, "Expected ':' before function body.");
@@ -219,10 +229,10 @@ std::shared_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
 
     expectSeparator("Expected newline or ';' after function declaration.");
 
-    return std::make_shared<Stmt::Function>(name, typeName, params, body);
+    return std::make_shared<FunctionStmt>(name, typeName, params, body);
 }
 
-std::shared_ptr<Stmt> Parser::structDeclaration() {
+Stmt Parser::structDeclaration() {
     expect(TokenType::IDENTIFIER, "Expected struct name.");
     Token name = m_previous;
 
@@ -240,9 +250,9 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
     expect(TokenType::COLON, "Expected ':' before struct body.");
     ignoreNewline();
 
-    std::vector<Field> fields;
-    std::vector<std::shared_ptr<Stmt::Function>> methods;
-    std::vector<std::shared_ptr<Stmt::Function>> assocFunctions;
+    std::vector<NamedTypename> fields;
+    std::vector<std::shared_ptr<FunctionStmt>> methods;
+    std::vector<std::shared_ptr<FunctionStmt>> assocFunctions;
 
     while (!check(TokenType::END) && !isAtEnd()) {
         ignoreNewline();
@@ -251,53 +261,53 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
             Token fieldName = m_previous;
             std::string fieldType = consumeTypeName();
 
-            fields.push_back(Field{m_previous, fieldType});
+            fields.push_back(NamedTypename{fieldName, fieldType});
 
             expectSeparator("Expected newline or ';' after field declaration.");
         } else if (consume(TokenType::FUN)) {
             // Method declaration
-            std::shared_ptr<Stmt::Function> method = std::static_pointer_cast<Stmt::Function>(functionDeclaration());
+            std::shared_ptr<FunctionStmt> method = std::static_pointer_cast<FunctionStmt>(functionDeclaration());
             methods.push_back(method);
         } else if (consume(TokenType::ASSOC)) {
             // Associated function declaration
-            auto function = std::static_pointer_cast<Stmt::Function>(functionDeclaration());
+            auto function = std::static_pointer_cast<FunctionStmt>(functionDeclaration());
             assocFunctions.push_back(function);
         } else {
-            errorAtCurrent("Expected field or method declaration.");
+            throw errorAtCurrent("Expected field or method declaration.");
         }
     }
 
     expect(TokenType::END, "Expected 'end' at end of struct declaration.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::Struct>(name, traits, fields, methods, assocFunctions);
+    return std::make_shared<StructStmt>(name, traits, fields, methods, assocFunctions);
 }
 
-std::shared_ptr<Stmt> Parser::traitDeclaration() {
+Stmt Parser::traitDeclaration() {
     expect(TokenType::IDENTIFIER, "Expected trait name.");
     Token name = m_previous;
 
     expect(TokenType::COLON, "Expected ':' after trait name.");
     ignoreNewline();
 
-    std::vector<std::shared_ptr<Stmt::Function>> methods;
+    std::vector<std::shared_ptr<FunctionStmt>> methods;
     while (!check(TokenType::END) && !isAtEnd()) {
         ignoreNewline();
         if (consume(TokenType::FUN)) {
-            auto method = std::static_pointer_cast<Stmt::Function>(functionDeclaration(false));
+            auto method = std::static_pointer_cast<FunctionStmt>(functionDeclaration(false));
             methods.push_back(method);
         } else {
-            errorAtCurrent("Expected method declaration.");
+            throw errorAtCurrent("Expected method declaration.");
         }
     }
 
     expect(TokenType::END, "Expected 'end' at end of trait declaration.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::Trait>(name, methods);
+    return std::make_shared<TraitStmt>(name, methods);
 }
 
-std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
+Stmt Parser::variableDeclaration(bool isConst) {
     expect(TokenType::IDENTIFIER, "Expected variable name.");
     Token name = m_previous;
 
@@ -305,14 +315,14 @@ std::shared_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
 
     expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
 
-    std::shared_ptr<Expr> initializer = expression();
+    Expr initializer = expression();
 
     expectSeparator("Expected newline or ';' after variable declaration.");
 
-    return std::make_shared<Stmt::Variable>(name, typeName, initializer, isConst);
+    return std::make_shared<VariableStmt>(name, typeName, initializer, isConst);
 }
 
-std::shared_ptr<Stmt> Parser::statement() {
+Stmt Parser::statement() {
     if (consume(TokenType::BLOCK)) return blockStatement();
     if (consume(TokenType::IF)) return ifStatement();
     if (consume(TokenType::WHILE)) return whileStatement();
@@ -325,11 +335,11 @@ std::shared_ptr<Stmt> Parser::statement() {
     return expressionStatement();
 }
 
-std::shared_ptr<Stmt> Parser::blockStatement() {
+Stmt Parser::blockStatement() {
     expect(TokenType::COLON, "Expected ':' before block body.");
     ignoreNewline();
 
-    std::vector<std::shared_ptr<Stmt>> statements;
+    std::vector<Stmt> statements;
     while (!check(TokenType::END) && !isAtEnd()) {
         statements.push_back(declaration());
     }
@@ -337,20 +347,22 @@ std::shared_ptr<Stmt> Parser::blockStatement() {
     expect(TokenType::END, "Expected 'end' at end of block.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::Block>(statements);
+    return std::make_shared<BlockStmt>(statements);
 }
 
-std::shared_ptr<Stmt> Parser::ifStatement() {
-    std::shared_ptr<Expr> condition = expression();
+Stmt Parser::ifStatement() {
+    Token keyword = m_previous;
+
+    Expr condition = expression();
     expect(TokenType::COLON, "Expected ':' after if condition.");
     ignoreNewline();
 
-    std::vector<std::shared_ptr<Stmt>> thenBlock;
+    std::vector<Stmt> thenBlock;
     while (!check(TokenType::END) && !check(TokenType::ELSE) && !isAtEnd()) {
         thenBlock.push_back(declaration());
     }
 
-    std::vector<std::shared_ptr<Stmt>> elseBlock;
+    std::vector<Stmt> elseBlock;
 
     if (consume(TokenType::ELSE)) {
         expect(TokenType::COLON, "Expected ':' after start of else block.");
@@ -363,15 +375,15 @@ std::shared_ptr<Stmt> Parser::ifStatement() {
     expect(TokenType::END, "Expected 'end' at end of if statement.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::If>(condition, thenBlock, elseBlock);
+    return std::make_shared<IfStmt>(condition, thenBlock, elseBlock, keyword);
 }
 
-std::shared_ptr<Stmt> Parser::whileStatement() {
-    std::shared_ptr<Expr> condition = expression();
+Stmt Parser::whileStatement() {
+    Expr condition = expression();
     expect(TokenType::COLON, "Expected ':' after while condition.");
     ignoreNewline();
 
-    std::vector<std::shared_ptr<Stmt>> body;
+    std::vector<Stmt> body;
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
     }
@@ -379,13 +391,13 @@ std::shared_ptr<Stmt> Parser::whileStatement() {
     expect(TokenType::END, "Expected 'end' at end of while loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::While>(condition, body);
+    return std::make_shared<WhileStmt>(condition, body);
 }
 
-std::shared_ptr<Stmt> Parser::forStatement() {
-    std::shared_ptr<Stmt> initializer;
+Stmt Parser::forStatement() {
+    Stmt initializer;
     if (consume(TokenType::SEMICOLON)) {
-        initializer = std::make_shared<Stmt::Expression>(std::make_shared<Expr::Nil>());
+        initializer = std::make_shared<ExpressionStmt>(std::make_shared<NilExpr>());
     } else if (consume(TokenType::VAR)) {
         initializer = variableDeclaration(false);
     } else if (consume(TokenType::CONST)) {
@@ -394,26 +406,26 @@ std::shared_ptr<Stmt> Parser::forStatement() {
         initializer = expressionStatement();
     }
 
-    std::shared_ptr<Expr> condition;
+    Expr condition;
     if (!consume(TokenType::SEMICOLON)) {
         condition = expression();
         expect(TokenType::SEMICOLON, "Expected ';' after for loop condition.");
     } else {
-        condition = std::make_shared<Expr::Boolean>(true);
+        condition = std::make_shared<BooleanExpr>(true);
     }
 
-    std::shared_ptr<Expr> increment;
+    Expr increment;
     if (!check(TokenType::COLON)) {
         increment = expression();
     } else {
-        increment = std::make_shared<Expr::Nil>();
+        increment = std::make_shared<NilExpr>();
     }
 
     expect(TokenType::COLON, "Expected ':' before body of for loop.");
 
     ignoreNewline();
 
-    std::vector<std::shared_ptr<Stmt>> body;
+    std::vector<Stmt> body;
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
     }
@@ -421,21 +433,21 @@ std::shared_ptr<Stmt> Parser::forStatement() {
     expect(TokenType::END, "Expected 'end' at end of for loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::For>(initializer, condition, increment, body);
+    return std::make_shared<ForStmt>(initializer, condition, increment, body);
 }
 
-std::shared_ptr<Stmt> Parser::eachStatement() {
+Stmt Parser::eachStatement() {
     expect(TokenType::IDENTIFIER, "Expected item name after 'each'.");
     Token name = m_previous;
 
     expect(TokenType::IN, "Expected 'in' after each loop item name.");
 
-    std::shared_ptr<Expr> object = expression();
+    Expr object = expression();
 
     expect(TokenType::COLON, "Expected ':' before each loop body.");
     ignoreNewline();
 
-    std::vector<std::shared_ptr<Stmt>> body;
+    std::vector<Stmt> body;
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
     }
@@ -443,11 +455,11 @@ std::shared_ptr<Stmt> Parser::eachStatement() {
     expect(TokenType::END, "Expected 'end' at end of each loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::Each>(name, object, body);
+    return std::make_shared<EachStmt>(name, object, body);
 }
 
-std::shared_ptr<Stmt> Parser::givenStatement() {
-    std::shared_ptr<Expr> value = expression();
+Stmt Parser::givenStatement() {
+    Expr value = expression();
     expect(TokenType::COLON, "Expected ':' before given statement body.");
 
     std::vector<GivenCase> cases;
@@ -455,101 +467,88 @@ std::shared_ptr<Stmt> Parser::givenStatement() {
         ignoreNewline();
 
         if (consume(TokenType::WHEN)) {
-            std::shared_ptr<Expr> caseValue = expression();
+            Token keyword = m_previous;
+
+            Expr caseValue = expression();
             expect(TokenType::COLON, "Expected ':' before case body");
 
-            std::vector<std::shared_ptr<Stmt>> caseBody;
+            std::vector<Stmt> caseBody;
             while (!check(TokenType::WHEN) && !check(TokenType::ELSE) && !check(TokenType::END) && !isAtEnd()) {
                 caseBody.push_back(declaration());
             }
 
-            cases.push_back(GivenCase{caseValue, caseBody});
+            cases.push_back(GivenCase{caseValue, caseBody, keyword});
         } else if (consume(TokenType::ELSE)) {
+            Token keyword = m_previous;
+
             expect(TokenType::COLON, "Expected ':' before 'else' case body.");
 
-            std::vector<std::shared_ptr<Stmt>> caseBody;
+            std::vector<Stmt> caseBody;
             while (!check(TokenType::WHEN) && !check(TokenType::END) && !isAtEnd()) {
                 caseBody.push_back(declaration());
             }
 
-            std::shared_ptr<Expr> caseValue = std::make_shared<Expr::Any>();
+            Expr caseValue = std::make_shared<AnyExpr>();
 
-            cases.push_back(GivenCase{caseValue, caseBody});
+            cases.push_back(GivenCase{caseValue, caseBody, keyword});
         }
     }
 
     expect(TokenType::END, "Expected 'end' at end of given statement.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<Stmt::Given>(value, cases);
+    return std::make_shared<GivenStmt>(value, cases);
 }
 
-std::shared_ptr<Stmt> Parser::returnStatement() {
+Stmt Parser::returnStatement() {
     Token keyword = m_previous;
-    std::shared_ptr<Expr> value = expression();
+    Expr value = expression();
 
     expectSeparator("Expected newline or ';' after return statement.");
 
-    return std::make_shared<Stmt::Return>(keyword, value);
+    return std::make_shared<ReturnStmt>(keyword, value);
 }
 
-std::shared_ptr<Stmt> Parser::breakStatement() {
+Stmt Parser::breakStatement() {
     expectSeparator("Expected newline or ';' after break statement.");
-    return std::make_shared<Stmt::Break>(m_previous);
+    return std::make_shared<BreakStmt>(m_previous);
 }
 
-std::shared_ptr<Stmt> Parser::continueStatement() {
+Stmt Parser::continueStatement() {
     expectSeparator("Expected newline or ';' after continue statement.");
-    return std::make_shared<Stmt::Continue>(m_previous);
+    return std::make_shared<ContinueStmt>(m_previous);
 }
 
-std::shared_ptr<Stmt> Parser::expressionStatement() {
-    std::shared_ptr<Expr> expr = expression();
+Stmt Parser::expressionStatement() {
+    Expr expr = expression();
     expectSeparator("Expected newline or ';' after expression.");
-    return std::make_shared<Stmt::Expression>(expr);
+    return std::make_shared<ExpressionStmt>(expr);
 }
 
-std::vector<std::shared_ptr<Stmt>> Parser::parse() {
+std::vector<Stmt> Parser::parse() {
     advance();
-    std::vector<std::shared_ptr<Stmt>> statements{};
+    std::vector<Stmt> statements{};
 
     while (!isAtEnd()) {
-        statements.push_back(declaration());
+        Stmt stmt = declaration();
+        if (stmt) statements.push_back(stmt);
     }
 
     return statements;
 }
 
-void Parser::errorAt(const Token &token, const std::string &message) {
-    std::cerr << "[line " << token.line << "] Error";
-
-    if (token.type == TokenType::ENDFILE) {
-        std::cerr << " at end: " << message << "\n\n";
-    } else {
-        if (token.type == TokenType::ERROR) {
-            std::cerr << ":\n";
-        } else {
-            std::cerr << " at " << (token.lexeme == "\n" ? "newline" : "'" + token.lexeme + "'") << ":\n";
-        }
-
-        std::cerr << "    " << m_scanner.getSourceLine(token.lexeme == "\n" ? token.line - 1 : token.line) << "\n";
-        for (int i = 1; i < token.col; ++i) {
-            std::cerr << " ";
-        }
-        std::cerr << "    ^\n";
-        std::cerr << message << "\n\n";
-    }
-
+Parser::ParseError Parser::errorAt(const Token &token, const std::string &message) {
+    Enact::reportErrorAt(token, message);
     m_hadError = true;
-    if (token.type != TokenType::ERROR) throw ParseError{};
+    return ParseError{};
 }
 
-void Parser::errorAtCurrent(const std::string &message) {
-    errorAt(m_current, message);
+Parser::ParseError Parser::errorAtCurrent(const std::string &message) {
+    return errorAt(m_current, message);
 }
 
-void Parser::error(const std::string &message) {
-    errorAt(m_previous, message);
+Parser::ParseError Parser::error(const std::string &message) {
+    return errorAt(m_previous, message);
 }
 
 void Parser::advance() {
@@ -559,8 +558,13 @@ void Parser::advance() {
         m_current = m_scanner.scanToken();
         if (m_current.type != TokenType::ERROR) break;
 
-        errorAtCurrent(m_current.lexeme);
+        Enact::reportErrorAt(m_current, m_current.lexeme);
     }
+}
+
+void Parser::undoAdvance() {
+    m_current = m_previous;
+    m_previous = m_scanner.backtrack();
 }
 
 void Parser::ignoreNewline() {
@@ -587,23 +591,34 @@ void Parser::expect(TokenType type, const std::string &message) {
     if (m_current.type == type) {
         advance();
     } else {
-        errorAtCurrent(message);
+        throw errorAtCurrent(message);
     }
 }
 
 void Parser::expectSeparator(const std::string &message) {
     if (consumeSeparator()) return;
-    errorAtCurrent(message);
+    throw errorAtCurrent(message);
 }
 
 std::string Parser::consumeTypeName() {
     std::string typeName;
 
     // May be enclosed in square brackets to signify list type
-    bool isList = false;
     if (consume(TokenType::LEFT_SQUARE)) {
-        isList = true;
         typeName += "[";
+
+        std::string elementType = consumeTypeName();
+        if (elementType.empty()) {
+            undoAdvance();
+            return "";
+        }
+
+        typeName += elementType;
+
+        expect(TokenType::RIGHT_SQUARE, "Expected ']' after list type name.");
+
+        typeName += "]";
+        return typeName;
     }
 
     // May start with 'ref'
@@ -612,12 +627,6 @@ std::string Parser::consumeTypeName() {
         typeName += "ref " + m_previous.lexeme;
     } else if (consume(TokenType::IDENTIFIER)) {
         typeName += m_previous.lexeme;
-    }
-
-    // Expect the closing ']' if we were consuming a list type.
-    if (isList) {
-        expect(TokenType::RIGHT_SQUARE, "Expected ']' after list type name.");
-        typeName += "]";
     }
 
     return typeName;

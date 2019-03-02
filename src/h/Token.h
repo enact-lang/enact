@@ -20,7 +20,7 @@ enum class TokenType {
     LESS, LESS_EQUAL,
 
     // Literals.
-    IDENTIFIER, STRING, NUMBER,
+    IDENTIFIER, STRING, INTEGER, FLOAT,
 
     // Reserved words.
     AND, ASSOC, BLOCK, BREAK,
@@ -39,6 +39,5 @@ struct Token {
     line_t line;
     col_t col;
 };
-
 
 #endif //ENACT_TOKEN_H

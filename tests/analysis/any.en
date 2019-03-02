@@ -1,0 +1,8 @@
+// Any type
+
+var t any = 21
+t = 25.2
+t = "strings!"
+
+t + 21
+t == 2

@@ -1,25 +1,93 @@
 #ifndef ENACT_ANALYSER_H
 #define ENACT_ANALYSER_H
-/*
-#include "../ast/Expr.h"
+
 #include "../ast/Stmt.h"
+#include "Type.h"
 
-class Analyser : private Expr::Visitor<void>, private Stmt::Visitor<void> {
-    void visitExpressionStmt(Stmt::Expression stmt) override;
-    void visitVariableStmt(Stmt::Variable stmt) override;
+#include <unordered_map>
 
-    void visitAssignExpr(Expr::Assign expr) override;
-    void visitBinaryExpr(Expr::Binary expr) override;
-    void visitBooleanExpr(Expr::Boolean expr) override;
-    void visitCallExpr(Expr::Call expr) override;
-    void visitNilExpr(Expr::Nil expr) override;
-    void visitNumberExpr(Expr::Number expr) override;
-    void visitStringExpr(Expr::String expr) override;
-    void visitTernaryExpr(Expr::Ternary expr) override;
-    void visitUnaryExpr(Expr::Unary expr) override;
-    void visitVariableExpr(Expr::Variable expr) override;
+// Walks the AST and assigns a Type to each node.
+
+class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
+    class AnalysisError : public std::runtime_error {
+    public:
+        AnalysisError() : std::runtime_error{"Internal error, raising exception:\nUncaught AnalysisError! Private Analyser::analyse() was likely called by mistake where public Analyser::analyse() was supposed to be called instead."} {}
+    };
+
+    struct Variable {
+        Type type = nullptr;
+        bool isConst = false;
+    };
+
+    std::unordered_map<std::string, Type> m_types{
+            std::make_pair("int", std::make_shared<PrimitiveType>(PrimitiveKind::INT)),
+            std::make_pair("float", std::make_shared<PrimitiveType>(PrimitiveKind::FLOAT)),
+            std::make_pair("bool", std::make_shared<PrimitiveType>(PrimitiveKind::BOOL)),
+            std::make_pair("string", std::make_shared<PrimitiveType>(PrimitiveKind::STRING)),
+            std::make_pair("nothing", std::make_shared<PrimitiveType>(PrimitiveKind::NOTHING)),
+            std::make_pair("any", std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC)),
+    };
+
+    std::vector<std::unordered_map<std::string, Variable>> m_scopes{std::unordered_map<std::string, Variable>{}};
+    bool m_hadError = false;
+
+    // Keep track of whether we can use break/continue
+    bool m_insideLoop = false;
+
+    // Keep track of the current function type to see if return statements are valid
+    std::optional<FunctionType> m_currentFunction = {};
+
+    void analyse(Stmt stmt);
+    void analyse(Expr expr);
+
+    AnalysisError errorAt(const Token &token, const std::string &message);
+
+    void visitBlockStmt(BlockStmt& stmt) override;
+    void visitBreakStmt(BreakStmt& stmt) override;
+    void visitContinueStmt(ContinueStmt& stmt) override;
+    void visitEachStmt(EachStmt& stmt) override;
+    void visitExpressionStmt(ExpressionStmt& stmt) override;
+    void visitForStmt(ForStmt& stmt) override;
+    void visitFunctionStmt(FunctionStmt& stmt) override;
+    void visitGivenStmt(GivenStmt& stmt) override;
+    void visitIfStmt(IfStmt& stmt) override;
+    void visitReturnStmt(ReturnStmt& stmt) override;
+    void visitStructStmt(StructStmt& stmt) override;
+    void visitTraitStmt(TraitStmt& stmt) override;
+    void visitWhileStmt(WhileStmt& stmt) override;
+    void visitVariableStmt(VariableStmt& stmt) override;
+
+    void visitAnyExpr(AnyExpr& expr) override;
+    void visitArrayExpr(ArrayExpr& expr) override;
+    void visitAssignExpr(AssignExpr& expr) override;
+    void visitBinaryExpr(BinaryExpr& expr) override;
+    void visitBooleanExpr(BooleanExpr& expr) override;
+    void visitCallExpr(CallExpr& expr) override;
+    void visitFieldExpr(FieldExpr& expr) override;
+    void visitFloatExpr(FloatExpr& expr) override;
+    void visitIntegerExpr(IntegerExpr& expr) override;
+    void visitLogicalExpr(LogicalExpr& expr) override;
+    void visitNilExpr(NilExpr& expr) override;
+    void visitReferenceExpr(ReferenceExpr& expr) override;
+    void visitStringExpr(StringExpr& expr) override;
+    void visitSubscriptExpr(SubscriptExpr& expr) override;
+    void visitTernaryExpr(TernaryExpr& expr) override;
+    void visitUnaryExpr(UnaryExpr& expr) override;
+    void visitVariableExpr(VariableExpr& expr) override;
+
+    Type getFunctionType(const FunctionStmt &stmt);
+
+    Type lookUpType(const Token& name);
+    Type lookUpType(const std::string& name, const Token& where);
+
+    Variable& lookUpVariable(const Token& name);
+    void declareVariable(const std::string& name, const Variable& variable);
+
+    void beginScope();
+    void endScope();
 public:
-    void analyse(std::vector<Sp<Stmt>> statements);
+    void analyse(std::vector<Stmt> program);
+    bool hadError();
 };
-*/
+
 #endif //ENACT_ANALYSER_H

@@ -5,24 +5,29 @@ def uncapitalize(s):
     s[:1].lower() + s[1:] if s else ''
 
 
-def generate_ast_class_visitors(name, type_fields, visitor_types):
-    ret = "    template <class R>\n    class Visitor {\n    public:\n"
+def generate_ast_visitor(name, type_fields, visitor_types):
+    ret = f"template <class R>\nclass {name}Visitor {{\npublic:\n"
     for key in type_fields:
-        ret += f"        virtual R visit{key+name}({key} {uncapitalize(name)}) = 0;\n"
-    ret += "    };\n\n"
-    for type in visitor_types:
-        ret += f"    virtual {type} accept({name}::Visitor<{type}> *visitor) = 0;\n"
+        ret += f"    virtual R visit{key}{name}({key}{name}& {name.lower()}) = 0;\n"
+    ret += "};\n\n"
     return ret
 
 
-def generate_ast_subclasses(name, type_fields, vistor_types):
+def generate_ast_class_visitors(name, type_fields, visitor_types):
+    ret = ""
+    for type in visitor_types:
+        ret += f"    virtual {type} accept({name}Visitor<{type}> *visitor) = 0;\n"
+    return ret
+
+
+def generate_ast_subclasses(name, type_fields, visitor_types):
     ret = ""
     for key in type_fields:
-        ret += f"class {name}::{key} : public {name} {{\npublic:\n"
+        ret += f"class {key}{name} : public {name}Base {{\npublic:\n"
         if len(type_fields[key]) > 0:
             for field in type_fields[key]:
                 ret += "    " + field + ";\n"
-            ret += f"\n    {key}("
+            ret += f"\n    {key}{name}("
             for field in type_fields[key]:
                 ret += field + ","
             ret = ret[:len(ret)-1]
@@ -32,17 +37,23 @@ def generate_ast_subclasses(name, type_fields, vistor_types):
             ret = ret[:len(ret)-1]
             ret += " {}\n"
         else:
-            ret += f"    {key}() = default;\n"
-        for visitor_type in vistor_types:
-            ret += f"\n    {visitor_type} accept({name}::Visitor<{visitor_type}> *visitor) override {{\n        return visitor->visit{key+name}(*this);\n    }}\n"
+            ret += f"    {key}{name}() = default;\n"
+        for visitor_type in visitor_types:
+            ret += f"\n    {visitor_type} accept({name}Visitor<{visitor_type}> *visitor) override {{\n        return visitor->visit{key+name}(*this);\n    }}\n"
         ret += "};\n\n"
+    return ret
+
+
+def generate_ast_subclass_decls(name, type_fields):
+    ret = ""
+    for type_field in type_fields:
+        ret += f"class {type_field}{name};\n"
+    ret += "\n"
     return ret
 
 
 def generate_ast_class_body(name, type_fields, visitor_types):
     ret = ""
-    for key in type_fields:
-        ret += f"    class {key};\n"
     ret += "\n" + generate_ast_class_visitors(name, type_fields, visitor_types)
     ret += "};\n\n"
     return ret
@@ -56,6 +67,13 @@ def generate_includes(includes):
 
 
 def generate_ast_class(name, type_fields, visitor_types, includes):
+    type_field = ""
+    type_getter = ""
+
+    if name == "Expr":
+        type_field = "    Type m_type = nullptr;\n"
+        type_getter = "    virtual void setType(Type t) { m_type = t; }\n    virtual const Type& getType() {\n        ENACT_ASSERT(m_type != nullptr, \"Expr::getType(): Tried to get uninitialized type.\");\n        return m_type;\n    }\n"
+
     ret = ("// This file was automatically generated.\n"
            "// \"See generate.py\" for details.\n\n"
            f"#ifndef ENACT_{name.upper()}_H\n"
@@ -63,10 +81,25 @@ def generate_ast_class(name, type_fields, visitor_types, includes):
 
            f"{generate_includes(includes)}\n"
            
-           f"class {name} {{\n"
+           f"template <class R>\nclass {name}Visitor;\n\n"
+           
+           f"class {name}Base {{\n"
+           
+           f"{type_field}"
+           
            "public:\n"
+           
+           f"{type_getter}"
+
            f"{generate_ast_class_body(name, type_fields, visitor_types)}"
+           
+           f"typedef std::shared_ptr<{name}Base> {name};\n\n"
+
+           f"{generate_ast_subclass_decls(name, type_fields)}"
+           f"{generate_ast_visitor(name, type_fields, visitor_types)}"
+           
            f"{generate_ast_subclasses(name, type_fields, visitor_types)}"
+           
            f"#endif // ENACT_{name.upper()}_H\n"
            )
     return ret
@@ -80,45 +113,46 @@ def generate_tree(name, type_fields, visitor_types, includes):
 generate_tree(
     "Expr",
     {
-        "Array":    ["std::vector<std::shared_ptr<Expr>> value"],
-        "Assign":   ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
-        "Binary":   ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
+        "Array":    ["std::vector<Expr> value", "Token square", "std::string typeName"],
+        "Assign":   ["Expr left", "Expr right", "Token oper"],
+        "Binary":   ["Expr left", "Expr right", "Token oper"],
         "Boolean":  ["bool value"],
-        "Call":     ["std::shared_ptr<Expr> callee", "std::vector<std::shared_ptr<Expr>> arguments", "Token paren"],
-        "Field":    ["std::shared_ptr<Expr> object", "Token name", "Token oper"],
-        "Logical":  ["std::shared_ptr<Expr> left", "std::shared_ptr<Expr> right", "Token oper"],
+        "Call":     ["Expr callee", "std::vector<Expr> arguments", "Token paren"],
+        "Field":    ["Expr object", "Token name", "Token oper"],
+        "Float":    ["double value"],
+        "Integer":  ["int value"],
+        "Logical":  ["Expr left", "Expr right", "Token oper"],
         "Nil":      [],
-        "Number":   ["double value"],
-        "Reference":["std::shared_ptr<Expr> object", "Token oper"],
+        "Reference":["Expr object", "Token oper"],
         "String":   ["std::string value"],
-        "Subscript":["std::shared_ptr<Expr> object", "std::shared_ptr<Expr> index", "Token square"],
-        "Ternary":  ["std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> thenExpr", "std::shared_ptr<Expr> elseExpr", "Token oper"],
-        "Unary":    ["std::shared_ptr<Expr> operand", "Token oper"],
+        "Subscript":["Expr object", "Expr index", "Token square"],
+        "Ternary":  ["Expr condition", "Expr thenExpr", "Expr elseExpr", "Token oper"],
+        "Unary":    ["Expr operand", "Token oper"],
         "Any":      [],
         "Variable": ["Token name"]
     },
     ["std::string", "void"],
-    ['"../h/Token.h"', "<memory>", "<vector>"]
+    ['"../h/Token.h"', '"../h/Type.h"', "<memory>", "<vector>"]
 )
 
 generate_tree(
     "Stmt",
     {
-        "Block":        ["std::vector<std::shared_ptr<Stmt>> statements"],
+        "Block":        ["std::vector<Stmt> statements"],
         "Break":        ["Token keyword"],
         "Continue":     ["Token keyword"],
-        "Each":         ["Token name", "std::shared_ptr<Expr> object", "std::vector<std::shared_ptr<Stmt>> body"],
-        "Expression":   ["std::shared_ptr<Expr> expr"],
-        "For":          ["std::shared_ptr<Stmt> initializer", "std::shared_ptr<Expr> condition", "std::shared_ptr<Expr> increment", "std::vector<std::shared_ptr<Stmt>> body"],
-        "Function":     ["Token name", "std::string typeName", "std::vector<Parameter> params", "std::vector<std::shared_ptr<Stmt>> body"],
-        "Given":        ["std::shared_ptr<Expr> value", "std::vector<GivenCase> cases"],
-        "If":           ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> thenBlock", "std::vector<std::shared_ptr<Stmt>> elseBlock"],
-        "Return":       ["Token keyword", "std::shared_ptr<Expr> value"],
-        "Struct":       ["Token name", "std::vector<Token> traits", "std::vector<Field> fields", "std::vector<std::shared_ptr<Stmt::Function>> methods", "std::vector<std::shared_ptr<Stmt::Function>> assocFunctions"],
-        "Trait":        ["Token name", "std::vector<std::shared_ptr<Stmt::Function>> methods"],
-        "While":        ["std::shared_ptr<Expr> condition", "std::vector<std::shared_ptr<Stmt>> body"],
-        "Variable":     ["Token name", "std::string typeName", "std::shared_ptr<Expr> initializer", "bool isConst"],
+        "Each":         ["Token name", "Expr object", "std::vector<Stmt> body"],
+        "Expression":   ["Expr expr"],
+        "For":          ["Stmt initializer", "Expr condition", "Expr increment", "std::vector<Stmt> body"],
+        "Function":     ["Token name", "std::string returnTypeName", "std::vector<NamedTypename> params", "std::vector<Stmt> body"],
+        "Given":        ["Expr value", "std::vector<GivenCase> cases"],
+        "If":           ["Expr condition", "std::vector<Stmt> thenBlock", "std::vector<Stmt> elseBlock", "Token keyword"],
+        "Return":       ["Token keyword", "Expr value"],
+        "Struct":       ["Token name", "std::vector<Token> traits", "std::vector<NamedTypename> fields", "std::vector<std::shared_ptr<FunctionStmt>> methods", "std::vector<std::shared_ptr<FunctionStmt>> assocFunctions"],
+        "Trait":        ["Token name", "std::vector<std::shared_ptr<FunctionStmt>> methods"],
+        "While":        ["Expr condition", "std::vector<Stmt> body"],
+        "Variable":     ["Token name", "std::string typeName", "Expr initializer", "bool isConst"],
     },
     ["std::string", "void"],
-    ['"Expr.h"', '"trivialStructs.h"']
+    ['"Expr.h"', '"../h/trivialStructs.h"']
 )

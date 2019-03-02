@@ -67,7 +67,6 @@ void Scanner::skipWhitespace() {
             case '/':
                 if (peekNext() == '/') {
                     while (peek() != '\n' && !isAtEnd()) advance();
-                    match('\n');
                 } else {
                     return;
                 }
@@ -81,12 +80,15 @@ void Scanner::skipWhitespace() {
 Token Scanner::number() {
     while (isDigit(peek())) advance();
 
+    TokenType type = TokenType::INTEGER;
+
     if (peek() == '.') {
+        type = TokenType::FLOAT;
         advance();
         while (isDigit(peek())) advance();
     }
 
-    return makeToken(TokenType::NUMBER);
+    return makeToken(type);
 }
 
 Token Scanner::identifier() {
@@ -150,18 +152,6 @@ TokenType Scanner::identifierType(std::string candidate) {
     return TokenType::IDENTIFIER;
 }
 
-std::string Scanner::getSourceLine(line_t line) {
-    std::istringstream source{m_source};
-    line_t lineNumber{1};
-    std::string lineContents;
-
-    while (std::getline(source, lineContents) && lineNumber < line) {
-        ++lineNumber;
-    }
-
-    return lineContents;
-}
-
 bool Scanner::isAtEnd() {
     return m_current >= m_source.length();
 }
@@ -203,4 +193,10 @@ bool Scanner::isIdentifierStart(char c) {
 
 bool Scanner::isIdentifier(char c) {
     return isIdentifierStart(c) || isDigit(c);
+}
+
+Token Scanner::backtrack() {
+    m_current -= m_last.lexeme.size();
+    m_start = m_current;
+    return m_last;
 }

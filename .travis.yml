@@ -2,6 +2,7 @@ language: cpp
 
 before_install:
 - sudo apt-get update -qq
+- sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157
 
 compiler: clang
 

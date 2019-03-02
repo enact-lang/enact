@@ -2,9 +2,8 @@ language: cpp
 
 before_install:
 - sudo apt-get update -qq
-- sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157
 
-compiler: clang
+compiler: gcc
 
 matrix:
   include:
@@ -15,8 +14,8 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - clang-7
+            - gcc-8
       env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
 
 script: cmake ./ && cmake --build ./ --target enact -- -j 2

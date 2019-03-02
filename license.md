@@ -1,4 +1,4 @@
-MIT License
+# MIT License
 
 Copyright (c) Daniel Boulton and contributors 2018 
 

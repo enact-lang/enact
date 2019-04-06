@@ -20,7 +20,6 @@ class Chunk {
     std::pair<std::string, size_t> disassembleSimple(size_t index);
 
 public:
-
     Chunk() = default;
 
     void write(uint8_t byte, line_t line);

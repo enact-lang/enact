@@ -18,7 +18,7 @@ add_executable( enact
         src/Parser.cpp
         src/h/Value.h
         src/Value.cpp
-        src/h/Object.h 
+        src/h/Object.h
         src/Object.cpp
         src/ast/Expr.h
         src/ast/Stmt.h

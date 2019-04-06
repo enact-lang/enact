@@ -1,51 +1,51 @@
 #ifndef ENACT_OBJECT_H
 #define ENACT_OBJECT_H
-/*
-#include <iostream>
+
 #include <string>
 
 enum class ObjectType {
-    STRING,
-    IDENTIFIER
+    STRING
 };
 
 class StringObject;
-class IdentifierObject;
 
 class Object {
-private:
     ObjectType m_type;
+
 public:
     explicit Object(ObjectType type);
-    Object *next = nullptr;
 
-    bool operator==(Object &object);
+    template <typename T>
+    inline bool is();
 
-    bool isString() const;
-    bool isIdentifier() const;
-
-    StringObject* asString();
-    IdentifierObject* asIdentifier();
-
-    friend std::ostream& operator<<(std::ostream &stream, Object &object);
+    template <typename T>
+    inline T* as();
 };
+
+template<typename T>
+inline bool Object::is() {
+    static_assert(std::is_same_v<T, StringObject>, "Object can only be a StringObject.");
+
+    if (std::is_same_v<T, StringObject>) {
+        return m_type == ObjectType::STRING;
+    }
+
+    return false;
+}
+
+template<typename T>
+inline T* Object::as() {
+    static_assert(std::is_same_v<T, StringObject>, "Object can only be a StringObject.");
+    return static_cast<T*>(this);
+}
 
 class StringObject : public Object {
-private:
-    std::string m_str;
-public:
-    explicit StringObject(std::string value);
+    std::string m_data;
 
-    StringObject operator+(StringObject &object) const;
-    const std::string& asStdString() const;
+public:
+
+    explicit StringObject(std::string data);
+    const std::string& asStdString();
 };
 
-class IdentifierObject : public Object {
-private:
-    std::string m_str;
-public:
-    explicit IdentifierObject(std::string value);
-    const std::string& asStdString() const;
-};
-*/
 #endif //ENACT_OBJECT_H

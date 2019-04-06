@@ -13,6 +13,8 @@
 #include "h/AstPrinter.h"
 #include "h/Analyser.h"
 
+#include "h/Value.h"
+
 std::string Enact::m_source = "";
 Analyser Enact::m_analyser{};
 
@@ -116,6 +118,5 @@ void Enact::start(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
     Enact::start(argc, argv);
-
     return 0;
 }

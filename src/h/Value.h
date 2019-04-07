@@ -15,19 +15,23 @@ public:
     Value(Object* value);
 
     template <typename T>
-    inline bool is();
+    inline bool is() const;
 
     template <typename T>
-    T as();
+    T as() const;
+
+    std::string toString() const;
 };
 
+std::ostream& operator<<(std::ostream& stream, const Value& value);
+
 template<typename T>
-inline bool Value::is() {
+inline bool Value::is() const {
     return std::holds_alternative<T>(m_value);
 }
 
 template<typename T>
-inline T Value::as() {
+inline T Value::as() const {
     return std::get<T>(m_value);
 }
 

@@ -9,6 +9,11 @@ enum class OpCode : uint8_t {
     CONSTANT,
     CONSTANT_LONG,
 
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
+
     RETURN,
 };
 

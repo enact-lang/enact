@@ -14,13 +14,29 @@ InterpretResult VM::run(const Chunk& chunk) {
         #define READ_LONG() (READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16))
         #define READ_CONSTANT() ((*m_constants)[READ_BYTE()])
         #define READ_CONSTANT_LONG() ((*m_constants)[READ_LONG()])
+        #define ARITH_OP(op) \
+            do { \
+                Value b = pop(); \
+                Value a = pop(); \
+                if (a.is<int>() && b.is<int>()) { \
+                    push(Value{a.as<int>() op b.as<int>()}); \
+                } else if (a.is<double>() && b.is<double>()) { \
+                    push(Value{a.as<double>() op b.as<double>()}); \
+                } else if (a.is<int>() && b.is<double>()) { \
+                    push(Value{a.as<int>() op b.as<double>()}); \
+                } else { \
+                    push(Value{a.as<double>() op b.as<int>()}); \
+                } \
+            } while (false)
 
         #ifdef DEBUG_TRACE_EXECUTION
-        std::cout << chunk.disassembleInstruction(index).first << "    [ ";
+        std::cout << "    ";
         for (Value value : m_stack) {
-            std::cout << value << " ";
+            std::cout << "[ " << value << " ] ";
         }
-        std::cout << "]\n";
+        std::cout << "\n";
+
+        std::cout << chunk.disassembleInstruction(index).first;
         #endif
 
         switch ((OpCode)*ip) {
@@ -35,6 +51,11 @@ InterpretResult VM::run(const Chunk& chunk) {
                 push(constant);
                 break;
             }
+
+            case OpCode::ADD: ARITH_OP(+); break;
+            case OpCode::SUBTRACT: ARITH_OP(-); break;
+            case OpCode::MULTIPLY: ARITH_OP(*); break;
+            case OpCode::DIVIDE: ARITH_OP(/); break;
 
             case OpCode::RETURN:
                 std::cout << pop() << "\n";

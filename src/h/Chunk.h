@@ -7,6 +7,8 @@
 
 enum class OpCode : uint8_t {
     CONSTANT,
+    CONSTANT_LONG,
+
     RETURN,
 };
 
@@ -20,13 +22,14 @@ class Chunk {
 
     std::pair<std::string, size_t> disassembleSimple(size_t index) const;
     std::pair<std::string, size_t> disassembleConstant(size_t index) const;
-
+    std::pair<std::string, size_t> disassembleLongConstant(size_t index) const;
 
 public:
     Chunk() = default;
 
     void write(uint8_t byte, line_t line);
     void write(OpCode byte, line_t line);
+    void writeLong(uint32_t value, line_t line);
 
     size_t addConstant(Value constant);
     void writeConstant(Value constant, line_t line);

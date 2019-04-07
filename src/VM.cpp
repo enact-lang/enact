@@ -11,7 +11,9 @@ InterpretResult VM::run(const Chunk& chunk) {
 
     for (size_t index = 0; ip != m_code->end(); ++index, ++ip) {
         #define READ_BYTE() (++index, *++ip)
+        #define READ_LONG() (READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16))
         #define READ_CONSTANT() ((*m_constants)[READ_BYTE()])
+        #define READ_CONSTANT_LONG() ((*m_constants)[READ_LONG()])
 
         #ifdef DEBUG_TRACE_EXECUTION
         std::cout << chunk.disassembleInstruction(index).first << "    [ ";
@@ -28,12 +30,21 @@ InterpretResult VM::run(const Chunk& chunk) {
                 break;
             }
 
+            case OpCode::CONSTANT_LONG: {
+                Value constant = READ_CONSTANT_LONG();
+                push(constant);
+                break;
+            }
+
             case OpCode::RETURN:
                 std::cout << pop() << "\n";
                 return InterpretResult::OK;
         }
 
+        #undef READ_BYTE
+        #undef READ_LONG
         #undef READ_CONSTANT
+        #undef READ_CONSTANT_LONG
     }
 }
 

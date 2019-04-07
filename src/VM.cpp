@@ -1,7 +1,6 @@
 #include "h/VM.h"
 
 VM::VM() : m_code{nullptr}, m_constants{nullptr}, m_stack{} {
-
 }
 
 InterpretResult VM::run(const Chunk& chunk) {

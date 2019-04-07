@@ -10,7 +10,8 @@ InterpretResult VM::run(const Chunk& chunk) {
     auto ip = m_code->begin();
 
     for (size_t index = 0; ip != m_code->end(); ++index, ++ip) {
-        #define READ_CONSTANT() ((++index, (*m_constants)[*(++ip)]))
+        #define READ_BYTE() (++index, *++ip)
+        #define READ_CONSTANT() ((*m_constants)[READ_BYTE()])
 
         #ifdef DEBUG_TRACE_EXECUTION
         std::cout << chunk.disassembleInstruction(index).first << "    [ ";

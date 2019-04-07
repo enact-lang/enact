@@ -117,6 +117,15 @@ void Enact::start(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+    /*Chunk chunk;
+    chunk.writeConstant(Value{21}, 1);
+    chunk.write(OpCode::RETURN, 1);
+
+    std::cout << chunk.disassemble() << "\n";
+
+    VM vm;
+    vm.run(chunk);*/
+
     Enact::start(argc, argv);
     return 0;
 }

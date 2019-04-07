@@ -6,6 +6,7 @@
 #include "Value.h"
 
 enum class OpCode : uint8_t {
+    CONSTANT,
     RETURN,
 };
 
@@ -17,7 +18,9 @@ class Chunk {
 
     std::unordered_map<size_t, line_t> m_lines;
 
-    std::pair<std::string, size_t> disassembleSimple(size_t index);
+    std::pair<std::string, size_t> disassembleSimple(size_t index) const;
+    std::pair<std::string, size_t> disassembleConstant(size_t index) const;
+
 
 public:
     Chunk() = default;
@@ -25,10 +28,16 @@ public:
     void write(uint8_t byte, line_t line);
     void write(OpCode byte, line_t line);
 
-    std::string disassemble();
-    std::pair<std::string, size_t> disassembleInstruction(size_t index);
+    size_t addConstant(Value constant);
+    void writeConstant(Value constant, line_t line);
 
-    line_t getLine(size_t index);
+    std::string disassemble() const;
+    std::pair<std::string, size_t> disassembleInstruction(size_t index) const;
+
+    line_t getLine(size_t index) const;
+
+    const std::vector<uint8_t>& getCode() const;
+    const std::vector<Value>& getConstants() const;
 };
 
 #endif //ENACT_CHUNK_H

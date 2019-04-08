@@ -52,6 +52,7 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     bool m_hadError = false;
 
     CompileError errorAt(const Token &token, const std::string &message);
+    
 public:
     const Chunk& compile(std::vector<Stmt> ast);
 

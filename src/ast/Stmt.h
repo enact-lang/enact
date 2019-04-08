@@ -12,7 +12,6 @@ class StmtVisitor;
 
 class StmtBase {
 public:
-
     virtual std::string accept(StmtVisitor<std::string> *visitor) = 0;
     virtual void accept(StmtVisitor<void> *visitor) = 0;
 };

@@ -4,35 +4,46 @@
 #include <variant>
 #include "Object.h"
 
+enum class ValueType {
+    INT,
+    DOUBLE,
+    BOOL,
+    OBJECT,
+    NIL,
+};
+
 class Value {
-    std::variant<int, double, bool, Object*> m_value;
+    ValueType m_type;
+
+    union {
+        int asInt;
+        double asDouble;
+        bool asBool;
+        Object* asObject;
+    } m_value;
 
 public:
+    explicit Value(int value);
+    explicit Value(double value);
+    explicit Value(bool value);
+    explicit Value(Object* value);
+    explicit Value();
 
-    Value(int value);
-    Value(double value);
-    Value(bool value);
-    Value(Object* value);
+    bool is(ValueType type) const;
 
-    template <typename T>
-    inline bool is() const;
+    bool isInt() const;
+    bool isDouble() const;
+    bool isBool() const;
+    bool isObject() const;
 
-    template <typename T>
-    T as() const;
+    int asInt() const;
+    double asDouble() const;
+    bool asBool() const;
+    Object* asObject() const;
 
     std::string toString() const;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Value& value);
-
-template<typename T>
-inline bool Value::is() const {
-    return std::holds_alternative<T>(m_value);
-}
-
-template<typename T>
-inline T Value::as() const {
-    return std::get<T>(m_value);
-}
 
 #endif //ENACT_VALUE_H

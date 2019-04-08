@@ -9,8 +9,7 @@ void Chunk::write(uint8_t byte, line_t line) {
 }
 
 void Chunk::write(OpCode byte, line_t line) {
-    m_code.push_back(static_cast<uint8_t>(byte));
-    m_lines.insert(std::pair(m_code.size() - 1, line));
+    write(static_cast<uint8_t>(byte), line);
 }
 
 void Chunk::writeLong(uint32_t value, line_t line) {
@@ -70,10 +69,12 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
     auto op = static_cast<OpCode>(m_code[index]);
     switch (op) {
         // Simple instructions
+        case OpCode::CHECK_NUMERIC:
         case OpCode::ADD:
         case OpCode::SUBTRACT:
         case OpCode::MULTIPLY:
         case OpCode::DIVIDE:
+        case OpCode::POP:
         case OpCode::RETURN: {
             std::string str;
             std::tie(str, index) = disassembleSimple(index);
@@ -154,6 +155,15 @@ line_t Chunk::getLine(size_t index) const {
     return line;
 }
 
+line_t Chunk::getCurrentLine() const {
+    line_t line = 1;
+    if (m_code.size() > 1) {
+        line = getLine(m_code.size() - 2);
+    }
+
+    return line;
+}
+
 const std::vector<uint8_t>& Chunk::getCode() const {
     return m_code;
 }
@@ -166,10 +176,12 @@ std::string opCodeToString(OpCode code) {
     switch (code) {
         case OpCode::CONSTANT: return "CONSTANT";
         case OpCode::CONSTANT_LONG: return "CONSTANT_LONG";
+        case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::ADD: return "ADD";
         case OpCode::SUBTRACT: return "SUBTRACT";
         case OpCode::MULTIPLY: return "MULTIPLY";
         case OpCode::DIVIDE: return "DIVIDE";
+        case OpCode::POP: return "POP";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.
         default: return "";

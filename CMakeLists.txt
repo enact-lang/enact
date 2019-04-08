@@ -27,4 +27,4 @@ add_executable( enact
         src/Analyser.cpp
         src/h/Analyser.h
         src/h/Type.h
-        src/Type.cpp)
+        src/Type.cpp src/h/Compiler.h src/Compiler.cpp)

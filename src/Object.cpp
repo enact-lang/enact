@@ -1,6 +1,11 @@
 #include "h/Object.h"
 
-Object::Object(ObjectType type) : m_type{type} {}
+Object* Object::m_objects = nullptr;
+
+Object::Object(ObjectType type) : m_type{type} {
+    m_next = m_objects;
+    m_objects = this;
+}
 
 std::string Object::toString() const {
     if (is<StringObject>()) {

@@ -14,21 +14,22 @@
 #include "h/Analyser.h"
 
 #include "h/Value.h"
+#include "h/Compiler.h"
 
 std::string Enact::m_source = "";
 Analyser Enact::m_analyser{};
+VM Enact::m_vm{};
 
-void Enact::run(const std::string &source) {
+InterpretResult Enact::run(const std::string &source) {
     m_source = source;
 
     Parser parser{m_source};
-    //if (!compiler.compile()) return InterpretResult::COMPILE_ERROR;
-    //std::cout << compiler.currentChunk().disassemble();
     std::vector<Stmt> statements = parser.parse();
 
     m_analyser.analyse(statements);
 
-    if (parser.hadError() || m_analyser.hadError()) return;
+    if (parser.hadError()) return InterpretResult::PARSE_ERROR;
+    if (m_analyser.hadError()) return InterpretResult::ANALYSIS_ERROR;
 
     AstPrinter astPrinter;
     for (const Stmt& stmt : statements) {
@@ -36,7 +37,14 @@ void Enact::run(const std::string &source) {
         std::cout << "\n";
     }
 
-    //return m_vm.run(compiler.currentChunk());
+    Compiler compiler;
+    const Chunk& chunk = compiler.compile(statements);
+
+    std::cout << chunk.disassemble();
+
+    if (compiler.hadError()) return InterpretResult::COMPILE_ERROR;
+
+    return m_vm.run(chunk);
 }
 
 void Enact::runFile(const std::string &path) {

@@ -6,6 +6,13 @@
 #include <unordered_map>
 #include <optional>
 
+#define INT_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::INT)
+#define FLOAT_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::FLOAT)
+#define BOOL_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::BOOL)
+#define STRING_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::STRING)
+#define DYNAMIC_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC)
+#define NOTHING_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::NOTHING)
+
 // Forward declarations from "../ast/Stmt.h":
 class FunctionStmt;
 struct NamedType;
@@ -14,7 +21,7 @@ struct NamedType;
 // Here's what it looks like:
 
 // Type
-// ├── Numerical
+// ├── Numeric
 // │   ├── Integral
 // │   └── Decimal
 // ├── String

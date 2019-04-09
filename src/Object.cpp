@@ -7,6 +7,12 @@ Object::Object(ObjectType type) : m_type{type} {
     m_objects = this;
 }
 
+Type Object::getType() const {
+    switch (m_type) {
+        case ObjectType::STRING: return STRING_TYPE;
+    }
+}
+
 std::string Object::toString() const {
     if (is<StringObject>()) {
         return as<StringObject>()->asStdString();

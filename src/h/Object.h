@@ -2,6 +2,7 @@
 #define ENACT_OBJECT_H
 
 #include <string>
+#include "Type.h"
 
 enum class ObjectType {
     STRING
@@ -28,6 +29,7 @@ public:
     inline const T* as() const;
 
     std::string toString() const;
+    Type getType() const;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Object& object);

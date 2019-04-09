@@ -8,6 +8,8 @@ const Chunk& Compiler::compile(std::vector<Stmt> ast) {
         compile(stmt);
     }
 
+    //m_chunk.write(OpCode::RETURN, m_chunk.getCurrentLine());
+
     return m_chunk;
 }
 

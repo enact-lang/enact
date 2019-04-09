@@ -3,6 +3,7 @@
 
 #include <variant>
 #include "Object.h"
+#include "Type.h"
 
 enum class ValueType {
     INT,
@@ -40,6 +41,8 @@ public:
     double asDouble() const;
     bool asBool() const;
     Object* asObject() const;
+
+    Type getType() const;
 
     std::string toString() const;
 };

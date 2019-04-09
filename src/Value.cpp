@@ -44,6 +44,16 @@ Object* Value::asObject() const {
     return m_value.asObject;
 }
 
+Type Value::getType() const {
+    switch (m_type) {
+        case ValueType::INT: return INT_TYPE;
+        case ValueType::DOUBLE: return FLOAT_TYPE;
+        case ValueType::BOOL: return BOOL_TYPE;
+        case ValueType::NIL: return NOTHING_TYPE;
+        case ValueType::OBJECT: return asObject()->getType();
+    }
+}
+
 std::string Value::toString() const {
     std::stringstream s;
 

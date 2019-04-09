@@ -59,8 +59,11 @@ InterpretResult VM::run(const Chunk& chunk) {
 
             case OpCode::CHECK_NUMERIC: {
                 Value value = pop();
-                if (!value.isInt() && !value.isDouble()) {
-                    runtimeError(chunk.getLine(index), "Expected a numeric value.");
+                if (!value.getType()->isNumeric()) {
+                    runtimeError(chunk.getLine(index),
+                            "Expected a value of type 'int' or 'float', but got a value of type '"
+                            + value.getType()->toString() + "' instead.");
+
                     return InterpretResult::RUNTIME_ERROR;
                 }
             }

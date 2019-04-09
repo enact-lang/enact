@@ -20,12 +20,12 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
     };
 
     std::unordered_map<std::string, Type> m_types{
-            std::make_pair("int", std::make_shared<PrimitiveType>(PrimitiveKind::INT)),
-            std::make_pair("float", std::make_shared<PrimitiveType>(PrimitiveKind::FLOAT)),
-            std::make_pair("bool", std::make_shared<PrimitiveType>(PrimitiveKind::BOOL)),
-            std::make_pair("string", std::make_shared<PrimitiveType>(PrimitiveKind::STRING)),
-            std::make_pair("nothing", std::make_shared<PrimitiveType>(PrimitiveKind::NOTHING)),
-            std::make_pair("any", std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC)),
+            std::pair("int", INT_TYPE),
+            std::pair("float", FLOAT_TYPE),
+            std::pair("bool", BOOL_TYPE),
+            std::pair("string", STRING_TYPE),
+            std::pair("any", DYNAMIC_TYPE),
+            std::pair("nothing", NOTHING_TYPE),
     };
 
     std::vector<std::unordered_map<std::string, Variable>> m_scopes{std::unordered_map<std::string, Variable>{}};

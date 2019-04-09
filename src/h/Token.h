@@ -26,7 +26,7 @@ enum class TokenType {
     AND, ASSOC, BLOCK, BREAK,
     CLASS, CONST, CONTINUE, EACH,
     ELSE, END, FALSE, FUN, FOR,
-    GIVEN, IF, IN, IS, NIL, OR, REF,
+    GIVEN, IF, IN, IS, NIL, OR,
     RETURN, STRUCT, THIS, TRAIT,
     TRUE, VAR, WHEN, WHILE,
 

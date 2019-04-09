@@ -37,7 +37,6 @@ class FloatExpr;
 class IntegerExpr;
 class LogicalExpr;
 class NilExpr;
-class ReferenceExpr;
 class StringExpr;
 class SubscriptExpr;
 class TernaryExpr;
@@ -58,7 +57,6 @@ public:
     virtual R visitIntegerExpr(IntegerExpr& expr) = 0;
     virtual R visitLogicalExpr(LogicalExpr& expr) = 0;
     virtual R visitNilExpr(NilExpr& expr) = 0;
-    virtual R visitReferenceExpr(ReferenceExpr& expr) = 0;
     virtual R visitStringExpr(StringExpr& expr) = 0;
     virtual R visitSubscriptExpr(SubscriptExpr& expr) = 0;
     virtual R visitTernaryExpr(TernaryExpr& expr) = 0;
@@ -233,23 +231,6 @@ public:
 
     void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitNilExpr(*this);
-    }
-};
-
-class ReferenceExpr : public ExprBase {
-public:
-    Expr object;
-    Token oper;
-
-    ReferenceExpr(Expr object,Token oper) : 
-        object{object},oper{oper} {}
-
-    std::string accept(ExprVisitor<std::string> *visitor) override {
-        return visitor->visitReferenceExpr(*this);
-    }
-
-    void accept(ExprVisitor<void> *visitor) override {
-        return visitor->visitReferenceExpr(*this);
     }
 };
 

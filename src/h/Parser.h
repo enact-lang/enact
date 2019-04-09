@@ -134,7 +134,6 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IS
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // NIL
             ParseRule{nullptr,               &Parser::binary,            Precedence::OR}, // OR
-            ParseRule{&Parser::unary,               nullptr,            Precedence::UNARY}, // REF
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RETURN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // STRUCT
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // THIS

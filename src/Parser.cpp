@@ -91,16 +91,6 @@ Expr Parser::unary() {
 
     Expr expr = parsePrecedence(Precedence::UNARY);
 
-    if (oper.type == TokenType::REF) {
-        if (typeid(*expr) != typeid(VariableExpr) &&
-                typeid(*expr) != typeid(FieldExpr) &&
-                typeid(*expr) != typeid(SubscriptExpr)) {
-            throw errorAt(oper, "Can only reference lvalues.");
-        }
-
-        return std::make_shared<ReferenceExpr>(expr, oper);
-    }
-
     return std::make_shared<UnaryExpr>(expr, oper);
 }
 
@@ -621,11 +611,7 @@ std::string Parser::consumeTypeName() {
         return typeName;
     }
 
-    // May start with 'ref'
-    if (consume(TokenType::REF)) {
-        expect(TokenType::IDENTIFIER, "Expected rest of type name after 'ref'.");
-        typeName += "ref " + m_previous.lexeme;
-    } else if (consume(TokenType::IDENTIFIER)) {
+    if (consume(TokenType::IDENTIFIER)) {
         typeName += m_previous.lexeme;
     }
 

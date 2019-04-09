@@ -8,7 +8,11 @@
 #include <optional>
 
 enum class InterpretResult {
-    OK
+    PARSE_ERROR,
+    ANALYSIS_ERROR,
+    COMPILE_ERROR,
+    RUNTIME_ERROR,
+    OK,
 };
 
 class VM {
@@ -25,6 +29,8 @@ public:
     void push(Value value);
     Value pop();
     Value peek(size_t depth);
+
+    void runtimeError(line_t line, const std::string& msg);
 };
 
 #endif //ENACT_VM_H

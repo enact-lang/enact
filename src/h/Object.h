@@ -10,7 +10,10 @@ enum class ObjectType {
 class StringObject;
 
 class Object {
+    static Object* m_objects;
+
     ObjectType m_type;
+    Object* m_next = nullptr;
 
 public:
     explicit Object(ObjectType type);

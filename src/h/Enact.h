@@ -3,6 +3,7 @@
 
 #include <string>
 #include "Analyser.h"
+#include "VM.h"
 
 enum class ExitCode {
     INVALID_ARGUMENTS = 65,
@@ -15,8 +16,9 @@ enum class ExitCode {
 class Enact {
     static std::string m_source;
     static Analyser m_analyser;
+    static VM m_vm;
 public:
-    static void run(const std::string &source);
+    static InterpretResult run(const std::string &source);
     static void runFile(const std::string &path);
     static void runPrompt();
 

@@ -9,10 +9,14 @@ enum class OpCode : uint8_t {
     CONSTANT,
     CONSTANT_LONG,
 
+    CHECK_NUMERIC,
+
     ADD,
     SUBTRACT,
     MULTIPLY,
     DIVIDE,
+
+    POP,
 
     RETURN,
 };
@@ -34,15 +38,17 @@ public:
 
     void write(uint8_t byte, line_t line);
     void write(OpCode byte, line_t line);
+
     void writeLong(uint32_t value, line_t line);
 
-    size_t addConstant(Value constant);
     void writeConstant(Value constant, line_t line);
+    size_t addConstant(Value constant);
 
     std::string disassemble() const;
     std::pair<std::string, size_t> disassembleInstruction(size_t index) const;
 
     line_t getLine(size_t index) const;
+    line_t getCurrentLine() const;
 
     const std::vector<uint8_t>& getCode() const;
     const std::vector<Value>& getConstants() const;

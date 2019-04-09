@@ -1,4 +1,5 @@
 #include "h/VM.h"
+#include "h/Enact.h"
 
 VM::VM() : m_code{nullptr}, m_constants{nullptr}, m_stack{} {
 }
@@ -18,14 +19,14 @@ InterpretResult VM::run(const Chunk& chunk) {
             do { \
                 Value b = pop(); \
                 Value a = pop(); \
-                if (a.is<int>() && b.is<int>()) { \
-                    push(Value{a.as<int>() op b.as<int>()}); \
-                } else if (a.is<double>() && b.is<double>()) { \
-                    push(Value{a.as<double>() op b.as<double>()}); \
-                } else if (a.is<int>() && b.is<double>()) { \
-                    push(Value{a.as<int>() op b.as<double>()}); \
+                if (a.isInt() && b.isInt()) { \
+                    push(Value{a.asInt() op b.asInt()}); \
+                } else if (a.isDouble() && b.isDouble()) { \
+                    push(Value{a.asDouble() op b.asDouble()}); \
+                } else if (a.isInt() && b.isDouble()) { \
+                    push(Value{a.asInt() op b.asDouble()}); \
                 } else { \
-                    push(Value{a.as<double>() op b.as<int>()}); \
+                    push(Value{a.asDouble() op b.asInt()}); \
                 } \
             } while (false)
 
@@ -39,7 +40,7 @@ InterpretResult VM::run(const Chunk& chunk) {
         std::cout << chunk.disassembleInstruction(index).first;
         #endif
 
-        switch ((OpCode)*ip) {
+        switch (static_cast<OpCode>(*ip)) {
             case OpCode::CONSTANT: {
                 Value constant = READ_CONSTANT();
                 push(constant);
@@ -52,10 +53,20 @@ InterpretResult VM::run(const Chunk& chunk) {
                 break;
             }
 
+            case OpCode::CHECK_NUMERIC: {
+                Value value = pop();
+                if (!value.isInt() && !value.isDouble()) {
+                    runtimeError(chunk.getLine(index), "Expected a numeric value.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+            }
+
             case OpCode::ADD: ARITH_OP(+); break;
             case OpCode::SUBTRACT: ARITH_OP(-); break;
             case OpCode::MULTIPLY: ARITH_OP(*); break;
             case OpCode::DIVIDE: ARITH_OP(/); break;
+
+            case OpCode::POP: pop(); break;
 
             case OpCode::RETURN:
                 std::cout << pop() << "\n";
@@ -67,6 +78,10 @@ InterpretResult VM::run(const Chunk& chunk) {
         #undef READ_CONSTANT
         #undef READ_CONSTANT_LONG
     }
+}
+
+void VM::runtimeError(line_t line, const std::string& msg) {
+    std::cerr << "[line " << line << "] Error:\n    " << Enact::getSourceLine(line) << msg;
 }
 
 void VM::push(Value value) {

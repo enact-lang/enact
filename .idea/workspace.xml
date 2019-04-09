@@ -46,23 +46,23 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/Object.cpp">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/Enact.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="323">
-              <caret line="17" selection-start-line="17" selection-end-line="17" />
+            <state relative-caret-position="466">
+              <caret line="116" column="63" selection-start-line="116" selection-start-column="63" selection-end-line="116" selection-end-column="63" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/Enact.cpp">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file:///usr/include/stdlib.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="422">
-              <caret line="129" column="4" selection-start-line="129" selection-start-column="4" selection-end-line="129" selection-end-column="4" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="196">
+              <caret line="613" column="12" selection-start-line="613" selection-start-column="12" selection-end-line="613" selection-end-column="12" />
             </state>
           </provider>
         </entry>
@@ -171,7 +171,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>[</find>
       <find>m_objects</find>
       <find>class</find>
       <find>std::shared_ptr</find>
@@ -201,6 +200,7 @@
       <find>makeToken</find>
       <find>returnStmt</find>
       <find>&amp;Parser::binary</find>
+      <find>\([a-zA-Z]+\)[a-z][A-Z]+</find>
     </findStrings>
     <replaceStrings>
       <replace>Sp</replace>
@@ -431,7 +431,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="362830000" />
+    <option name="totallyTimeSpent" value="363346000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -446,12 +446,12 @@
     <frame x="67" y="27" width="1853" height="1053" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.20365246" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.20365246" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32829374" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.48976204" visible="true" weight="0.31733915" />
+      <window_info active="true" anchor="bottom" id="Find" order="1" visible="true" weight="0.32824427" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.48976204" weight="0.31733915" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.4997233" weight="0.39803708" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -574,7 +574,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/ast/decl.cpp" />
     <entry file="file://$PROJECT_DIR$/src/ast/decl.h" />
     <entry file="file://$PROJECT_DIR$/src/ast/Decl.h" />
     <entry file="file://$PROJECT_DIR$/src/ast/Txpr.h" />
@@ -892,10 +891,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file:///usr/include/stdlib.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="196">
+          <caret line="613" column="12" selection-start-line="613" selection-start-column="12" selection-end-line="613" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/Enact.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="422">
-          <caret line="129" column="4" selection-start-line="129" selection-start-column="4" selection-end-line="129" selection-end-column="4" />
+        <state relative-caret-position="466">
+          <caret line="116" column="63" selection-start-line="116" selection-start-column="63" selection-end-line="116" selection-end-column="63" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>

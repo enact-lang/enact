@@ -114,7 +114,7 @@ void Enact::reportErrorAt(const Token &token, const std::string &message) {
 void Enact::start(int argc, char *argv[]) {
     if (argc > 2) {
         std::cerr << "Usage: enact [file]\n";
-        std::exit((int)ExitCode::INVALID_ARGUMENTS);
+        std::exit(static_cast<int>(ExitCode::INVALID_ARGUMENTS));
     } else if (argc == 2) {
         // Run the provided file.
         runFile(argv[1]);

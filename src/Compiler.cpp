@@ -145,10 +145,6 @@ void Compiler::visitNilExpr(NilExpr &expr) {
     throw CompileError{};
 }
 
-void Compiler::visitReferenceExpr(ReferenceExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
-}
-
 void Compiler::visitStringExpr(StringExpr &expr) {
     throw CompileError{};
 }

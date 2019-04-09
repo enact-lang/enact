@@ -139,7 +139,6 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "is")       return TokenType::IS;
     if (candidate == "nil")      return TokenType::NIL;
     if (candidate == "or")       return TokenType::OR;
-    if (candidate == "ref")      return TokenType::REF;
     if (candidate == "return")   return TokenType::RETURN;
     if (candidate == "struct")   return TokenType::STRUCT;
     if (candidate == "this")     return TokenType::THIS;

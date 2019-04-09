@@ -123,7 +123,6 @@ generate_tree(
         "Integer":  ["int value"],
         "Logical":  ["Expr left", "Expr right", "Token oper"],
         "Nil":      [],
-        "Reference":["Expr object", "Token oper"],
         "String":   ["std::string value"],
         "Subscript":["Expr object", "Expr index", "Token square"],
         "Ternary":  ["Expr condition", "Expr thenExpr", "Expr elseExpr", "Token oper"],

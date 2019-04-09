@@ -118,7 +118,7 @@ void Compiler::visitBinaryExpr(BinaryExpr &expr) {
 }
 
 void Compiler::visitBooleanExpr(BooleanExpr &expr) {
-    throw CompileError{};
+    m_chunk.write(expr.value ? OpCode::TRUE : OpCode::FALSE, m_chunk.getCurrentLine());
 }
 
 void Compiler::visitCallExpr(CallExpr &expr) {
@@ -142,7 +142,7 @@ void Compiler::visitLogicalExpr(LogicalExpr &expr) {
 }
 
 void Compiler::visitNilExpr(NilExpr &expr) {
-    throw CompileError{};
+    m_chunk.write(OpCode::NIL, m_chunk.getCurrentLine());
 }
 
 void Compiler::visitStringExpr(StringExpr &expr) {

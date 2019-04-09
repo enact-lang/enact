@@ -9,6 +9,10 @@ enum class OpCode : uint8_t {
     CONSTANT,
     CONSTANT_LONG,
 
+    TRUE,
+    FALSE,
+    NIL,
+
     CHECK_NUMERIC,
 
     ADD,

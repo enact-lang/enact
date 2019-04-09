@@ -53,6 +53,10 @@ InterpretResult VM::run(const Chunk& chunk) {
                 break;
             }
 
+            case OpCode::TRUE: push(Value{true}); break;
+            case OpCode::FALSE: push(Value{}); break;
+            case OpCode::NIL: push(Value{}); break;
+
             case OpCode::CHECK_NUMERIC: {
                 Value value = pop();
                 if (!value.isInt() && !value.isDouble()) {

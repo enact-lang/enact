@@ -69,6 +69,9 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
     auto op = static_cast<OpCode>(m_code[index]);
     switch (op) {
         // Simple instructions
+        case OpCode::TRUE:
+        case OpCode::FALSE:
+        case OpCode::NIL:
         case OpCode::CHECK_NUMERIC:
         case OpCode::ADD:
         case OpCode::SUBTRACT:
@@ -176,6 +179,9 @@ std::string opCodeToString(OpCode code) {
     switch (code) {
         case OpCode::CONSTANT: return "CONSTANT";
         case OpCode::CONSTANT_LONG: return "CONSTANT_LONG";
+        case OpCode::TRUE: return "TRUE";
+        case OpCode::FALSE: return "FALSE";
+        case OpCode::NIL: return "NIL";
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::ADD: return "ADD";
         case OpCode::SUBTRACT: return "SUBTRACT";

@@ -8,7 +8,7 @@ const Chunk& Compiler::compile(std::vector<Stmt> ast) {
         compile(stmt);
     }
 
-    //m_chunk.write(OpCode::RETURN, m_chunk.getCurrentLine());
+    m_chunk.write(OpCode::RETURN, m_chunk.getCurrentLine());
 
     return m_chunk;
 }
@@ -148,7 +148,8 @@ void Compiler::visitNilExpr(NilExpr &expr) {
 }
 
 void Compiler::visitStringExpr(StringExpr &expr) {
-    throw CompileError{};
+    Object* string = new StringObject{expr.value};
+    m_chunk.writeConstant(Value{string}, m_chunk.getCurrentLine());
 }
 
 void Compiler::visitSubscriptExpr(SubscriptExpr &expr) {

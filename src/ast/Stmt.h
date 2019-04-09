@@ -12,6 +12,8 @@ class StmtVisitor;
 
 class StmtBase {
 public:
+    virtual ~StmtBase() = default;
+
     virtual std::string accept(StmtVisitor<std::string> *visitor) = 0;
     virtual void accept(StmtVisitor<void> *visitor) = 0;
 };
@@ -58,6 +60,7 @@ public:
 
     BlockStmt(std::vector<Stmt> statements) : 
         statements{statements} {}
+    ~BlockStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitBlockStmt(*this);
@@ -74,6 +77,7 @@ public:
 
     BreakStmt(Token keyword) : 
         keyword{keyword} {}
+    ~BreakStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitBreakStmt(*this);
@@ -90,6 +94,7 @@ public:
 
     ContinueStmt(Token keyword) : 
         keyword{keyword} {}
+    ~ContinueStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitContinueStmt(*this);
@@ -108,6 +113,7 @@ public:
 
     EachStmt(Token name,Expr object,std::vector<Stmt> body) : 
         name{name},object{object},body{body} {}
+    ~EachStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitEachStmt(*this);
@@ -124,6 +130,7 @@ public:
 
     ExpressionStmt(Expr expr) : 
         expr{expr} {}
+    ~ExpressionStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitExpressionStmt(*this);
@@ -143,6 +150,7 @@ public:
 
     ForStmt(Stmt initializer,Expr condition,Expr increment,std::vector<Stmt> body) : 
         initializer{initializer},condition{condition},increment{increment},body{body} {}
+    ~ForStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitForStmt(*this);
@@ -162,6 +170,7 @@ public:
 
     FunctionStmt(Token name,std::string returnTypeName,std::vector<NamedTypename> params,std::vector<Stmt> body) : 
         name{name},returnTypeName{returnTypeName},params{params},body{body} {}
+    ~FunctionStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitFunctionStmt(*this);
@@ -179,6 +188,7 @@ public:
 
     GivenStmt(Expr value,std::vector<GivenCase> cases) : 
         value{value},cases{cases} {}
+    ~GivenStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitGivenStmt(*this);
@@ -198,6 +208,7 @@ public:
 
     IfStmt(Expr condition,std::vector<Stmt> thenBlock,std::vector<Stmt> elseBlock,Token keyword) : 
         condition{condition},thenBlock{thenBlock},elseBlock{elseBlock},keyword{keyword} {}
+    ~IfStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitIfStmt(*this);
@@ -215,6 +226,7 @@ public:
 
     ReturnStmt(Token keyword,Expr value) : 
         keyword{keyword},value{value} {}
+    ~ReturnStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitReturnStmt(*this);
@@ -235,6 +247,7 @@ public:
 
     StructStmt(Token name,std::vector<Token> traits,std::vector<NamedTypename> fields,std::vector<std::shared_ptr<FunctionStmt>> methods,std::vector<std::shared_ptr<FunctionStmt>> assocFunctions) : 
         name{name},traits{traits},fields{fields},methods{methods},assocFunctions{assocFunctions} {}
+    ~StructStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitStructStmt(*this);
@@ -252,6 +265,7 @@ public:
 
     TraitStmt(Token name,std::vector<std::shared_ptr<FunctionStmt>> methods) : 
         name{name},methods{methods} {}
+    ~TraitStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitTraitStmt(*this);
@@ -269,6 +283,7 @@ public:
 
     WhileStmt(Expr condition,std::vector<Stmt> body) : 
         condition{condition},body{body} {}
+    ~WhileStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitWhileStmt(*this);
@@ -288,6 +303,7 @@ public:
 
     VariableStmt(Token name,std::string typeName,Expr initializer,bool isConst) : 
         name{name},typeName{typeName},initializer{initializer},isConst{isConst} {}
+    ~VariableStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitVariableStmt(*this);

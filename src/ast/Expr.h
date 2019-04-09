@@ -20,6 +20,7 @@ public:
         ENACT_ASSERT(m_type != nullptr, "Expr::getType(): Tried to get uninitialized type.");
         return m_type;
     }
+    virtual ~ExprBase() = default;
 
     virtual std::string accept(ExprVisitor<std::string> *visitor) = 0;
     virtual void accept(ExprVisitor<void> *visitor) = 0;
@@ -73,6 +74,7 @@ public:
 
     ArrayExpr(std::vector<Expr> value,Token square,std::string typeName) : 
         value{value},square{square},typeName{typeName} {}
+    ~ArrayExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitArrayExpr(*this);
@@ -91,6 +93,7 @@ public:
 
     AssignExpr(Expr left,Expr right,Token oper) : 
         left{left},right{right},oper{oper} {}
+    ~AssignExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitAssignExpr(*this);
@@ -109,6 +112,7 @@ public:
 
     BinaryExpr(Expr left,Expr right,Token oper) : 
         left{left},right{right},oper{oper} {}
+    ~BinaryExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitBinaryExpr(*this);
@@ -125,6 +129,7 @@ public:
 
     BooleanExpr(bool value) : 
         value{value} {}
+    ~BooleanExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitBooleanExpr(*this);
@@ -143,6 +148,7 @@ public:
 
     CallExpr(Expr callee,std::vector<Expr> arguments,Token paren) : 
         callee{callee},arguments{arguments},paren{paren} {}
+    ~CallExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitCallExpr(*this);
@@ -161,6 +167,7 @@ public:
 
     FieldExpr(Expr object,Token name,Token oper) : 
         object{object},name{name},oper{oper} {}
+    ~FieldExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitFieldExpr(*this);
@@ -177,6 +184,7 @@ public:
 
     FloatExpr(double value) : 
         value{value} {}
+    ~FloatExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitFloatExpr(*this);
@@ -193,6 +201,7 @@ public:
 
     IntegerExpr(int value) : 
         value{value} {}
+    ~IntegerExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitIntegerExpr(*this);
@@ -211,6 +220,7 @@ public:
 
     LogicalExpr(Expr left,Expr right,Token oper) : 
         left{left},right{right},oper{oper} {}
+    ~LogicalExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitLogicalExpr(*this);
@@ -224,6 +234,7 @@ public:
 class NilExpr : public ExprBase {
 public:
     NilExpr() = default;
+    ~NilExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitNilExpr(*this);
@@ -240,6 +251,7 @@ public:
 
     StringExpr(std::string value) : 
         value{value} {}
+    ~StringExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitStringExpr(*this);
@@ -258,6 +270,7 @@ public:
 
     SubscriptExpr(Expr object,Expr index,Token square) : 
         object{object},index{index},square{square} {}
+    ~SubscriptExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitSubscriptExpr(*this);
@@ -277,6 +290,7 @@ public:
 
     TernaryExpr(Expr condition,Expr thenExpr,Expr elseExpr,Token oper) : 
         condition{condition},thenExpr{thenExpr},elseExpr{elseExpr},oper{oper} {}
+    ~TernaryExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitTernaryExpr(*this);
@@ -294,6 +308,7 @@ public:
 
     UnaryExpr(Expr operand,Token oper) : 
         operand{operand},oper{oper} {}
+    ~UnaryExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitUnaryExpr(*this);
@@ -307,6 +322,7 @@ public:
 class AnyExpr : public ExprBase {
 public:
     AnyExpr() = default;
+    ~AnyExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitAnyExpr(*this);
@@ -323,6 +339,7 @@ public:
 
     VariableExpr(Token name) : 
         name{name} {}
+    ~VariableExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitVariableExpr(*this);

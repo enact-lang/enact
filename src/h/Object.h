@@ -18,6 +18,9 @@ class Object {
 
 public:
     explicit Object(ObjectType type);
+    virtual ~Object() = default;
+
+    static void freeAll();
 
     template <typename T>
     inline bool is() const;
@@ -62,8 +65,9 @@ class StringObject : public Object {
     std::string m_data;
 
 public:
-
     explicit StringObject(std::string data);
+    ~StringObject() override = default;
+
     const std::string& asStdString() const;
 };
 

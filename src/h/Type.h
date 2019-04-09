@@ -48,6 +48,7 @@ private:
     TypeKind m_kind;
 public:
     TypeBase(TypeKind kind);
+    virtual ~TypeBase() = default;
 
     virtual TypeKind getKind() const;
 
@@ -110,6 +111,7 @@ private:
     PrimitiveKind m_kind;
 public:
     PrimitiveType(PrimitiveKind kind);
+    ~PrimitiveType() override = default;
 
     PrimitiveKind getPrimitiveKind() const;
 };
@@ -119,6 +121,7 @@ class ArrayType : public TypeBase {
     Type m_elementType;
 public:
     ArrayType(Type elementType);
+    ~ArrayType() override = default;
 
     const Type getElementType() const;
 };
@@ -129,6 +132,7 @@ class FunctionType : public TypeBase {
     std::vector<Type> m_argumentTypes;
 public:
     FunctionType(Type returnType, std::vector<Type> argumentTypes);
+    ~FunctionType() override = default;
 
     const Type getReturnType() const;
     const std::vector<Type>& getArgumentTypes() const;
@@ -144,6 +148,7 @@ class TraitType : public TypeBase {
     std::unordered_map<std::string, Type> m_methods;
 public:
     TraitType(std::string name, std::unordered_map<std::string, Type> methods);
+    ~TraitType() override = default;
 
     const std::string& getName() const;
 
@@ -162,6 +167,7 @@ class StructType : public TypeBase {
 public:
     StructType(std::string name, std::vector<Type> traits, std::unordered_map<std::string, Type> fields,
                std::unordered_map<std::string, Type> methods, std::unordered_map<std::string, Type> assocFunctions);
+    ~StructType() override = default;
 
     const std::string& getName() const;
 
@@ -185,6 +191,7 @@ class ConstructorType : public TypeBase {
     FunctionType m_functionType;
 public:
     ConstructorType(StructType structType);
+    ~ConstructorType() override = default;
 
     const StructType& getStructType() const;
     const FunctionType& getFunctionType() const;

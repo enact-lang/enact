@@ -38,6 +38,9 @@ def generate_ast_subclasses(name, type_fields, visitor_types):
             ret += " {}\n"
         else:
             ret += f"    {key}{name}() = default;\n"
+
+        ret += f"    ~{key}{name}() override = default;\n"
+
         for visitor_type in visitor_types:
             ret += f"\n    {visitor_type} accept({name}Visitor<{visitor_type}> *visitor) override {{\n        return visitor->visit{key+name}(*this);\n    }}\n"
         ret += "};\n\n"
@@ -53,7 +56,7 @@ def generate_ast_subclass_decls(name, type_fields):
 
 
 def generate_ast_class_body(name, type_fields, visitor_types):
-    ret = ""
+    ret = f"    virtual ~{name}Base() = default;\n"
     ret += "\n" + generate_ast_class_visitors(name, type_fields, visitor_types)
     ret += "};\n\n"
     return ret

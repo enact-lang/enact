@@ -7,6 +7,15 @@ Object::Object(ObjectType type) : m_type{type} {
     m_objects = this;
 }
 
+void Object::freeAll() {
+    Object* object = m_objects;
+    while (object != nullptr) {
+        Object* next = object->m_next;
+        delete object;
+        object = next;
+    }
+}
+
 Type Object::getType() const {
     switch (m_type) {
         case ObjectType::STRING: return STRING_TYPE;

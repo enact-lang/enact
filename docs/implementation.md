@@ -9,8 +9,8 @@ this bytecode on a virtual machine.
 
 Enact has a planned 5 pass interpreter:
 - First, the source is parsed and converted into an AST. \[ done ✔️ \]
-- Next, the AST is walked to resolve variables and check types. \[ in progress 🚧 \]
-- Afterwards, the AST is walked again and compiled down to bytecode. \[ not implemented ❌ \]
+- Next, the AST is walked to resolve variables and check types. \[ done ✔️ \]
+- Afterwards, the AST is walked again and compiled down to bytecode. \[ in progress 🚧 \]
 - This bytecode is optimized by yet another pass. \[ not implemented ❌ \]
 - Finally, the VM takes the bytecode and runs it. \[ not implemented ❌ \]
 

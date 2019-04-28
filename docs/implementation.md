@@ -12,6 +12,6 @@ Enact has a planned 5 pass interpreter:
 - Next, the AST is walked to resolve variables and check types. \[ done ✔️ \]
 - Afterwards, the AST is walked again and compiled down to bytecode. \[ in progress 🚧 \]
 - This bytecode is optimized by yet another pass. \[ not implemented ❌ \]
-- Finally, the VM takes the bytecode and runs it. \[ not implemented ❌ \]
+- Finally, the VM takes the bytecode and runs it. \[ in progress 🚧 \]
 
 Currently, the focus of development is typechecking and semantic analysis in the AST.

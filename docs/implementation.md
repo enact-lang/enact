@@ -14,4 +14,4 @@ Enact has a planned 5 pass interpreter:
 - This bytecode is optimized by yet another pass. \[ not implemented ❌ \]
 - Finally, the VM takes the bytecode and runs it. \[ in progress 🚧 \]
 
-Currently, the focus of development is typechecking and semantic analysis in the AST.
+Currently, the focus of development is implementing the VM abd compiler, and things that come along with that, like garbage collection.

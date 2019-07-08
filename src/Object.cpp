@@ -43,11 +43,9 @@ Type StringObject::getType() const {
 }
 
 ArrayObject::ArrayObject() : Object{ObjectType::ARRAY}, m_vector{} {
-
 }
 
 ArrayObject::ArrayObject(std::vector<Value> vector) : Object{ObjectType::ARRAY}, m_vector{std::move(vector)} {
-
 }
 
 std::optional<Value> ArrayObject::at(size_t index) const {
@@ -63,7 +61,7 @@ Type ArrayObject::getType() const {
     Type elementType = DYNAMIC_TYPE;
 
     for (const auto& element : m_vector) {
-
+        elementType = element.getType();
     }
 
     return std::make_shared<ArrayType>(elementType);

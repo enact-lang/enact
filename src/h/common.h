@@ -57,4 +57,7 @@ inline std::vector<V> getMapValues(const std::unordered_map<K, V>& map) {
     return std::move(values);
 }
 
+template <class T, class... Ts>
+struct IsAny : std::disjunction<std::is_same<T, Ts>...> {};
+
 #endif //ENACT_COMMON_H

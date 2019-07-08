@@ -5,6 +5,8 @@
 #include "Object.h"
 #include "Type.h"
 
+class Object;
+
 enum class ValueType {
     INT,
     DOUBLE,
@@ -36,6 +38,7 @@ public:
     bool isDouble() const;
     bool isBool() const;
     bool isObject() const;
+    bool isNil() const;
 
     int asInt() const;
     double asDouble() const;

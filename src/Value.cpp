@@ -6,7 +6,7 @@ Value::Value(int value) : m_type{ValueType::INT}, m_value{.asInt = value} {}
 Value::Value(double value) : m_type{ValueType::DOUBLE}, m_value{.asDouble = value} {}
 Value::Value(bool value) : m_type{ValueType::BOOL}, m_value{.asBool = value} {}
 Value::Value(Object* value) : m_type{ValueType::OBJECT}, m_value{.asObject = value} {}
-Value::Value() : m_type{ValueType::INT}, m_value{.asInt = 0} {}
+Value::Value() : m_type{ValueType::NIL}, m_value{.asInt = 0} {}
 
 bool Value::is(ValueType type) const {
     return m_type == type;
@@ -26,6 +26,10 @@ bool Value::isBool() const {
 
 bool Value::isObject() const {
     return is(ValueType::OBJECT);
+}
+
+bool Value::isNil() const {
+    return is(ValueType::NIL);
 }
 
 int Value::asInt() const {
@@ -63,8 +67,10 @@ std::string Value::toString() const {
         s << asDouble();
     } else if (isBool()) {
         s << (asBool() ? "true" : "false");
+    } else if (isNil()) {
+        s << "nil";
     } else if (isObject()) {
-        s << *asObject();
+            s << *asObject();
     }
 
     return s.str();

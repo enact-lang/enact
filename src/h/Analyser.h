@@ -84,6 +84,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
 
     void beginScope();
     void endScope();
+
 public:
     void analyse(std::vector<Stmt> program);
     bool hadError();

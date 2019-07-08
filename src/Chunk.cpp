@@ -85,6 +85,22 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
             break;
         }
 
+        // Byte instructions
+        case OpCode::GET_VARIABLE: {
+            std::string str;
+            std::tie(str, index) = disassembleByte(index);
+            s << str;
+            break;
+        }
+
+        // Long instructions
+        case OpCode::GET_VARIABLE_LONG: {
+            std::string str;
+            std::tie(str, index) = disassembleLong(index);
+            s << str;
+            break;
+        }
+
         // Constant instructions
         case OpCode::CONSTANT: {
             std::string str;
@@ -108,6 +124,34 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 std::pair<std::string, size_t> Chunk::disassembleSimple(size_t index) const {
     std::string s = opCodeToString(static_cast<OpCode>(m_code[index])) + "\n";
     return {s, ++index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleByte(size_t index) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s.flags(f);
+
+    // Output the byte argument
+    uint8_t arg = m_code[++index];
+    s << " " << static_cast<size_t>(arg) << "\n";
+
+    return {s.str(), ++index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleLong(size_t index) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s.flags(f);
+
+    // Output the long argument
+    uint32_t arg = (m_code[++index] | (m_code[++index] << 8) | (m_code[++index] << 16));
+    s << " " << static_cast<size_t>(arg) << "\n";
+
+    return {s.str(), ++index};
 }
 
 std::pair<std::string, size_t> Chunk::disassembleConstant(size_t index) const {
@@ -188,6 +232,8 @@ std::string opCodeToString(OpCode code) {
         case OpCode::MULTIPLY: return "MULTIPLY";
         case OpCode::DIVIDE: return "DIVIDE";
         case OpCode::POP: return "POP";
+        case OpCode::GET_VARIABLE: return "GET_VARIABLE";
+        case OpCode::GET_VARIABLE_LONG: return "GET_VARIABLE_LONG";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.
         default: return "";

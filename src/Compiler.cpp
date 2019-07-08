@@ -1,12 +1,46 @@
 #include "h/Compiler.h"
 #include "h/Enact.h"
 
+void Compiler::beginScope() {
+    ++m_scopeDepth;
+}
+
+void Compiler::endScope() {
+    --m_scopeDepth;
+
+    while (!m_locals.empty() && m_locals.back().depth > m_scopeDepth) {
+        m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
+        m_locals.pop_back();
+    }
+}
+
+void Compiler::addVariable(const Token& name) {
+    m_locals.push_back(Local{
+        name,
+        m_scopeDepth
+    });
+}
+
+uint32_t Compiler::resolveVariable(const Token& name) {
+    for (int i = m_locals.size() - 1; i >= 0; --i) {
+        const Local& local = m_locals[i];
+
+        if (local.name.lexeme == name.lexeme) {
+            return i;
+        }
+    }
+
+    throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
+}
+
 const Chunk& Compiler::compile(std::vector<Stmt> ast) {
     m_hadError = false;
 
+    beginScope();
     for (auto& stmt : ast) {
         compile(stmt);
     }
+    endScope();
 
     m_chunk.write(OpCode::RETURN, m_chunk.getCurrentLine());
 
@@ -79,7 +113,8 @@ void Compiler::visitWhileStmt(WhileStmt &stmt) {
 }
 
 void Compiler::visitVariableStmt(VariableStmt &stmt) {
-    throw errorAt(stmt.name, "Not implemented.");
+    compile(stmt.initializer);
+    addVariable(stmt.name);
 }
 
 void Compiler::visitAnyExpr(AnyExpr &expr) {
@@ -165,7 +200,14 @@ void Compiler::visitUnaryExpr(UnaryExpr &expr) {
 }
 
 void Compiler::visitVariableExpr(VariableExpr &expr) {
-    throw errorAt(expr.name, "Not implemented.");
+    uint32_t index = resolveVariable(expr.name);
+    if (index <= UINT8_MAX) {
+        m_chunk.write(OpCode::GET_VARIABLE, m_chunk.getCurrentLine());
+        m_chunk.write(static_cast<uint8_t>(index), m_chunk.getCurrentLine());
+    } else {
+        m_chunk.write(OpCode::GET_VARIABLE_LONG, m_chunk.getCurrentLine());
+        m_chunk.writeLong(index, m_chunk.getCurrentLine());
+    }
 }
 
 Compiler::CompileError Compiler::errorAt(const Token &token, const std::string &message) {

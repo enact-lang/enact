@@ -5,6 +5,13 @@
 #include <algorithm>
 #include <sstream>
 
+const Type INT_TYPE = std::make_shared<PrimitiveType>(PrimitiveKind::INT);
+const Type FLOAT_TYPE = std::make_shared<PrimitiveType>(PrimitiveKind::FLOAT);
+const Type BOOL_TYPE = std::make_shared<PrimitiveType>(PrimitiveKind::BOOL);
+const Type STRING_TYPE = std::make_shared<PrimitiveType>(PrimitiveKind::STRING);
+const Type DYNAMIC_TYPE = std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC);
+const Type NOTHING_TYPE = std::make_shared<PrimitiveType>(PrimitiveKind::NOTHING);
+
 TypeBase::TypeBase(TypeKind kind) :
         m_kind{kind} {}
 

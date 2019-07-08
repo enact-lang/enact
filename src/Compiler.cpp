@@ -17,7 +17,8 @@ void Compiler::endScope() {
 void Compiler::addVariable(const Token& name) {
     m_variables.push_back(Variable{
         name,
-        m_scopeDepth
+        m_scopeDepth,
+        false
     });
 }
 
@@ -26,6 +27,9 @@ uint32_t Compiler::resolveVariable(const Token& name) {
         const Variable& variable = m_variables[i];
 
         if (variable.name.lexeme == name.lexeme) {
+            if (!variable.initialized) {
+                throw errorAt(variable.name, "Cannot reference a variable in its own initializer.");
+            }
             return i;
         }
     }
@@ -60,7 +64,11 @@ void Compiler::compile(Expr expr) {
 }
 
 void Compiler::visitBlockStmt(BlockStmt &stmt) {
-    throw CompileError{};
+    beginScope();
+    for (const Stmt& statement : stmt.statements) {
+        compile(statement);
+    }
+    endScope();
 }
 
 void Compiler::visitBreakStmt(BreakStmt &stmt) {
@@ -113,8 +121,9 @@ void Compiler::visitWhileStmt(WhileStmt &stmt) {
 }
 
 void Compiler::visitVariableStmt(VariableStmt &stmt) {
-    compile(stmt.initializer);
     addVariable(stmt.name);
+    compile(stmt.initializer);
+    m_variables.back().initialized = true;
 }
 
 void Compiler::visitAnyExpr(AnyExpr &expr) {

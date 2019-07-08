@@ -7,6 +7,7 @@
 struct Variable {
     Token name;
     uint32_t depth;
+    bool initialized;
 };
 
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {

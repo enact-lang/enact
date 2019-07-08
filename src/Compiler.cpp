@@ -60,7 +60,11 @@ void Compiler::compile(Expr expr) {
 }
 
 void Compiler::visitBlockStmt(BlockStmt &stmt) {
-    throw CompileError{};
+    beginScope();
+    for (const Stmt& statement : stmt.statements) {
+        compile(statement);
+    }
+    endScope();
 }
 
 void Compiler::visitBreakStmt(BreakStmt &stmt) {

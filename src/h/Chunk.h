@@ -22,6 +22,9 @@ enum class OpCode : uint8_t {
 
     POP,
 
+    GET_VARIABLE,
+    GET_VARIABLE_LONG,
+
     RETURN,
 };
 
@@ -34,6 +37,8 @@ class Chunk {
     std::unordered_map<size_t, line_t> m_lines;
 
     std::pair<std::string, size_t> disassembleSimple(size_t index) const;
+    std::pair<std::string, size_t> disassembleByte(size_t index) const;
+    std::pair<std::string, size_t> disassembleLong(size_t index) const;
     std::pair<std::string, size_t> disassembleConstant(size_t index) const;
     std::pair<std::string, size_t> disassembleLongConstant(size_t index) const;
 

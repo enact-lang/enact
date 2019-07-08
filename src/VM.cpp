@@ -75,8 +75,10 @@ InterpretResult VM::run(const Chunk& chunk) {
 
             case OpCode::POP: pop(); break;
 
+            case OpCode::GET_VARIABLE: push(m_stack[READ_BYTE()]); break;
+            case OpCode::GET_VARIABLE_LONG: push(m_stack[READ_LONG()]); break;
+
             case OpCode::RETURN:
-                std::cout << pop() << "\n";
                 return InterpretResult::OK;
         }
 

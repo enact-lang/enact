@@ -6,12 +6,12 @@
 #include <unordered_map>
 #include <optional>
 
-#define INT_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::INT)
+/*#define INT_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::INT)
 #define FLOAT_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::FLOAT)
 #define BOOL_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::BOOL)
 #define STRING_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::STRING)
 #define DYNAMIC_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC)
-#define NOTHING_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::NOTHING)
+#define NOTHING_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::NOTHING)*/
 
 // Forward declarations from "../ast/Stmt.h":
 class FunctionStmt;
@@ -33,6 +33,13 @@ class TypeBase;
 
 // Type is just a managed pointer to TypeBase that allows for polymorphism.
 typedef std::shared_ptr<TypeBase> Type;
+
+extern const Type INT_TYPE;
+extern const Type FLOAT_TYPE;
+extern const Type BOOL_TYPE;
+extern const Type STRING_TYPE;
+extern const Type DYNAMIC_TYPE;
+extern const Type NOTHING_TYPE;
 
 enum class TypeKind {
     PRIMITIVE,
@@ -164,6 +171,7 @@ class StructType : public TypeBase {
     std::unordered_map<std::string, Type> m_fields;
     std::unordered_map<std::string, Type> m_methods;
     std::unordered_map<std::string, Type> m_assocFunctions;
+
 public:
     StructType(std::string name, std::vector<Type> traits, std::unordered_map<std::string, Type> fields,
                std::unordered_map<std::string, Type> methods, std::unordered_map<std::string, Type> assocFunctions);

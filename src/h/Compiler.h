@@ -4,8 +4,22 @@
 #include "../ast/Stmt.h"
 #include "Chunk.h"
 
+struct Local {
+    Token name;
+    uint32_t depth;
+};
+
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     Chunk m_chunk;
+
+    std::vector<Local> m_locals;
+    uint32_t m_scopeDepth = 0;
+
+    void beginScope();
+    void endScope();
+
+    void addVariable(const Token& name);
+    uint32_t resolveVariable(const Token& name);
 
     void compile(Stmt stmt);
     void compile(Expr expr);

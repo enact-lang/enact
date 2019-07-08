@@ -3,12 +3,15 @@
 
 #include <string>
 #include "Type.h"
+#include "Value.h"
 
 enum class ObjectType {
-    STRING
+    STRING,
+    ARRAY,
 };
 
 class StringObject;
+class ArrayObject;
 
 class Object {
     static Object* m_objects;
@@ -32,17 +35,21 @@ public:
     inline const T* as() const;
 
     std::string toString() const;
-    Type getType() const;
+
+    virtual Type getType() const = 0;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Object& object);
 
 template<typename T>
 inline bool Object::is() const {
-    static_assert(std::is_same_v<T, StringObject>, "Object can only be a StringObject.");
+    static_assert(IsAny<T, StringObject, ArrayObject>::value,
+                  "Object::is<T>: T must be StringObject or ArrayObject.");
 
     if (std::is_same_v<T, StringObject>) {
         return m_type == ObjectType::STRING;
+    } else if (std::is_same_v<T, ArrayObject>) {
+        return m_type == ObjectType::ARRAY;
     }
 
     return false;
@@ -50,7 +57,9 @@ inline bool Object::is() const {
 
 template<typename T>
 inline T* Object::as() {
-    static_assert(std::is_same_v<T, StringObject>, "Object can only be a StringObject.");
+    static_assert(IsAny<T, StringObject, ArrayObject>::value,
+                  "Object::as<T>: T must be StringObject or ArrayObject.");
+
     return static_cast<T*>(this);
 }
 
@@ -69,6 +78,24 @@ public:
     ~StringObject() override = default;
 
     const std::string& asStdString() const;
+
+    Type getType() const override;
+};
+
+class Value;
+
+class ArrayObject : public Object {
+    std::vector<Value> m_vector;
+
+public:
+    explicit ArrayObject();
+    explicit ArrayObject(std::vector<Value> vector);
+
+    ~ArrayObject() override = default;
+
+    std::optional<Value> at(size_t index) const;
+
+    Type getType() const override;
 };
 
 #endif //ENACT_OBJECT_H

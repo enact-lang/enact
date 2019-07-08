@@ -8,24 +8,24 @@ void Compiler::beginScope() {
 void Compiler::endScope() {
     --m_scopeDepth;
 
-    while (!m_locals.empty() && m_locals.back().depth > m_scopeDepth) {
+    while (!m_variables.empty() && m_variables.back().depth > m_scopeDepth) {
         m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
-        m_locals.pop_back();
+        m_variables.pop_back();
     }
 }
 
 void Compiler::addVariable(const Token& name) {
-    m_locals.push_back(Local{
+    m_variables.push_back(Variable{
         name,
         m_scopeDepth
     });
 }
 
 uint32_t Compiler::resolveVariable(const Token& name) {
-    for (int i = m_locals.size() - 1; i >= 0; --i) {
-        const Local& local = m_locals[i];
+    for (int i = m_variables.size() - 1; i >= 0; --i) {
+        const Variable& variable = m_variables[i];
 
-        if (local.name.lexeme == name.lexeme) {
+        if (variable.name.lexeme == name.lexeme) {
             return i;
         }
     }

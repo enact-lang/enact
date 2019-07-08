@@ -4,7 +4,7 @@
 #include "../ast/Stmt.h"
 #include "Chunk.h"
 
-struct Local {
+struct Variable {
     Token name;
     uint32_t depth;
 };
@@ -12,7 +12,7 @@ struct Local {
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     Chunk m_chunk;
 
-    std::vector<Local> m_locals;
+    std::vector<Variable> m_variables;
     uint32_t m_scopeDepth = 0;
 
     void beginScope();

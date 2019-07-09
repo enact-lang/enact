@@ -102,12 +102,15 @@ void Enact::reportErrorAt(const Token &token, const std::string &message) {
             std::cerr << " at " << (token.lexeme == "\n" ? "newline" : "'" + token.lexeme + "'") << ":\n";
         }
 
-        std::cerr << "    " << getSourceLine(token.lexeme == "\n" ? token.line - 1 : token.line) << "\n";
-        for (int i = 1; i < token.col; ++i) {
+        std::cerr << "    " << getSourceLine(token.lexeme == "\n" ? token.line - 1 : token.line) << "\n    ";
+        for (int i = 1; i <= token.col - token.lexeme.size(); ++i) {
             std::cerr << " ";
         }
-        std::cerr << "    ^\n";
-        std::cerr << message << "\n\n";
+
+        for (int i = 1; i <= token.lexeme.size(); ++i) {
+            std::cerr << "^";
+        }
+        std::cerr << "\n" << message << "\n\n";
     }
 }
 

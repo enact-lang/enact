@@ -25,6 +25,9 @@ enum class OpCode : uint8_t {
     GET_VARIABLE,
     GET_VARIABLE_LONG,
 
+    SET_VARIABLE,
+    SET_VARIABLE_LONG,
+
     RETURN,
 };
 

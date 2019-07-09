@@ -86,7 +86,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Byte instructions
-        case OpCode::GET_VARIABLE: {
+        case OpCode::GET_VARIABLE:
+        case OpCode::SET_VARIABLE: {
             std::string str;
             std::tie(str, index) = disassembleByte(index);
             s << str;
@@ -94,7 +95,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Long instructions
-        case OpCode::GET_VARIABLE_LONG: {
+        case OpCode::GET_VARIABLE_LONG:
+        case OpCode::SET_VARIABLE_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLong(index);
             s << str;
@@ -234,6 +236,8 @@ std::string opCodeToString(OpCode code) {
         case OpCode::POP: return "POP";
         case OpCode::GET_VARIABLE: return "GET_VARIABLE";
         case OpCode::GET_VARIABLE_LONG: return "GET_VARIABLE_LONG";
+        case OpCode::SET_VARIABLE: return "SET_VARIABLE";
+        case OpCode::SET_VARIABLE_LONG: return "SET_VARIABLE_LONG";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.
         default: return "";

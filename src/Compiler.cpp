@@ -135,7 +135,22 @@ void Compiler::visitArrayExpr(ArrayExpr &expr) {
 }
 
 void Compiler::visitAssignExpr(AssignExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
+    compile(expr.right);
+
+    if (typeid(*expr.left) == typeid(VariableExpr)) {
+        auto variableExpr = std::static_pointer_cast<VariableExpr>(expr.left);
+
+        uint32_t index = resolveVariable(variableExpr->name);
+        if (index <= UINT8_MAX) {
+            m_chunk.write(OpCode::SET_VARIABLE, m_chunk.getCurrentLine());
+            m_chunk.write(static_cast<uint8_t>(index), m_chunk.getCurrentLine());
+        } else {
+            m_chunk.write(OpCode::SET_VARIABLE_LONG, m_chunk.getCurrentLine());
+            m_chunk.writeLong(index, m_chunk.getCurrentLine());
+        }
+    } else {
+        throw errorAt(expr.oper, "Not implemented.");
+    }
 }
 
 void Compiler::visitBinaryExpr(BinaryExpr &expr) {

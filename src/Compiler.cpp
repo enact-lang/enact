@@ -66,6 +66,9 @@ void Compiler::visitGivenStmt(GivenStmt &stmt) {
 
 void Compiler::visitIfStmt(IfStmt &stmt) {
     compile(stmt.condition);
+    if (stmt.condition->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_BOOL);
+    }
 
     // Jump to the else branch if condition is false
     size_t thenJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);

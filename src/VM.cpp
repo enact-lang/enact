@@ -69,6 +69,17 @@ InterpretResult VM::run(const Chunk& chunk) {
                 }
                 break;
             }
+            case OpCode::CHECK_BOOL: {
+                Value value = peek(0);
+                if (!value.getType()->isBool()) {
+                    runtimeError(chunk.getLine(index),
+                                 "Expected a value of type 'bool', but got a value of type '"
+                                 + value.getType()->toString() + "' instead.");
+
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
 
             case OpCode::ADD: ARITH_OP(+); break;
             case OpCode::SUBTRACT: ARITH_OP(-); break;

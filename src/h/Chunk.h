@@ -14,6 +14,7 @@ enum class OpCode : uint8_t {
     NIL,
 
     CHECK_NUMERIC,
+    CHECK_BOOL,
 
     ADD,
     SUBTRACT,

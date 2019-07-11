@@ -59,7 +59,7 @@ InterpretResult VM::run(const Chunk& chunk) {
             case OpCode::NIL: push(Value{}); break;
 
             case OpCode::CHECK_NUMERIC: {
-                Value value = pop();
+                Value value = peek(0);
                 if (!value.getType()->isNumeric()) {
                     runtimeError(chunk.getLine(index),
                             "Expected a value of type 'int' or 'float', but got a value of type '"
@@ -67,6 +67,7 @@ InterpretResult VM::run(const Chunk& chunk) {
 
                     return InterpretResult::RUNTIME_ERROR;
                 }
+                break;
             }
 
             case OpCode::ADD: ARITH_OP(+); break;
@@ -109,7 +110,14 @@ InterpretResult VM::run(const Chunk& chunk) {
 }
 
 void VM::runtimeError(line_t line, const std::string& msg) {
-    std::cerr << "[line " << line << "] Error:\n    > " << Enact::getSourceLine(line) << msg;
+    const std::string source = Enact::getSourceLine(line);
+
+    std::cerr << "[line " << line << "] Error on this line:\n    " << source << "\n    ";
+    for (int i = 0; i < source.size(); ++i) {
+        std::cerr << "^";
+    }
+    std::cerr << "\n" << msg << "\n\n";
+
 }
 
 void VM::push(Value value) {
@@ -117,7 +125,7 @@ void VM::push(Value value) {
 }
 
 Value VM::pop() {
-    ENACT_ASSERT(m_stack.size() > 0, "Stack underflow!");
+    ENACT_ASSERT(!m_stack.empty(), "Stack underflow!");
     Value value = m_stack.back();
     m_stack.pop_back();
     return value;

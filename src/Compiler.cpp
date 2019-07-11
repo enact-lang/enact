@@ -1,42 +1,6 @@
 #include "h/Compiler.h"
 #include "h/Enact.h"
 
-void Compiler::beginScope() {
-    ++m_scopeDepth;
-}
-
-void Compiler::endScope() {
-    --m_scopeDepth;
-
-    while (!m_variables.empty() && m_variables.back().depth > m_scopeDepth) {
-        m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
-        m_variables.pop_back();
-    }
-}
-
-void Compiler::addVariable(const Token& name) {
-    m_variables.push_back(Variable{
-        name,
-        m_scopeDepth,
-        false
-    });
-}
-
-uint32_t Compiler::resolveVariable(const Token& name) {
-    for (int i = m_variables.size() - 1; i >= 0; --i) {
-        const Variable& variable = m_variables[i];
-
-        if (variable.name.lexeme == name.lexeme) {
-            if (!variable.initialized) {
-                throw errorAt(variable.name, "Cannot reference a variable in its own initializer.");
-            }
-            return i;
-        }
-    }
-
-    throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
-}
-
 const Chunk& Compiler::compile(std::vector<Stmt> ast) {
     m_hadError = false;
 
@@ -101,7 +65,37 @@ void Compiler::visitGivenStmt(GivenStmt &stmt) {
 }
 
 void Compiler::visitIfStmt(IfStmt &stmt) {
-    throw errorAt(stmt.keyword, "Not implemented.");
+    compile(stmt.condition);
+
+    // Jump to the else branch if condition is false
+    size_t thenJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
+
+    // Pop the condition
+    emitByte(OpCode::POP);
+
+    beginScope();
+    for (Stmt& statement : stmt.thenBlock) {
+        compile(statement);
+    }
+    endScope();
+
+    // If condition was true, we'll jump to the end of the else block
+    size_t elseJumpIndex = emitJump(OpCode::JUMP);
+
+    // If condition was false, we jumped here
+    patchJump(thenJumpIndex, stmt.keyword);
+
+    // Make sure we still pop the condition
+    emitByte(OpCode::POP);
+
+    beginScope();
+    for (Stmt& statement : stmt.elseBlock) {
+        compile(statement);
+    }
+    endScope();
+
+    // If condition was true, we jumped here
+    patchJump(elseJumpIndex, stmt.keyword);
 }
 
 void Compiler::visitReturnStmt(ReturnStmt &stmt) {
@@ -244,6 +238,42 @@ bool Compiler::hadError() {
     return m_hadError;
 }
 
+void Compiler::beginScope() {
+    ++m_scopeDepth;
+}
+
+void Compiler::endScope() {
+    --m_scopeDepth;
+
+    while (!m_variables.empty() && m_variables.back().depth > m_scopeDepth) {
+        m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
+        m_variables.pop_back();
+    }
+}
+
+void Compiler::addVariable(const Token& name) {
+    m_variables.push_back(Variable{
+            name,
+            m_scopeDepth,
+            false
+    });
+}
+
+uint32_t Compiler::resolveVariable(const Token& name) {
+    for (int i = m_variables.size() - 1; i >= 0; --i) {
+        const Variable& variable = m_variables[i];
+
+        if (variable.name.lexeme == name.lexeme) {
+            if (!variable.initialized) {
+                throw errorAt(variable.name, "Cannot reference a variable in its own initializer.");
+            }
+            return i;
+        }
+    }
+
+    throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
+}
+
 void Compiler::emitByte(uint8_t byte) {
     m_chunk.write(byte, m_chunk.getCurrentLine());
 }
@@ -258,4 +288,22 @@ void Compiler::emitLong(uint32_t value) {
 
 void Compiler::emitConstant(Value constant) {
     m_chunk.writeConstant(constant, m_chunk.getCurrentLine());
+}
+
+size_t Compiler::emitJump(OpCode jump) {
+    emitByte(jump);
+    emitByte(0xff);
+    emitByte(0xff);
+    return m_chunk.getCount() - 2;
+}
+
+void Compiler::patchJump(size_t index, Token where) {
+    size_t jumpSize = m_chunk.getCount() - index - 2;
+
+    if (jumpSize > UINT16_MAX) {
+        throw errorAt(where, "Too much code in control flow block.");
+    }
+
+    m_chunk.rewrite(index, jumpSize & 0xff);
+    m_chunk.rewrite(index + 1, (jumpSize >> 8) & 0xff);
 }

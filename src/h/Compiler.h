@@ -16,19 +16,6 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     std::vector<Variable> m_variables;
     uint32_t m_scopeDepth = 0;
 
-    void beginScope();
-    void endScope();
-
-    void addVariable(const Token& name);
-    uint32_t resolveVariable(const Token& name);
-
-    void emitByte(uint8_t byte);
-    void emitByte(OpCode byte);
-
-    void emitLong(uint32_t value);
-
-    void emitConstant(Value constant);
-
     void compile(Stmt stmt);
     void compile(Expr expr);
 
@@ -64,6 +51,21 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     void visitUnaryExpr(UnaryExpr& expr) override;
     void visitVariableExpr(VariableExpr& expr) override;
 
+    void beginScope();
+    void endScope();
+
+    void addVariable(const Token& name);
+    uint32_t resolveVariable(const Token& name);
+
+    void emitByte(uint8_t byte);
+    void emitByte(OpCode byte);
+
+    void emitLong(uint32_t value);
+
+    void emitConstant(Value constant);
+
+    size_t emitJump(OpCode jump);
+    void patchJump(size_t index, Token where);
 
     class CompileError : public std::runtime_error {
     public:

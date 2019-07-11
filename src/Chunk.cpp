@@ -18,6 +18,14 @@ void Chunk::writeLong(uint32_t value, line_t line) {
     write(static_cast<uint8_t>((value >> 16) & 0xff), line);
 }
 
+void Chunk::rewrite(size_t index, uint8_t byte) {
+    m_code[index] = byte;
+}
+
+void Chunk::rewrite(size_t index, OpCode byte) {
+    m_code[index] = static_cast<uint8_t>(byte);
+}
+
 size_t Chunk::addConstant(Value constant) {
     m_constants.push_back(constant);
     return m_constants.size() - 1;
@@ -94,6 +102,15 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
             break;
         }
 
+        // Short instructions
+        case OpCode::JUMP:
+        case OpCode::JUMP_IF_FALSE: {
+            std::string str;
+            std::tie(str, index) = disassembleShort(index);
+            s << str;
+            break;
+        }
+
         // Long instructions
         case OpCode::GET_VARIABLE_LONG:
         case OpCode::SET_VARIABLE_LONG: {
@@ -137,6 +154,20 @@ std::pair<std::string, size_t> Chunk::disassembleByte(size_t index) const {
 
     // Output the byte argument
     uint8_t arg = m_code[++index];
+    s << " " << static_cast<size_t>(arg) << "\n";
+
+    return {s.str(), ++index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleShort(size_t index) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s.flags(f);
+
+    // Output the long argument
+    uint16_t arg = (m_code[++index] | (m_code[++index] << 8));
     s << " " << static_cast<size_t>(arg) << "\n";
 
     return {s.str(), ++index};
@@ -221,6 +252,10 @@ const std::vector<Value>& Chunk::getConstants() const {
     return m_constants;
 }
 
+size_t Chunk::getCount() const {
+    return m_code.size();
+}
+
 std::string opCodeToString(OpCode code) {
     switch (code) {
         case OpCode::CONSTANT: return "CONSTANT";
@@ -238,6 +273,8 @@ std::string opCodeToString(OpCode code) {
         case OpCode::GET_VARIABLE_LONG: return "GET_VARIABLE_LONG";
         case OpCode::SET_VARIABLE: return "SET_VARIABLE";
         case OpCode::SET_VARIABLE_LONG: return "SET_VARIABLE_LONG";
+        case OpCode::JUMP: return "JUMP";
+        case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.
         default: return "";

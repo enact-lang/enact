@@ -28,6 +28,9 @@ enum class OpCode : uint8_t {
     SET_VARIABLE,
     SET_VARIABLE_LONG,
 
+    JUMP,
+    JUMP_IF_FALSE,
+
     RETURN,
 };
 
@@ -41,6 +44,7 @@ class Chunk {
 
     std::pair<std::string, size_t> disassembleSimple(size_t index) const;
     std::pair<std::string, size_t> disassembleByte(size_t index) const;
+    std::pair<std::string, size_t> disassembleShort(size_t index) const;
     std::pair<std::string, size_t> disassembleLong(size_t index) const;
     std::pair<std::string, size_t> disassembleConstant(size_t index) const;
     std::pair<std::string, size_t> disassembleLongConstant(size_t index) const;
@@ -56,6 +60,9 @@ public:
     void writeConstant(Value constant, line_t line);
     size_t addConstant(Value constant);
 
+    void rewrite(size_t index, uint8_t byte);
+    void rewrite(size_t index, OpCode byte);
+
     std::string disassemble() const;
     std::pair<std::string, size_t> disassembleInstruction(size_t index) const;
 
@@ -64,6 +71,8 @@ public:
 
     const std::vector<uint8_t>& getCode() const;
     const std::vector<Value>& getConstants() const;
+
+    size_t getCount() const;
 };
 
 #endif //ENACT_CHUNK_H

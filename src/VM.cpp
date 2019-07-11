@@ -12,7 +12,8 @@ InterpretResult VM::run(const Chunk& chunk) {
 
     for (size_t index = 0; ip != m_code->end(); ++index, ++ip) {
         #define READ_BYTE() (++index, *++ip)
-        #define READ_LONG() (READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16))
+        #define READ_SHORT() (static_cast<uint16_t>(READ_BYTE() | (READ_BYTE() << 8)))
+        #define READ_LONG() (static_cast<uint32_t>(READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)))
         #define READ_CONSTANT() ((*m_constants)[READ_BYTE()])
         #define READ_CONSTANT_LONG() ((*m_constants)[READ_LONG()])
         #define ARITH_OP(op) \
@@ -81,6 +82,21 @@ InterpretResult VM::run(const Chunk& chunk) {
             case OpCode::SET_VARIABLE: m_stack[READ_BYTE()] = peek(0); break;
             case OpCode::SET_VARIABLE_LONG: m_stack[READ_LONG()] = peek(0); break;
 
+            case OpCode::JUMP: {
+                uint16_t jumpSize = READ_SHORT();
+                index += jumpSize;
+                ip += jumpSize;
+                break;
+            }
+            case OpCode::JUMP_IF_FALSE: {
+                uint16_t jumpSize = READ_SHORT();
+                if (!peek(0).asBool()) {
+                    index += jumpSize;
+                    ip += jumpSize;
+                }
+                break;
+            }
+
             case OpCode::RETURN:
                 return InterpretResult::OK;
         }
@@ -93,7 +109,7 @@ InterpretResult VM::run(const Chunk& chunk) {
 }
 
 void VM::runtimeError(line_t line, const std::string& msg) {
-    std::cerr << "[line " << line << "] Error:\n    " << Enact::getSourceLine(line) << msg;
+    std::cerr << "[line " << line << "] Error:\n    > " << Enact::getSourceLine(line) << msg;
 }
 
 void VM::push(Value value) {

@@ -22,6 +22,13 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     void addVariable(const Token& name);
     uint32_t resolveVariable(const Token& name);
 
+    void emitByte(uint8_t byte);
+    void emitByte(OpCode byte);
+
+    void emitLong(uint32_t value);
+
+    void emitConstant(Value constant);
+
     void compile(Stmt stmt);
     void compile(Expr expr);
 

@@ -6,9 +6,16 @@
 void Analyser::analyse(std::vector<Stmt> program) {
     m_hadError = false;
 
+    beginScope();
     for (auto &stmt : program) {
         analyse(stmt);
     }
+
+    // Analyse all function bodies in the global scope
+    for (auto& function : m_globalFunctions) {
+        analyseFunctionBody(function);
+    }
+    endScope();
 }
 
 void Analyser::analyse(Stmt stmt) {
@@ -81,19 +88,11 @@ void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
 
     declareVariable(stmt.name.lexeme, Variable{type, true});
 
-    beginScope();
-    m_currentFunction = *type->as<FunctionType>();
-
-    for (int i = 0; i < stmt.params.size(); ++i) {
-        declareVariable(stmt.params[i].name.lexeme, Variable{functionType->getArgumentTypes()[i]});
+    if (m_scopes.size() > 1) {
+        m_globalFunctions.push_back(stmt);
+    } else {
+        analyseFunctionBody(stmt);
     }
-
-    for (Stmt &statement : stmt.body) {
-        analyse(statement);
-    }
-
-    m_currentFunction = {};
-    endScope();
 }
 
 void Analyser::visitGivenStmt(GivenStmt &stmt) {
@@ -600,6 +599,25 @@ void Analyser::visitUnaryExpr(UnaryExpr &expr) {
 
 void Analyser::visitVariableExpr(VariableExpr &expr) {
     expr.setType(lookUpVariable(expr.name).type);
+}
+
+void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
+    Type type = getFunctionType(stmt);
+    auto functionType = type->as<FunctionType>();
+
+    beginScope();
+    m_currentFunction = *type->as<FunctionType>();
+
+    for (int i = 0; i < stmt.params.size(); ++i) {
+        declareVariable(stmt.params[i].name.lexeme, Variable{functionType->getArgumentTypes()[i]});
+    }
+
+    for (Stmt &statement : stmt.body) {
+        analyse(statement);
+    }
+
+    m_currentFunction = {};
+    endScope();
 }
 
 Type Analyser::getFunctionType(const FunctionStmt &stmt) {

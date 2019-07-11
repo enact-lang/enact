@@ -46,7 +46,7 @@ const Chunk& Compiler::compile(std::vector<Stmt> ast) {
     }
     endScope();
 
-    m_chunk.write(OpCode::RETURN, m_chunk.getCurrentLine());
+    emitByte(OpCode::RETURN);
 
     return m_chunk;
 }
@@ -85,7 +85,7 @@ void Compiler::visitEachStmt(EachStmt &stmt) {
 
 void Compiler::visitExpressionStmt(ExpressionStmt &stmt) {
     compile(stmt.expr);
-    m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
+    emitByte(OpCode::POP);
 }
 
 void Compiler::visitForStmt(ForStmt &stmt) {
@@ -142,11 +142,11 @@ void Compiler::visitAssignExpr(AssignExpr &expr) {
 
         uint32_t index = resolveVariable(variableExpr->name);
         if (index <= UINT8_MAX) {
-            m_chunk.write(OpCode::SET_VARIABLE, m_chunk.getCurrentLine());
-            m_chunk.write(static_cast<uint8_t>(index), m_chunk.getCurrentLine());
+            emitByte(OpCode::SET_VARIABLE);
+            emitByte(static_cast<uint8_t>(index));
         } else {
-            m_chunk.write(OpCode::SET_VARIABLE_LONG, m_chunk.getCurrentLine());
-            m_chunk.writeLong(index, m_chunk.getCurrentLine());
+            emitByte(OpCode::SET_VARIABLE_LONG);
+            emitLong(index);
         }
     } else {
         throw errorAt(expr.oper, "Not implemented.");
@@ -157,13 +157,13 @@ void Compiler::visitBinaryExpr(BinaryExpr &expr) {
     compile(expr.left);
 
     if (expr.left->getType()->isDynamic()) {
-        m_chunk.write(OpCode::CHECK_NUMERIC, expr.oper.line);
+        emitByte(OpCode::CHECK_NUMERIC);
     }
 
     compile(expr.right);
 
     if (expr.right->getType()->isDynamic()) {
-        m_chunk.write(OpCode::CHECK_NUMERIC, expr.oper.line);
+        emitByte(OpCode::CHECK_NUMERIC);
     }
 
     OpCode op;
@@ -175,11 +175,11 @@ void Compiler::visitBinaryExpr(BinaryExpr &expr) {
         case TokenType::SLASH: op = OpCode::DIVIDE; break;
     }
 
-    m_chunk.write(op, expr.oper.line);
+    emitByte(op);
 }
 
 void Compiler::visitBooleanExpr(BooleanExpr &expr) {
-    m_chunk.write(expr.value ? OpCode::TRUE : OpCode::FALSE, m_chunk.getCurrentLine());
+    emitByte(expr.value ? OpCode::TRUE : OpCode::FALSE);
 }
 
 void Compiler::visitCallExpr(CallExpr &expr) {
@@ -191,11 +191,11 @@ void Compiler::visitFieldExpr(FieldExpr &expr) {
 }
 
 void Compiler::visitFloatExpr(FloatExpr &expr) {
-    m_chunk.writeConstant(Value{expr.value}, m_chunk.getCurrentLine());
+    emitConstant(Value{expr.value});
 }
 
 void Compiler::visitIntegerExpr(IntegerExpr &expr) {
-    m_chunk.writeConstant(Value{expr.value}, m_chunk.getCurrentLine());
+    emitConstant(Value{expr.value});
 }
 
 void Compiler::visitLogicalExpr(LogicalExpr &expr) {
@@ -203,12 +203,12 @@ void Compiler::visitLogicalExpr(LogicalExpr &expr) {
 }
 
 void Compiler::visitNilExpr(NilExpr &expr) {
-    m_chunk.write(OpCode::NIL, m_chunk.getCurrentLine());
+    emitByte(OpCode::NIL);
 }
 
 void Compiler::visitStringExpr(StringExpr &expr) {
     Object* string = new StringObject{expr.value};
-    m_chunk.writeConstant(Value{string}, m_chunk.getCurrentLine());
+    emitConstant(Value{string});
 }
 
 void Compiler::visitSubscriptExpr(SubscriptExpr &expr) {
@@ -226,11 +226,11 @@ void Compiler::visitUnaryExpr(UnaryExpr &expr) {
 void Compiler::visitVariableExpr(VariableExpr &expr) {
     uint32_t index = resolveVariable(expr.name);
     if (index <= UINT8_MAX) {
-        m_chunk.write(OpCode::GET_VARIABLE, m_chunk.getCurrentLine());
-        m_chunk.write(static_cast<uint8_t>(index), m_chunk.getCurrentLine());
+        emitByte(OpCode::GET_VARIABLE);
+        emitByte(static_cast<uint8_t>(index));
     } else {
-        m_chunk.write(OpCode::GET_VARIABLE_LONG, m_chunk.getCurrentLine());
-        m_chunk.writeLong(index, m_chunk.getCurrentLine());
+        emitByte(OpCode::GET_VARIABLE_LONG);
+        emitLong(index);
     }
 }
 
@@ -242,4 +242,20 @@ Compiler::CompileError Compiler::errorAt(const Token &token, const std::string &
 
 bool Compiler::hadError() {
     return m_hadError;
+}
+
+void Compiler::emitByte(uint8_t byte) {
+    m_chunk.write(byte, m_chunk.getCurrentLine());
+}
+
+void Compiler::emitByte(OpCode byte) {
+    m_chunk.write(byte, m_chunk.getCurrentLine());
+}
+
+void Compiler::emitLong(uint32_t value) {
+    m_chunk.writeLong(value, m_chunk.getCurrentLine());
+}
+
+void Compiler::emitConstant(Value constant) {
+    m_chunk.writeConstant(constant, m_chunk.getCurrentLine());
 }

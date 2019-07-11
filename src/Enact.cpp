@@ -20,7 +20,7 @@ std::string Enact::m_source = "";
 Analyser Enact::m_analyser{};
 VM Enact::m_vm{};
 
-InterpretResult Enact::run(const std::string &source) {
+InterpretResult Enact::run(const std::string& source) {
     m_source = source;
 
     Parser parser{m_source};

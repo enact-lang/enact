@@ -196,7 +196,22 @@ void Compiler::visitIntegerExpr(IntegerExpr &expr) {
 }
 
 void Compiler::visitLogicalExpr(LogicalExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
+    // Always compile the left operand
+    compile(expr.left);
+
+    size_t jumpIndex = 0;
+
+    if (expr.oper.type == TokenType::OR) {
+        jumpIndex = emitJump(OpCode::JUMP_IF_TRUE);
+    } else if (expr.oper.type == TokenType::AND) {
+        jumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
+    }
+
+    emitByte(OpCode::POP);
+
+    compile(expr.right);
+
+    patchJump(jumpIndex, expr.oper);
 }
 
 void Compiler::visitNilExpr(NilExpr &expr) {

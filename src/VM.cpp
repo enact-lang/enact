@@ -55,7 +55,7 @@ InterpretResult VM::run(const Chunk& chunk) {
             }
 
             case OpCode::TRUE: push(Value{true}); break;
-            case OpCode::FALSE: push(Value{}); break;
+            case OpCode::FALSE: push(Value{false}); break;
             case OpCode::NIL: push(Value{}); break;
 
             case OpCode::CHECK_NUMERIC: {
@@ -98,6 +98,14 @@ InterpretResult VM::run(const Chunk& chunk) {
                 uint16_t jumpSize = READ_SHORT();
                 index += jumpSize;
                 ip += jumpSize;
+                break;
+            }
+            case OpCode::JUMP_IF_TRUE: {
+                uint16_t jumpSize = READ_SHORT();
+                if (peek(0).asBool()) {
+                    index += jumpSize;
+                    ip += jumpSize;
+                }
                 break;
             }
             case OpCode::JUMP_IF_FALSE: {

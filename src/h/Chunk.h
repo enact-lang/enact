@@ -30,6 +30,7 @@ enum class OpCode : uint8_t {
     SET_VARIABLE_LONG,
 
     JUMP,
+    JUMP_IF_TRUE,
     JUMP_IF_FALSE,
 
     RETURN,

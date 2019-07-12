@@ -105,6 +105,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
         // Short instructions
         case OpCode::JUMP:
+        case OpCode::JUMP_IF_TRUE:
         case OpCode::JUMP_IF_FALSE: {
             std::string str;
             std::tie(str, index) = disassembleShort(index);
@@ -276,6 +277,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::SET_VARIABLE: return "SET_VARIABLE";
         case OpCode::SET_VARIABLE_LONG: return "SET_VARIABLE_LONG";
         case OpCode::JUMP: return "JUMP";
+        case OpCode::JUMP_IF_TRUE: return "JUMP_IF_TRUE";
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.

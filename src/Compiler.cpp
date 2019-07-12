@@ -91,7 +91,40 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
 }
 
 void Compiler::visitGivenStmt(GivenStmt &stmt) {
-    throw CompileError{};
+    struct Jump {
+        size_t index;
+        Token where;
+    };
+
+    std::vector<Jump> exitJumps;
+
+    for (GivenCase& case_ : stmt.cases) {
+        compile(stmt.value);
+        compile(case_.value);
+        emitByte(OpCode::EQUAL);
+
+        size_t jumpToNext = emitJump(OpCode::JUMP_IF_FALSE);
+
+        emitByte(OpCode::POP);
+
+        beginScope();
+        for (Stmt& statement : case_.body) {
+            compile(statement);
+        }
+        endScope();
+
+        exitJumps.push_back(Jump{
+                emitJump(OpCode::JUMP_IF_FALSE),
+                case_.keyword
+        });
+
+        patchJump(jumpToNext, case_.keyword);
+        emitByte(OpCode::POP);
+    }
+
+    for (Jump& jump : exitJumps) {
+        patchJump(jump.index, jump.where);
+    }
 }
 
 void Compiler::visitIfStmt(IfStmt &stmt) {

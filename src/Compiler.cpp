@@ -53,7 +53,29 @@ void Compiler::visitExpressionStmt(ExpressionStmt &stmt) {
 }
 
 void Compiler::visitForStmt(ForStmt &stmt) {
-    throw CompileError{};
+    compile(stmt.initializer);
+
+    size_t loopStartIndex = m_chunk.getCount();
+
+    compile(stmt.condition);
+    size_t exitJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
+
+    emitByte(OpCode::POP);
+
+    beginScope();
+    for (Stmt& statement : stmt.body) {
+        compile(statement);
+    }
+    endScope();
+
+    compile(stmt.increment);
+    emitByte(OpCode::POP);
+
+    emitLoop(loopStartIndex, stmt.keyword);
+
+    patchJump(exitJumpIndex, stmt.keyword);
+
+    emitByte(OpCode::POP);
 }
 
 void Compiler::visitFunctionStmt(FunctionStmt &stmt) {

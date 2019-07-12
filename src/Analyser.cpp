@@ -206,6 +206,28 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
         methods.insert(std::pair(method->name.lexeme, getFunctionType(*method)));
     }
 
+    // Check that the traits are satisfied now
+    for (const Type& type: traits) {
+        const TraitType& traitType = *std::static_pointer_cast<TraitType>(type);
+
+        // Check methods have been defined
+        for (const std::pair<const std::string, Type>& traitMethod : traitType.getMethods()) {
+            bool found = false;
+
+            for (const std::pair<const std::string, Type>& structMethod : methods) {
+                if (structMethod == traitMethod) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found) continue;
+
+            throw errorAt(stmt.name, "Method '" + traitMethod.first + "' is required by trait '"
+                + traitType.toString() + "' but is not implemented.");
+        }
+    }
+
     // Assoc functions must be kept separate from the fields, as they are called on
     // the type rather than an instance of the type.
     std::unordered_map<std::string, Type> assocFunctions;

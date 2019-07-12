@@ -17,6 +17,19 @@ void Object::freeAll() {
     }
 }
 
+bool Object::operator==(const Object &object) const {
+    if (m_type != object.m_type) {
+        return false;
+    }
+
+    switch (m_type) {
+        case ObjectType::STRING:
+            return this->as<StringObject>()->asStdString() == object.as<StringObject>()->asStdString();
+        case ObjectType::ARRAY:
+            return this->as<ArrayObject>()->asVector() == object.as<ArrayObject>()->asVector();
+    }
+}
+
 std::string Object::toString() const {
     if (is<StringObject>()) {
         return as<StringObject>()->asStdString();
@@ -56,6 +69,9 @@ std::optional<Value> ArrayObject::at(size_t index) const {
     return {m_vector[index]};
 }
 
+const std::vector<Value>& ArrayObject::asVector() const {
+    return m_vector;
+}
 
 Type ArrayObject::getType() const {
     Type elementType = DYNAMIC_TYPE;

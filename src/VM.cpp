@@ -16,7 +16,7 @@ InterpretResult VM::run(const Chunk& chunk) {
         #define READ_LONG() (static_cast<uint32_t>(READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)))
         #define READ_CONSTANT() ((*m_constants)[READ_BYTE()])
         #define READ_CONSTANT_LONG() ((*m_constants)[READ_LONG()])
-        #define ARITH_OP(op) \
+        #define NUMERIC_OP(op) \
             do { \
                 Value b = pop(); \
                 Value a = pop(); \
@@ -81,10 +81,30 @@ InterpretResult VM::run(const Chunk& chunk) {
                 break;
             }
 
-            case OpCode::ADD: ARITH_OP(+); break;
-            case OpCode::SUBTRACT: ARITH_OP(-); break;
-            case OpCode::MULTIPLY: ARITH_OP(*); break;
-            case OpCode::DIVIDE: ARITH_OP(/); break;
+            case OpCode::NEGATE: {
+                Value value = pop();
+                if (value.isInt()) {
+                    push(Value{-value.asInt()});
+                } else {
+                    push(Value{-value.asDouble()});
+                }
+                break;
+            }
+            case OpCode::NOT: push(Value{!pop().asBool()}); break;
+
+            case OpCode::ADD: NUMERIC_OP(+); break;
+            case OpCode::SUBTRACT: NUMERIC_OP(-); break;
+            case OpCode::MULTIPLY: NUMERIC_OP(*); break;
+            case OpCode::DIVIDE: NUMERIC_OP(/); break;
+
+            case OpCode::LESS: NUMERIC_OP(<); break;
+            case OpCode::GREATER: NUMERIC_OP(>); break;
+            case OpCode::EQUAL: {
+                Value b = pop();
+                Value a = pop();
+                push(Value{a == b});
+                break;
+            }
 
             case OpCode::POP: pop(); break;
 
@@ -129,9 +149,12 @@ InterpretResult VM::run(const Chunk& chunk) {
         }
 
         #undef READ_BYTE
+        #undef READ_SHORT
         #undef READ_LONG
         #undef READ_CONSTANT
         #undef READ_CONSTANT_LONG
+
+        #undef NUMERIC_OP
     }
 }
 

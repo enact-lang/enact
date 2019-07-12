@@ -206,20 +206,36 @@ void Compiler::visitBinaryExpr(BinaryExpr &expr) {
 
     compile(expr.right);
 
-    if (expr.right->getType()->isDynamic()) {
+    if (expr.oper.type != TokenType::EQUAL
+            && expr.oper.type != TokenType::BANG_EQUAL
+            && expr.right->getType()->isDynamic()) {
         emitByte(OpCode::CHECK_NUMERIC);
     }
 
-    OpCode op;
-
     switch (expr.oper.type) {
-        case TokenType::PLUS: op = OpCode::ADD; break;
-        case TokenType::MINUS: op = OpCode::SUBTRACT; break;
-        case TokenType::STAR: op = OpCode::MULTIPLY; break;
-        case TokenType::SLASH: op = OpCode::DIVIDE; break;
-    }
+        case TokenType::PLUS: emitByte(OpCode::ADD); break;
+        case TokenType::MINUS: emitByte(OpCode::SUBTRACT); break;
+        case TokenType::STAR: emitByte(OpCode::MULTIPLY); break;
+        case TokenType::SLASH: emitByte(OpCode::DIVIDE); break;
 
-    emitByte(op);
+        case TokenType::LESS: emitByte(OpCode::LESS); break;
+        case TokenType::LESS_EQUAL:
+            emitByte(OpCode::GREATER);
+            emitByte(OpCode::NOT);
+            break;
+
+        case TokenType::GREATER: emitByte(OpCode::GREATER); break;
+        case TokenType::GREATER_EQUAL:
+            emitByte(OpCode::LESS);
+            emitByte(OpCode::NOT);
+            break;
+
+        case TokenType::EQUAL_EQUAL: emitByte(OpCode::EQUAL); break;
+        case TokenType::BANG_EQUAL:
+            emitByte(OpCode::EQUAL);
+            emitByte(OpCode::NOT);
+            break;
+    }
 }
 
 void Compiler::visitBooleanExpr(BooleanExpr &expr) {
@@ -279,7 +295,26 @@ void Compiler::visitTernaryExpr(TernaryExpr &expr) {
 }
 
 void Compiler::visitUnaryExpr(UnaryExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
+    compile(expr.operand);
+
+    switch (expr.oper.type) {
+        case TokenType::MINUS: {
+            if (expr.operand->getType()->isDynamic()) {
+                emitByte(OpCode::CHECK_NUMERIC);
+            }
+            emitByte(OpCode::NEGATE);
+
+            break;
+        }
+        case TokenType::BANG: {
+            if (expr.operand->getType()->isDynamic()) {
+                emitByte(OpCode::CHECK_BOOL);
+            }
+            emitByte(OpCode::NOT);
+
+            break;
+        }
+    }
 }
 
 void Compiler::visitVariableExpr(VariableExpr &expr) {

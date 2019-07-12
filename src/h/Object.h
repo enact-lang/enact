@@ -34,6 +34,8 @@ public:
     template <typename T>
     inline const T* as() const;
 
+    bool operator==(const Object& object) const;
+
     std::string toString() const;
 
     virtual Type getType() const = 0;
@@ -65,7 +67,7 @@ inline T* Object::as() {
 
 template<typename T>
 inline const T* Object::as() const {
-    static_assert(std::is_same_v<T, StringObject>, "Object can only be a StringObject.");
+    static_assert(IsAny<T, StringObject, ArrayObject>::value, "Object::as<T>: T must be StringObject or ArrayObject.");
     return static_cast<const T*>(this);
 }
 
@@ -94,6 +96,8 @@ public:
     ~ArrayObject() override = default;
 
     std::optional<Value> at(size_t index) const;
+
+    const std::vector<Value>& asVector() const;
 
     Type getType() const override;
 };

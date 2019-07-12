@@ -48,6 +48,20 @@ Object* Value::asObject() const {
     return m_value.asObject;
 }
 
+bool Value::operator==(const Value &value) const {
+    if (m_type != value.m_type) {
+        return false;
+    }
+
+    switch (m_type) {
+        case ValueType::INT: return this->asInt() == value.asInt();
+        case ValueType::DOUBLE: return this->asDouble() == value.asDouble();
+        case ValueType::BOOL: return this->asBool() == value.asBool();
+        case ValueType::NIL: return true;
+        case ValueType::OBJECT: return *this->asObject() == *value.asObject();
+    }
+}
+
 Type Value::getType() const {
     switch (m_type) {
         case ValueType::INT: return INT_TYPE;

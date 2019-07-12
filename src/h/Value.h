@@ -45,6 +45,8 @@ public:
     bool asBool() const;
     Object* asObject() const;
 
+    bool operator==(const Value& value) const;
+
     Type getType() const;
 
     std::string toString() const;

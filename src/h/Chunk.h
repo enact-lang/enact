@@ -16,10 +16,17 @@ enum class OpCode : uint8_t {
     CHECK_NUMERIC,
     CHECK_BOOL,
 
+    NEGATE,
+    NOT,
+
     ADD,
     SUBTRACT,
     MULTIPLY,
     DIVIDE,
+
+    LESS,
+    GREATER,
+    EQUAL,
 
     POP,
 

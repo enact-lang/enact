@@ -87,10 +87,15 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::NIL:
         case OpCode::CHECK_NUMERIC:
         case OpCode::CHECK_BOOL:
+        case OpCode::NEGATE:
+        case OpCode::NOT:
         case OpCode::ADD:
         case OpCode::SUBTRACT:
         case OpCode::MULTIPLY:
         case OpCode::DIVIDE:
+        case OpCode::LESS:
+        case OpCode::GREATER:
+        case OpCode::EQUAL:
         case OpCode::POP:
         case OpCode::RETURN: {
             std::string str;
@@ -273,10 +278,15 @@ std::string opCodeToString(OpCode code) {
         case OpCode::NIL: return "NIL";
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
+        case OpCode::NEGATE: return "NEGATE";
+        case OpCode::NOT: return "NOT";
         case OpCode::ADD: return "ADD";
         case OpCode::SUBTRACT: return "SUBTRACT";
         case OpCode::MULTIPLY: return "MULTIPLY";
         case OpCode::DIVIDE: return "DIVIDE";
+        case OpCode::LESS: return "LESS";
+        case OpCode::GREATER: return "GREATER";
+        case OpCode::EQUAL: return "EQUAL";
         case OpCode::POP: return "POP";
         case OpCode::GET_VARIABLE: return "GET_VARIABLE";
         case OpCode::GET_VARIABLE_LONG: return "GET_VARIABLE_LONG";

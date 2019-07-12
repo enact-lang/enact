@@ -80,11 +80,21 @@ public:
 
 class Stmt::While : public Stmt {
 public:
+<<<<<<< Updated upstream
     std::shared_ptr<Expr> condition;
     std::vector<std::shared_ptr<Stmt>> body;
 
     While(std::shared_ptr<Expr> condition,std::vector<std::shared_ptr<Stmt>> body) : 
         condition{condition},body{body} {}
+=======
+    Expr condition;
+    std::vector<Stmt> body;
+    Token keyword;
+
+    WhileStmt(Expr condition,std::vector<Stmt> body,Token keyword) :
+        condition{condition},body{body},keyword{keyword} {}
+    ~WhileStmt() override = default;
+>>>>>>> Stashed changes
 
     std::string accept(Stmt::Visitor<std::string> *visitor) override {
         return visitor->visitWhileStmt(*this);

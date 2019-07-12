@@ -1,0 +1,360 @@
+#include "h/Compiler.h"
+#include "h/Enact.h"
+
+const Chunk& Compiler::compile(std::vector<Stmt> ast) {
+    m_hadError = false;
+
+    beginScope();
+    for (auto& stmt : ast) {
+        compile(stmt);
+    }
+    endScope();
+
+    emitByte(OpCode::RETURN);
+
+    return m_chunk;
+}
+
+void Compiler::compile(Stmt stmt) {
+    try {
+        stmt->accept(this);
+    } catch (CompileError& error) {
+        m_hadError = true;
+    }
+}
+
+void Compiler::compile(Expr expr) {
+    expr->accept(this);
+}
+
+void Compiler::visitBlockStmt(BlockStmt &stmt) {
+    beginScope();
+    for (const Stmt& statement : stmt.statements) {
+        compile(statement);
+    }
+    endScope();
+}
+
+void Compiler::visitBreakStmt(BreakStmt &stmt) {
+    throw errorAt(stmt.keyword, "Not implemented.");
+}
+
+void Compiler::visitContinueStmt(ContinueStmt &stmt) {
+    throw errorAt(stmt.keyword, "Not implemented.");
+}
+
+void Compiler::visitEachStmt(EachStmt &stmt) {
+    throw errorAt(stmt.name, "Not implemented.");
+}
+
+void Compiler::visitExpressionStmt(ExpressionStmt &stmt) {
+    compile(stmt.expr);
+    emitByte(OpCode::POP);
+}
+
+void Compiler::visitForStmt(ForStmt &stmt) {
+    throw CompileError{};
+}
+
+void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
+    throw errorAt(stmt.name, "Not implemented.");
+}
+
+void Compiler::visitGivenStmt(GivenStmt &stmt) {
+    throw CompileError{};
+}
+
+void Compiler::visitIfStmt(IfStmt &stmt) {
+    compile(stmt.condition);
+    if (stmt.condition->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_BOOL);
+    }
+
+    // Jump to the else branch if condition is false
+    size_t thenJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
+
+    // Pop the condition
+    emitByte(OpCode::POP);
+
+    beginScope();
+    for (Stmt& statement : stmt.thenBlock) {
+        compile(statement);
+    }
+    endScope();
+
+    // If condition was true, we'll jump to the end of the else block
+    size_t elseJumpIndex = emitJump(OpCode::JUMP);
+
+    // If condition was false, we jumped here
+    patchJump(thenJumpIndex, stmt.keyword);
+
+    // Make sure we still pop the condition
+    emitByte(OpCode::POP);
+
+    beginScope();
+    for (Stmt& statement : stmt.elseBlock) {
+        compile(statement);
+    }
+    endScope();
+
+    // If condition was true, we jumped here
+    patchJump(elseJumpIndex, stmt.keyword);
+}
+
+void Compiler::visitReturnStmt(ReturnStmt &stmt) {
+    throw errorAt(stmt.keyword, "Not implemented.");
+}
+
+void Compiler::visitStructStmt(StructStmt &stmt) {
+    throw errorAt(stmt.name, "Not implemented.");
+}
+
+void Compiler::visitTraitStmt(TraitStmt &stmt) {
+    throw errorAt(stmt.name, "Not implemented.");
+}
+
+void Compiler::visitWhileStmt(WhileStmt &stmt) {
+    size_t loopStartIndex = m_chunk.getCount();
+
+    compile(stmt.condition);
+    size_t exitJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
+
+    emitByte(OpCode::POP);
+
+    beginScope();
+    for (Stmt& statement : stmt.body) {
+        compile(statement);
+    }
+    endScope();
+
+    emitLoop(loopStartIndex, stmt.keyword);
+
+    patchJump(exitJumpIndex, stmt.keyword);
+
+    emitByte(OpCode::POP);
+}
+
+void Compiler::visitVariableStmt(VariableStmt &stmt) {
+    addVariable(stmt.name);
+    compile(stmt.initializer);
+    m_variables.back().initialized = true;
+}
+
+void Compiler::visitAnyExpr(AnyExpr &expr) {
+    throw CompileError{};
+}
+
+void Compiler::visitArrayExpr(ArrayExpr &expr) {
+    throw errorAt(expr.square, "Not implemented.");
+}
+
+void Compiler::visitAssignExpr(AssignExpr &expr) {
+    compile(expr.right);
+
+    if (typeid(*expr.left) == typeid(VariableExpr)) {
+        auto variableExpr = std::static_pointer_cast<VariableExpr>(expr.left);
+
+        uint32_t index = resolveVariable(variableExpr->name);
+        if (index <= UINT8_MAX) {
+            emitByte(OpCode::SET_VARIABLE);
+            emitByte(static_cast<uint8_t>(index));
+        } else {
+            emitByte(OpCode::SET_VARIABLE_LONG);
+            emitLong(index);
+        }
+    } else {
+        throw errorAt(expr.oper, "Not implemented.");
+    }
+}
+
+void Compiler::visitBinaryExpr(BinaryExpr &expr) {
+    compile(expr.left);
+
+    if (expr.left->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_NUMERIC);
+    }
+
+    compile(expr.right);
+
+    if (expr.right->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_NUMERIC);
+    }
+
+    OpCode op;
+
+    switch (expr.oper.type) {
+        case TokenType::PLUS: op = OpCode::ADD; break;
+        case TokenType::MINUS: op = OpCode::SUBTRACT; break;
+        case TokenType::STAR: op = OpCode::MULTIPLY; break;
+        case TokenType::SLASH: op = OpCode::DIVIDE; break;
+    }
+
+    emitByte(op);
+}
+
+void Compiler::visitBooleanExpr(BooleanExpr &expr) {
+    emitByte(expr.value ? OpCode::TRUE : OpCode::FALSE);
+}
+
+void Compiler::visitCallExpr(CallExpr &expr) {
+    throw errorAt(expr.paren, "Not implemented.");
+}
+
+void Compiler::visitFieldExpr(FieldExpr &expr) {
+    throw errorAt(expr.oper, "Not implemented.");
+}
+
+void Compiler::visitFloatExpr(FloatExpr &expr) {
+    emitConstant(Value{expr.value});
+}
+
+void Compiler::visitIntegerExpr(IntegerExpr &expr) {
+    emitConstant(Value{expr.value});
+}
+
+void Compiler::visitLogicalExpr(LogicalExpr &expr) {
+    // Always compile the left operand
+    compile(expr.left);
+
+    size_t jumpIndex = 0;
+
+    if (expr.oper.type == TokenType::OR) {
+        jumpIndex = emitJump(OpCode::JUMP_IF_TRUE);
+    } else if (expr.oper.type == TokenType::AND) {
+        jumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
+    }
+
+    emitByte(OpCode::POP);
+
+    compile(expr.right);
+
+    patchJump(jumpIndex, expr.oper);
+}
+
+void Compiler::visitNilExpr(NilExpr &expr) {
+    emitByte(OpCode::NIL);
+}
+
+void Compiler::visitStringExpr(StringExpr &expr) {
+    Object* string = new StringObject{expr.value};
+    emitConstant(Value{string});
+}
+
+void Compiler::visitSubscriptExpr(SubscriptExpr &expr) {
+    throw errorAt(expr.square, "Not implemented.");
+}
+
+void Compiler::visitTernaryExpr(TernaryExpr &expr) {
+    throw errorAt(expr.oper, "Not implemented.");
+}
+
+void Compiler::visitUnaryExpr(UnaryExpr &expr) {
+    throw errorAt(expr.oper, "Not implemented.");
+}
+
+void Compiler::visitVariableExpr(VariableExpr &expr) {
+    uint32_t index = resolveVariable(expr.name);
+    if (index <= UINT8_MAX) {
+        emitByte(OpCode::GET_VARIABLE);
+        emitByte(static_cast<uint8_t>(index));
+    } else {
+        emitByte(OpCode::GET_VARIABLE_LONG);
+        emitLong(index);
+    }
+}
+
+Compiler::CompileError Compiler::errorAt(const Token &token, const std::string &message) {
+    Enact::reportErrorAt(token, message);
+    m_hadError = true;
+    return CompileError{};
+}
+
+bool Compiler::hadError() {
+    return m_hadError;
+}
+
+void Compiler::beginScope() {
+    ++m_scopeDepth;
+}
+
+void Compiler::endScope() {
+    --m_scopeDepth;
+
+    while (!m_variables.empty() && m_variables.back().depth > m_scopeDepth) {
+        m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
+        m_variables.pop_back();
+    }
+}
+
+void Compiler::addVariable(const Token& name) {
+    m_variables.push_back(Variable{
+            name,
+            m_scopeDepth,
+            false
+    });
+}
+
+uint32_t Compiler::resolveVariable(const Token& name) {
+    for (int i = m_variables.size() - 1; i >= 0; --i) {
+        const Variable& variable = m_variables[i];
+
+        if (variable.name.lexeme == name.lexeme) {
+            if (!variable.initialized) {
+                throw errorAt(variable.name, "Cannot reference a variable in its own initializer.");
+            }
+            return i;
+        }
+    }
+
+    throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
+}
+
+void Compiler::emitByte(uint8_t byte) {
+    m_chunk.write(byte, m_chunk.getCurrentLine());
+}
+
+void Compiler::emitByte(OpCode byte) {
+    m_chunk.write(byte, m_chunk.getCurrentLine());
+}
+
+void Compiler::emitShort(uint16_t value) {
+    m_chunk.writeShort(value, m_chunk.getCurrentLine());
+}
+
+void Compiler::emitLong(uint32_t value) {
+    m_chunk.writeLong(value, m_chunk.getCurrentLine());
+}
+
+void Compiler::emitConstant(Value constant) {
+    m_chunk.writeConstant(constant, m_chunk.getCurrentLine());
+}
+
+size_t Compiler::emitJump(OpCode jump) {
+    emitByte(jump);
+    emitByte(0xff);
+    emitByte(0xff);
+    return m_chunk.getCount() - 2;
+}
+
+void Compiler::patchJump(size_t index, Token where) {
+    size_t jumpSize = m_chunk.getCount() - index - 2;
+
+    if (jumpSize > UINT16_MAX) {
+        throw errorAt(where, "Too much code in control flow block.");
+    }
+
+    m_chunk.rewrite(index, jumpSize & 0xff);
+    m_chunk.rewrite(index + 1, (jumpSize >> 8) & 0xff);
+}
+
+void Compiler::emitLoop(size_t loopStartIndex, Token where) {
+    emitByte(OpCode::LOOP);
+
+    size_t jumpSize = m_chunk.getCount() - loopStartIndex + 2;
+    if (jumpSize > UINT16_MAX) {
+        throw errorAt(where, "Too much code in loop body.");
+    }
+
+    emitByte(jumpSize & 0xff);
+    emitByte((jumpSize >> 8) & 0xff);
+}

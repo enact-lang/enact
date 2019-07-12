@@ -245,8 +245,15 @@ std::shared_ptr<Stmt> Parser::ifStatement() {
     return std::make_shared<Stmt::If>(condition, thenBlock, elseBlock);
 }
 
+<<<<<<< Updated upstream
 std::shared_ptr<Stmt> Parser::whileStatement() {
     std::shared_ptr<Expr> condition = expression();
+=======
+Stmt Parser::whileStatement() {
+    Token keyword = m_previous;
+
+    Expr condition = expression();
+>>>>>>> Stashed changes
     expect(TokenType::COLON, "Expected ':' after while condition.");
     ignoreNewline();
 
@@ -258,7 +265,11 @@ std::shared_ptr<Stmt> Parser::whileStatement() {
     expect(TokenType::END, "Expected 'end' at end of while statement.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
+<<<<<<< Updated upstream
     return std::make_shared<Stmt::While>(condition, body);
+=======
+    return std::make_shared<WhileStmt>(condition, body, keyword);
+>>>>>>> Stashed changes
 }
 
 std::shared_ptr<Stmt> Parser::expressionStatement() {

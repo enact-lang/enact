@@ -1,6 +1,7 @@
+#include <sstream>
+#include <iomanip>
+#include <strings.h>
 #include "h/Chunk.h"
-<<<<<<< Updated upstream
-=======
 
 void Chunk::write(uint8_t byte, line_t line) {
     m_code.push_back(byte);
@@ -290,4 +291,3 @@ std::string opCodeToString(OpCode code) {
         default: return "";
     }
 }
->>>>>>> Stashed changes

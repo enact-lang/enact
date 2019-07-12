@@ -1,0 +1,4 @@
+each i in [1, 2, 3]:
+    print(i); 32
+    [3] + 3
+end

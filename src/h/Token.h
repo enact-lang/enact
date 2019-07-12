@@ -20,11 +20,15 @@ enum class TokenType {
     LESS, LESS_EQUAL,
 
     // Literals.
-    IDENTIFIER, STRING, NUMBER,
+    IDENTIFIER, STRING, INTEGER, FLOAT,
 
     // Reserved words.
-    AND, BLOCK, BOOL, CLASS, CONST, EACH, ELSE, END, FALSE, FUN,
-    FOR, IF, NIL, OR, REF, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
+    AND, ASSOC, BLOCK, BREAK,
+    CLASS, CONST, CONTINUE, EACH,
+    ELSE, END, FALSE, FUN, FOR,
+    GIVEN, IF, IN, IS, NIL, OR,
+    RETURN, STRUCT, THIS, TRAIT,
+    TRUE, VAR, WHEN, WHILE,
 
     ERROR, ENDFILE, MAX,
 };
@@ -35,6 +39,5 @@ struct Token {
     line_t line;
     col_t col;
 };
-
 
 #endif //ENACT_TOKEN_H

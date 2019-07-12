@@ -6,33 +6,43 @@
 #include <string>
 #include <memory>
 
-class AstPrinter : private Stmt::Visitor<std::string>, private Expr::Visitor<std::string> {
-    std::string visitBlockStmt(Stmt::Block stmt) override;
-    std::string visitExpressionStmt(Stmt::Expression stmt) override;
-    std::string visitIfStmt(Stmt::If stmt) override;
-    std::string visitWhileStmt(Stmt::While stmt) override;
-    std::string visitVariableStmt(Stmt::Variable stmt) override;
+class AstPrinter : private StmtVisitor<std::string>, private ExprVisitor<std::string> {
+    std::string visitBlockStmt(BlockStmt& stmt) override;
+    std::string visitBreakStmt(BreakStmt& stmt) override;
+    std::string visitContinueStmt(ContinueStmt& stmt) override;
+    std::string visitEachStmt(EachStmt& stmt) override;
+    std::string visitExpressionStmt(ExpressionStmt& stmt) override;
+    std::string visitForStmt(ForStmt& stmt) override;
+    std::string visitFunctionStmt(FunctionStmt& stmt) override;
+    std::string visitGivenStmt(GivenStmt& stmt) override;
+    std::string visitIfStmt(IfStmt& stmt) override;
+    std::string visitReturnStmt(ReturnStmt& stmt) override;
+    std::string visitStructStmt(StructStmt& stmt) override;
+    std::string visitTraitStmt(TraitStmt& stmt) override;
+    std::string visitWhileStmt(WhileStmt& stmt) override;
+    std::string visitVariableStmt(VariableStmt& stmt) override;
 
-    std::string visitArrayExpr(Expr::Array expr) override;
-    std::string visitAssignExpr(Expr::Assign expr) override;
-    std::string visitBinaryExpr(Expr::Binary expr) override;
-    std::string visitBooleanExpr(Expr::Boolean expr) override;
-    std::string visitCallExpr(Expr::Call expr) override;
-    std::string visitFieldExpr(Expr::Field expr) override;
-    std::string visitLogicalExpr(Expr::Logical expr) override;
-    std::string visitNilExpr(Expr::Nil expr) override;
-    std::string visitNumberExpr(Expr::Number expr) override;
-    std::string visitReferenceExpr(Expr::Reference expr) override;
-    std::string visitStringExpr(Expr::String expr) override;
-    std::string visitSubscriptExpr(Expr::Subscript expr) override;
-    std::string visitTernaryExpr(Expr::Ternary expr) override;
-    std::string visitUnaryExpr(Expr::Unary expr) override;
-    std::string visitVariableExpr(Expr::Variable expr) override;
+    std::string visitAnyExpr(AnyExpr& expr) override;
+    std::string visitArrayExpr(ArrayExpr& expr) override;
+    std::string visitAssignExpr(AssignExpr& expr) override;
+    std::string visitBinaryExpr(BinaryExpr& expr) override;
+    std::string visitBooleanExpr(BooleanExpr& expr) override;
+    std::string visitCallExpr(CallExpr& expr) override;
+    std::string visitFieldExpr(FieldExpr& expr) override;
+    std::string visitFloatExpr(FloatExpr& expr) override;
+    std::string visitIntegerExpr(IntegerExpr& expr) override;
+    std::string visitLogicalExpr(LogicalExpr& expr) override;
+    std::string visitNilExpr(NilExpr& expr) override;
+    std::string visitStringExpr(StringExpr& expr) override;
+    std::string visitSubscriptExpr(SubscriptExpr& expr) override;
+    std::string visitTernaryExpr(TernaryExpr& expr) override;
+    std::string visitUnaryExpr(UnaryExpr& expr) override;
+    std::string visitVariableExpr(VariableExpr& expr) override;
 
-    std::string evaluate(std::shared_ptr<Stmt> stmt);
-    std::string evaluate(std::shared_ptr<Expr> expr);
+    std::string evaluate(Stmt stmt);
+    std::string evaluate(Expr expr);
 public:
-    void print(std::shared_ptr<Stmt> stmt);
+    void print(Stmt stmt);
 };
 
 #endif //ENACT_ASTPRINTER_H

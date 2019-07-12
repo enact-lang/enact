@@ -5,301 +5,347 @@
 #define ENACT_EXPR_H
 
 #include "../h/Token.h"
+#include "../h/Type.h"
 #include <memory>
 #include <vector>
 
-class Expr {
+template <class R>
+class ExprVisitor;
+
+class ExprBase {
+    Type m_type = nullptr;
 public:
-    class Array;
-    class Assign;
-    class Binary;
-    class Boolean;
-    class Call;
-    class Field;
-    class Logical;
-    class Nil;
-    class Number;
-    class Reference;
-    class String;
-    class Subscript;
-    class Ternary;
-    class Unary;
-    class Variable;
+    virtual void setType(Type t) { m_type = t; }
+    virtual const Type& getType() {
+        ENACT_ASSERT(m_type != nullptr, "Expr::getType(): Tried to get uninitialized type.");
+        return m_type;
+    }
+    virtual ~ExprBase() = default;
 
-    template <class R>
-    class Visitor {
-    public:
-        virtual R visitArrayExpr(Array None);
-        virtual R visitAssignExpr(Assign None);
-        virtual R visitBinaryExpr(Binary None);
-        virtual R visitBooleanExpr(Boolean None);
-        virtual R visitCallExpr(Call None);
-        virtual R visitFieldExpr(Field None);
-        virtual R visitLogicalExpr(Logical None);
-        virtual R visitNilExpr(Nil None);
-        virtual R visitNumberExpr(Number None);
-        virtual R visitReferenceExpr(Reference None);
-        virtual R visitStringExpr(String None);
-        virtual R visitSubscriptExpr(Subscript None);
-        virtual R visitTernaryExpr(Ternary None);
-        virtual R visitUnaryExpr(Unary None);
-        virtual R visitVariableExpr(Variable None);
-    };
-
-    virtual std::string accept(Expr::Visitor<std::string> *visitor) = 0;
-    virtual void accept(Expr::Visitor<void> *visitor) = 0;
+    virtual std::string accept(ExprVisitor<std::string> *visitor) = 0;
+    virtual void accept(ExprVisitor<void> *visitor) = 0;
 };
 
-class Expr::Array : public Expr {
+typedef std::shared_ptr<ExprBase> Expr;
+
+class ArrayExpr;
+class AssignExpr;
+class BinaryExpr;
+class BooleanExpr;
+class CallExpr;
+class FieldExpr;
+class FloatExpr;
+class IntegerExpr;
+class LogicalExpr;
+class NilExpr;
+class StringExpr;
+class SubscriptExpr;
+class TernaryExpr;
+class UnaryExpr;
+class AnyExpr;
+class VariableExpr;
+
+template <class R>
+class ExprVisitor {
 public:
-    std::vector<std::shared_ptr<Expr>> value;
+    virtual R visitArrayExpr(ArrayExpr& expr) = 0;
+    virtual R visitAssignExpr(AssignExpr& expr) = 0;
+    virtual R visitBinaryExpr(BinaryExpr& expr) = 0;
+    virtual R visitBooleanExpr(BooleanExpr& expr) = 0;
+    virtual R visitCallExpr(CallExpr& expr) = 0;
+    virtual R visitFieldExpr(FieldExpr& expr) = 0;
+    virtual R visitFloatExpr(FloatExpr& expr) = 0;
+    virtual R visitIntegerExpr(IntegerExpr& expr) = 0;
+    virtual R visitLogicalExpr(LogicalExpr& expr) = 0;
+    virtual R visitNilExpr(NilExpr& expr) = 0;
+    virtual R visitStringExpr(StringExpr& expr) = 0;
+    virtual R visitSubscriptExpr(SubscriptExpr& expr) = 0;
+    virtual R visitTernaryExpr(TernaryExpr& expr) = 0;
+    virtual R visitUnaryExpr(UnaryExpr& expr) = 0;
+    virtual R visitAnyExpr(AnyExpr& expr) = 0;
+    virtual R visitVariableExpr(VariableExpr& expr) = 0;
+};
 
-    Array(std::vector<std::shared_ptr<Expr>> value) : 
-        value{value} {}
+class ArrayExpr : public ExprBase {
+public:
+    std::vector<Expr> value;
+    Token square;
+    std::string typeName;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    ArrayExpr(std::vector<Expr> value,Token square,std::string typeName) : 
+        value{value},square{square},typeName{typeName} {}
+    ~ArrayExpr() override = default;
+
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitArrayExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitArrayExpr(*this);
     }
 };
 
-class Expr::Assign : public Expr {
+class AssignExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> left;
-    std::shared_ptr<Expr> right;
+    Expr left;
+    Expr right;
     Token oper;
 
-    Assign(std::shared_ptr<Expr> left,std::shared_ptr<Expr> right,Token oper) : 
+    AssignExpr(Expr left,Expr right,Token oper) : 
         left{left},right{right},oper{oper} {}
+    ~AssignExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitAssignExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitAssignExpr(*this);
     }
 };
 
-class Expr::Binary : public Expr {
+class BinaryExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> left;
-    std::shared_ptr<Expr> right;
+    Expr left;
+    Expr right;
     Token oper;
 
-    Binary(std::shared_ptr<Expr> left,std::shared_ptr<Expr> right,Token oper) : 
+    BinaryExpr(Expr left,Expr right,Token oper) : 
         left{left},right{right},oper{oper} {}
+    ~BinaryExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitBinaryExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitBinaryExpr(*this);
     }
 };
 
-class Expr::Boolean : public Expr {
+class BooleanExpr : public ExprBase {
 public:
     bool value;
 
-    Boolean(bool value) : 
+    BooleanExpr(bool value) : 
         value{value} {}
+    ~BooleanExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitBooleanExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitBooleanExpr(*this);
     }
 };
 
-class Expr::Call : public Expr {
+class CallExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> callee;
-    std::vector<std::shared_ptr<Expr>> arguments;
+    Expr callee;
+    std::vector<Expr> arguments;
     Token paren;
 
-    Call(std::shared_ptr<Expr> callee,std::vector<std::shared_ptr<Expr>> arguments,Token paren) : 
+    CallExpr(Expr callee,std::vector<Expr> arguments,Token paren) : 
         callee{callee},arguments{arguments},paren{paren} {}
+    ~CallExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitCallExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitCallExpr(*this);
     }
 };
 
-class Expr::Field : public Expr {
+class FieldExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> object;
+    Expr object;
     Token name;
     Token oper;
 
-    Field(std::shared_ptr<Expr> object,Token name,Token oper) : 
+    FieldExpr(Expr object,Token name,Token oper) : 
         object{object},name{name},oper{oper} {}
+    ~FieldExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitFieldExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitFieldExpr(*this);
     }
 };
 
-class Expr::Logical : public Expr {
-public:
-    std::shared_ptr<Expr> left;
-    std::shared_ptr<Expr> right;
-    Token oper;
-
-    Logical(std::shared_ptr<Expr> left,std::shared_ptr<Expr> right,Token oper) : 
-        left{left},right{right},oper{oper} {}
-
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
-        return visitor->visitLogicalExpr(*this);
-    }
-
-    void accept(Expr::Visitor<void> *visitor) override {
-        return visitor->visitLogicalExpr(*this);
-    }
-};
-
-class Expr::Nil : public Expr {
-public:
-    Nil() = default;
-
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
-        return visitor->visitNilExpr(*this);
-    }
-
-    void accept(Expr::Visitor<void> *visitor) override {
-        return visitor->visitNilExpr(*this);
-    }
-};
-
-class Expr::Number : public Expr {
+class FloatExpr : public ExprBase {
 public:
     double value;
 
-    Number(double value) : 
+    FloatExpr(double value) : 
         value{value} {}
+    ~FloatExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
-        return visitor->visitNumberExpr(*this);
+    std::string accept(ExprVisitor<std::string> *visitor) override {
+        return visitor->visitFloatExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
-        return visitor->visitNumberExpr(*this);
+    void accept(ExprVisitor<void> *visitor) override {
+        return visitor->visitFloatExpr(*this);
     }
 };
 
-class Expr::Reference : public Expr {
+class IntegerExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> object;
+    int value;
+
+    IntegerExpr(int value) : 
+        value{value} {}
+    ~IntegerExpr() override = default;
+
+    std::string accept(ExprVisitor<std::string> *visitor) override {
+        return visitor->visitIntegerExpr(*this);
+    }
+
+    void accept(ExprVisitor<void> *visitor) override {
+        return visitor->visitIntegerExpr(*this);
+    }
+};
+
+class LogicalExpr : public ExprBase {
+public:
+    Expr left;
+    Expr right;
     Token oper;
 
-    Reference(std::shared_ptr<Expr> object,Token oper) : 
-        object{object},oper{oper} {}
+    LogicalExpr(Expr left,Expr right,Token oper) : 
+        left{left},right{right},oper{oper} {}
+    ~LogicalExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
-        return visitor->visitReferenceExpr(*this);
+    std::string accept(ExprVisitor<std::string> *visitor) override {
+        return visitor->visitLogicalExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
-        return visitor->visitReferenceExpr(*this);
+    void accept(ExprVisitor<void> *visitor) override {
+        return visitor->visitLogicalExpr(*this);
     }
 };
 
-class Expr::String : public Expr {
+class NilExpr : public ExprBase {
+public:
+    NilExpr() = default;
+    ~NilExpr() override = default;
+
+    std::string accept(ExprVisitor<std::string> *visitor) override {
+        return visitor->visitNilExpr(*this);
+    }
+
+    void accept(ExprVisitor<void> *visitor) override {
+        return visitor->visitNilExpr(*this);
+    }
+};
+
+class StringExpr : public ExprBase {
 public:
     std::string value;
 
-    String(std::string value) : 
+    StringExpr(std::string value) : 
         value{value} {}
+    ~StringExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitStringExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitStringExpr(*this);
     }
 };
 
-class Expr::Subscript : public Expr {
+class SubscriptExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> object;
-    std::shared_ptr<Expr> index;
+    Expr object;
+    Expr index;
     Token square;
 
-    Subscript(std::shared_ptr<Expr> object,std::shared_ptr<Expr> index,Token square) : 
+    SubscriptExpr(Expr object,Expr index,Token square) : 
         object{object},index{index},square{square} {}
+    ~SubscriptExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitSubscriptExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitSubscriptExpr(*this);
     }
 };
 
-class Expr::Ternary : public Expr {
+class TernaryExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> condition;
-    std::shared_ptr<Expr> thenExpr;
-    std::shared_ptr<Expr> elseExpr;
+    Expr condition;
+    Expr thenExpr;
+    Expr elseExpr;
     Token oper;
 
-    Ternary(std::shared_ptr<Expr> condition,std::shared_ptr<Expr> thenExpr,std::shared_ptr<Expr> elseExpr,Token oper) : 
+    TernaryExpr(Expr condition,Expr thenExpr,Expr elseExpr,Token oper) : 
         condition{condition},thenExpr{thenExpr},elseExpr{elseExpr},oper{oper} {}
+    ~TernaryExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitTernaryExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitTernaryExpr(*this);
     }
 };
 
-class Expr::Unary : public Expr {
+class UnaryExpr : public ExprBase {
 public:
-    std::shared_ptr<Expr> operand;
+    Expr operand;
     Token oper;
 
-    Unary(std::shared_ptr<Expr> operand,Token oper) : 
+    UnaryExpr(Expr operand,Token oper) : 
         operand{operand},oper{oper} {}
+    ~UnaryExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitUnaryExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitUnaryExpr(*this);
     }
 };
 
-class Expr::Variable : public Expr {
+class AnyExpr : public ExprBase {
+public:
+    AnyExpr() = default;
+    ~AnyExpr() override = default;
+
+    std::string accept(ExprVisitor<std::string> *visitor) override {
+        return visitor->visitAnyExpr(*this);
+    }
+
+    void accept(ExprVisitor<void> *visitor) override {
+        return visitor->visitAnyExpr(*this);
+    }
+};
+
+class VariableExpr : public ExprBase {
 public:
     Token name;
 
-    Variable(Token name) : 
+    VariableExpr(Token name) : 
         name{name} {}
+    ~VariableExpr() override = default;
 
-    std::string accept(Expr::Visitor<std::string> *visitor) override {
+    std::string accept(ExprVisitor<std::string> *visitor) override {
         return visitor->visitVariableExpr(*this);
     }
 
-    void accept(Expr::Visitor<void> *visitor) override {
+    void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitVariableExpr(*this);
     }
 };

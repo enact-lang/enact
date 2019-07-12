@@ -1,6 +1,3 @@
-<<<<<<< Updated upstream
-#include "h/VM.h"
-=======
 #include "h/VM.h"
 #include "h/Enact.h"
 
@@ -163,4 +160,3 @@ Value VM::pop() {
 Value VM::peek(size_t depth) {
     return m_stack[m_stack.size() - 1 - depth];
 }
->>>>>>> Stashed changes

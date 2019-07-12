@@ -2,6 +2,7 @@
 #define ENACT_ENACT_H
 
 #include <string>
+#include "Analyser.h"
 #include "VM.h"
 
 enum class ExitCode {
@@ -13,10 +14,18 @@ enum class ExitCode {
 };
 
 class Enact {
+    static std::string m_source;
+    static Analyser m_analyser;
+    static VM m_vm;
 public:
-    static void run(const std::string &source);
+    static InterpretResult run(const std::string &source);
     static void runFile(const std::string &path);
     static void runPrompt();
+
+    static std::string getSourceLine(const line_t line);
+
+    static void reportErrorAt(const Token &token, const std::string &message);
+
     static void start(int argc, char *argv[]);
 };
 

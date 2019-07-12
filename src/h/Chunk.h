@@ -1,8 +1,6 @@
 #ifndef ENACT_CHUNK_H
 #define ENACT_CHUNK_H
 
-<<<<<<< Updated upstream
-=======
 #include <vector>
 #include "common.h"
 #include "Value.h"
@@ -34,9 +32,9 @@ enum class OpCode : uint8_t {
     JUMP,
     JUMP_IF_TRUE,
     JUMP_IF_FALSE,
-
+  
     LOOP,
-
+  
     RETURN,
 };
 
@@ -83,5 +81,4 @@ public:
     size_t getCount() const;
 };
 
->>>>>>> Stashed changes
 #endif //ENACT_CHUNK_H

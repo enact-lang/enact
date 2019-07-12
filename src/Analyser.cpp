@@ -69,6 +69,7 @@ void Analyser::visitExpressionStmt(ExpressionStmt &stmt) {
 }
 
 void Analyser::visitForStmt(ForStmt &stmt) {
+    beginScope();
     analyse(stmt.initializer);
 
     analyse(stmt.condition);
@@ -77,8 +78,6 @@ void Analyser::visitForStmt(ForStmt &stmt) {
                 + stmt.condition->getType()->toString() + "'.");
     }
 
-    analyse(stmt.increment);
-
     m_insideLoop = true;
     beginScope();
     for (Stmt &statement : stmt.body) {
@@ -86,6 +85,9 @@ void Analyser::visitForStmt(ForStmt &stmt) {
     }
     endScope();
     m_insideLoop = false;
+
+    analyse(stmt.increment);
+    endScope();
 }
 
 void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
@@ -403,10 +405,6 @@ void Analyser::visitBinaryExpr(BinaryExpr &expr) {
         case TokenType::MINUS:
         case TokenType::STAR:
         case TokenType::SLASH:
-        case TokenType::LESS:
-        case TokenType::LESS_EQUAL:
-        case TokenType::GREATER:
-        case TokenType::GREATER_EQUAL:
             if (!left->maybeNumeric() ||
                 !right->maybeNumeric()) {
                 throw errorAt(expr.oper, "Operator '" + expr.oper.lexeme + "' may only be applied to numbers.");
@@ -420,6 +418,18 @@ void Analyser::visitBinaryExpr(BinaryExpr &expr) {
                 expr.setType(m_types["any"]);
             }
 
+            break;
+
+        case TokenType::LESS:
+        case TokenType::LESS_EQUAL:
+        case TokenType::GREATER:
+        case TokenType::GREATER_EQUAL:
+            if (!left->maybeNumeric() ||
+                !right->maybeNumeric()) {
+                throw errorAt(expr.oper, "Operator '" + expr.oper.lexeme + "' may only be applied to numbers.");
+            }
+
+            expr.setType(m_types["bool"]);
             break;
 
         case TokenType::PLUS:

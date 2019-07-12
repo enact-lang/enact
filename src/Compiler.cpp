@@ -53,6 +53,7 @@ void Compiler::visitExpressionStmt(ExpressionStmt &stmt) {
 }
 
 void Compiler::visitForStmt(ForStmt &stmt) {
+    beginScope();
     compile(stmt.initializer);
 
     size_t loopStartIndex = m_chunk.getCount();
@@ -73,6 +74,9 @@ void Compiler::visitForStmt(ForStmt &stmt) {
     endScope();
 
     compile(stmt.increment);
+    endScope();
+
+    // Pop the increment
     emitByte(OpCode::POP);
 
     emitLoop(loopStartIndex, stmt.keyword);

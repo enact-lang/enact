@@ -147,9 +147,10 @@ public:
     Expr condition;
     Expr increment;
     std::vector<Stmt> body;
+    Token keyword;
 
-    ForStmt(Stmt initializer,Expr condition,Expr increment,std::vector<Stmt> body) : 
-        initializer{initializer},condition{condition},increment{increment},body{body} {}
+    ForStmt(Stmt initializer,Expr condition,Expr increment,std::vector<Stmt> body,Token keyword) :
+        initializer{initializer},condition{condition},increment{increment},body{body},keyword{keyword} {}
     ~ForStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {

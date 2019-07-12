@@ -388,6 +388,8 @@ Stmt Parser::whileStatement() {
 }
 
 Stmt Parser::forStatement() {
+    Token keyword = m_previous;
+
     Stmt initializer;
     if (consume(TokenType::SEMICOLON)) {
         initializer = std::make_shared<ExpressionStmt>(std::make_shared<NilExpr>());
@@ -426,7 +428,7 @@ Stmt Parser::forStatement() {
     expect(TokenType::END, "Expected 'end' at end of for loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<ForStmt>(initializer, condition, increment, body);
+    return std::make_shared<ForStmt>(initializer, condition, increment, body, keyword);
 }
 
 Stmt Parser::eachStatement() {

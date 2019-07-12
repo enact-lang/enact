@@ -1,51 +1,105 @@
 #ifndef ENACT_OBJECT_H
 #define ENACT_OBJECT_H
 
-#include <iostream>
 #include <string>
+#include "Type.h"
+#include "Value.h"
 
 enum class ObjectType {
     STRING,
-    IDENTIFIER
+    ARRAY,
 };
 
 class StringObject;
-class IdentifierObject;
+class ArrayObject;
 
 class Object {
-private:
+    static Object* m_objects;
+
     ObjectType m_type;
+    Object* m_next = nullptr;
+
 public:
     explicit Object(ObjectType type);
-    Object *next = nullptr;
+    virtual ~Object() = default;
 
-    bool operator==(Object &object);
+    static void freeAll();
 
-    bool isString() const;
-    bool isIdentifier() const;
+    template <typename T>
+    inline bool is() const;
 
-    StringObject* asString();
-    IdentifierObject* asIdentifier();
+    template <typename T>
+    inline T* as();
 
-    friend std::ostream& operator<<(std::ostream &stream, Object &object);
+    template <typename T>
+    inline const T* as() const;
+
+    bool operator==(const Object& object) const;
+
+    std::string toString() const;
+
+    virtual Type getType() const = 0;
 };
+
+std::ostream& operator<<(std::ostream& stream, const Object& object);
+
+template<typename T>
+inline bool Object::is() const {
+    static_assert(IsAny<T, StringObject, ArrayObject>::value,
+                  "Object::is<T>: T must be StringObject or ArrayObject.");
+
+    if (std::is_same_v<T, StringObject>) {
+        return m_type == ObjectType::STRING;
+    } else if (std::is_same_v<T, ArrayObject>) {
+        return m_type == ObjectType::ARRAY;
+    }
+
+    return false;
+}
+
+template<typename T>
+inline T* Object::as() {
+    static_assert(IsAny<T, StringObject, ArrayObject>::value,
+                  "Object::as<T>: T must be StringObject or ArrayObject.");
+
+    return static_cast<T*>(this);
+}
+
+template<typename T>
+inline const T* Object::as() const {
+    static_assert(IsAny<T, StringObject, ArrayObject>::value, "Object::as<T>: T must be StringObject or ArrayObject.");
+    return static_cast<const T*>(this);
+}
+
 
 class StringObject : public Object {
-private:
-    std::string m_str;
-public:
-    explicit StringObject(std::string value);
+    std::string m_data;
 
-    StringObject operator+(StringObject &object) const;
+public:
+    explicit StringObject(std::string data);
+    ~StringObject() override = default;
+
     const std::string& asStdString() const;
+
+    Type getType() const override;
 };
 
-class IdentifierObject : public Object {
-private:
-    std::string m_str;
+class Value;
+
+class ArrayObject : public Object {
+    std::vector<Value> m_vector;
+
 public:
-    explicit IdentifierObject(std::string value);
-    const std::string& asStdString() const;
+    explicit ArrayObject();
+    explicit ArrayObject(std::vector<Value> vector);
+
+    ~ArrayObject() override = default;
+
+    std::optional<Value> at(size_t index) const;
+
+    const std::vector<Value>& asVector() const;
+
+    Type getType() const override;
 };
 
 #endif //ENACT_OBJECT_H

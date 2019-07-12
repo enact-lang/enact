@@ -1,0 +1,19 @@
+dist: trusty
+
+language: cpp
+compiler: gcc
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-8
+      - g++-8
+      - cmake
+
+script:
+    - export CC=gcc-8
+    - export CXX=g++-8
+    - cmake ./
+    - cmake --build ./ --target enact -- -j 2

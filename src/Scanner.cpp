@@ -67,7 +67,6 @@ void Scanner::skipWhitespace() {
             case '/':
                 if (peekNext() == '/') {
                     while (peek() != '\n' && !isAtEnd()) advance();
-                    match('\n');
                 } else {
                     return;
                 }
@@ -81,12 +80,15 @@ void Scanner::skipWhitespace() {
 Token Scanner::number() {
     while (isDigit(peek())) advance();
 
+    TokenType type = TokenType::INTEGER;
+
     if (peek() == '.') {
+        type = TokenType::FLOAT;
         advance();
         while (isDigit(peek())) advance();
     }
 
-    return makeToken(TokenType::NUMBER);
+    return makeToken(type);
 }
 
 Token Scanner::identifier() {
@@ -118,44 +120,35 @@ Token Scanner::errorToken(const std::string &what) {
 }
 
 TokenType Scanner::identifierType(std::string candidate) {
-    if (candidate == "and")     return TokenType::AND;
-    if (candidate == "block")   return TokenType::BLOCK;
-    if (candidate == "bool")    return TokenType::BOOL;
-    if (candidate == "class")   return TokenType::CLASS;
-    if (candidate == "const")   return TokenType::CONST;
-    if (candidate == "each")    return TokenType::EACH;
-    if (candidate == "else")    return TokenType::ELSE;
-    if (candidate == "end")     return TokenType::END;
-    if (candidate == "false")   return TokenType::FALSE;
-    if (candidate == "fun")     return TokenType::FUN;
-    if (candidate == "for")     return TokenType::FOR;
-    if (candidate == "given")   return TokenType::GIVEN;
-    if (candidate == "if")      return TokenType::IF;
-    if (candidate == "in")      return TokenType::IN;
-    if (candidate == "nil")     return TokenType::NIL;
-    if (candidate == "or")      return TokenType::OR;
-    if (candidate == "ref")     return TokenType::REF;
-    if (candidate == "return")  return TokenType::RETURN;
-    if (candidate == "super")   return TokenType::SUPER;
-    if (candidate == "this")    return TokenType::THIS;
-    if (candidate == "true")    return TokenType::TRUE;
-    if (candidate == "var")     return TokenType::VAR;
-    if (candidate == "when")    return TokenType::WHEN;
-    if (candidate == "while")   return TokenType::WHILE;
+    if (candidate == "and")      return TokenType::AND;
+    if (candidate == "assoc")    return TokenType::ASSOC;
+    if (candidate == "block")    return TokenType::BLOCK;
+    if (candidate == "break")    return TokenType::BREAK;
+    if (candidate == "class")    return TokenType::CLASS;
+    if (candidate == "const")    return TokenType::CONST;
+    if (candidate == "continue") return TokenType::CONTINUE;
+    if (candidate == "each")     return TokenType::EACH;
+    if (candidate == "else")     return TokenType::ELSE;
+    if (candidate == "end")      return TokenType::END;
+    if (candidate == "false")    return TokenType::FALSE;
+    if (candidate == "fun")      return TokenType::FUN;
+    if (candidate == "for")      return TokenType::FOR;
+    if (candidate == "given")    return TokenType::GIVEN;
+    if (candidate == "if")       return TokenType::IF;
+    if (candidate == "in")       return TokenType::IN;
+    if (candidate == "is")       return TokenType::IS;
+    if (candidate == "nil")      return TokenType::NIL;
+    if (candidate == "or")       return TokenType::OR;
+    if (candidate == "return")   return TokenType::RETURN;
+    if (candidate == "struct")   return TokenType::STRUCT;
+    if (candidate == "this")     return TokenType::THIS;
+    if (candidate == "trait")    return TokenType::TRAIT;
+    if (candidate == "true")     return TokenType::TRUE;
+    if (candidate == "var")      return TokenType::VAR;
+    if (candidate == "when")     return TokenType::WHEN;
+    if (candidate == "while")    return TokenType::WHILE;
 
     return TokenType::IDENTIFIER;
-}
-
-std::string Scanner::getSourceLine(line_t line) {
-    std::istringstream source{m_source};
-    line_t lineNumber{1};
-    std::string lineContents;
-
-    while (std::getline(source, lineContents) && lineNumber < line) {
-        ++lineNumber;
-    }
-
-    return lineContents;
 }
 
 bool Scanner::isAtEnd() {
@@ -199,4 +192,10 @@ bool Scanner::isIdentifierStart(char c) {
 
 bool Scanner::isIdentifier(char c) {
     return isIdentifierStart(c) || isDigit(c);
+}
+
+Token Scanner::backtrack() {
+    m_current -= m_last.lexeme.size();
+    m_start = m_current;
+    return m_last;
 }

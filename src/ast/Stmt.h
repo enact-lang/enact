@@ -5,172 +5,313 @@
 #define ENACT_STMT_H
 
 #include "Expr.h"
-#include "../h/GivenCase.h"
+#include "../h/trivialStructs.h"
 
-class Stmt {
+template <class R>
+class StmtVisitor;
+
+class StmtBase {
 public:
-    class Block;
-    class Each;
-    class Expression;
-    class For;
-    class Given;
-    class If;
-    class While;
-    class Variable;
+    virtual ~StmtBase() = default;
 
-    template <class R>
-    class Visitor {
-    public:
-        virtual R visitBlockStmt(Block None);
-        virtual R visitEachStmt(Each None);
-        virtual R visitExpressionStmt(Expression None);
-        virtual R visitForStmt(For None);
-        virtual R visitGivenStmt(Given None);
-        virtual R visitIfStmt(If None);
-        virtual R visitWhileStmt(While None);
-        virtual R visitVariableStmt(Variable None);
-    };
-
-    virtual std::string accept(Stmt::Visitor<std::string> *visitor) = 0;
-    virtual void accept(Stmt::Visitor<void> *visitor) = 0;
+    virtual std::string accept(StmtVisitor<std::string> *visitor) = 0;
+    virtual void accept(StmtVisitor<void> *visitor) = 0;
 };
 
-class Stmt::Block : public Stmt {
-public:
-    std::vector<std::shared_ptr<Stmt>> statements;
+typedef std::shared_ptr<StmtBase> Stmt;
 
-    Block(std::vector<std::shared_ptr<Stmt>> statements) : 
+class BlockStmt;
+class BreakStmt;
+class ContinueStmt;
+class EachStmt;
+class ExpressionStmt;
+class ForStmt;
+class FunctionStmt;
+class GivenStmt;
+class IfStmt;
+class ReturnStmt;
+class StructStmt;
+class TraitStmt;
+class WhileStmt;
+class VariableStmt;
+
+template <class R>
+class StmtVisitor {
+public:
+    virtual R visitBlockStmt(BlockStmt& stmt) = 0;
+    virtual R visitBreakStmt(BreakStmt& stmt) = 0;
+    virtual R visitContinueStmt(ContinueStmt& stmt) = 0;
+    virtual R visitEachStmt(EachStmt& stmt) = 0;
+    virtual R visitExpressionStmt(ExpressionStmt& stmt) = 0;
+    virtual R visitForStmt(ForStmt& stmt) = 0;
+    virtual R visitFunctionStmt(FunctionStmt& stmt) = 0;
+    virtual R visitGivenStmt(GivenStmt& stmt) = 0;
+    virtual R visitIfStmt(IfStmt& stmt) = 0;
+    virtual R visitReturnStmt(ReturnStmt& stmt) = 0;
+    virtual R visitStructStmt(StructStmt& stmt) = 0;
+    virtual R visitTraitStmt(TraitStmt& stmt) = 0;
+    virtual R visitWhileStmt(WhileStmt& stmt) = 0;
+    virtual R visitVariableStmt(VariableStmt& stmt) = 0;
+};
+
+class BlockStmt : public StmtBase {
+public:
+    std::vector<Stmt> statements;
+
+    BlockStmt(std::vector<Stmt> statements) : 
         statements{statements} {}
+    ~BlockStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitBlockStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitBlockStmt(*this);
     }
 };
 
-class Stmt::Each : public Stmt {
+class BreakStmt : public StmtBase {
+public:
+    Token keyword;
+
+    BreakStmt(Token keyword) : 
+        keyword{keyword} {}
+    ~BreakStmt() override = default;
+
+    std::string accept(StmtVisitor<std::string> *visitor) override {
+        return visitor->visitBreakStmt(*this);
+    }
+
+    void accept(StmtVisitor<void> *visitor) override {
+        return visitor->visitBreakStmt(*this);
+    }
+};
+
+class ContinueStmt : public StmtBase {
+public:
+    Token keyword;
+
+    ContinueStmt(Token keyword) : 
+        keyword{keyword} {}
+    ~ContinueStmt() override = default;
+
+    std::string accept(StmtVisitor<std::string> *visitor) override {
+        return visitor->visitContinueStmt(*this);
+    }
+
+    void accept(StmtVisitor<void> *visitor) override {
+        return visitor->visitContinueStmt(*this);
+    }
+};
+
+class EachStmt : public StmtBase {
 public:
     Token name;
-    std::shared_ptr<Expr> object;
-    std::vector<std::shared_ptr<Stmt>> body;
+    Expr object;
+    std::vector<Stmt> body;
 
-    Each(Token name,std::shared_ptr<Expr> object,std::vector<std::shared_ptr<Stmt>> body) : 
+    EachStmt(Token name,Expr object,std::vector<Stmt> body) : 
         name{name},object{object},body{body} {}
+    ~EachStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitEachStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitEachStmt(*this);
     }
 };
 
-class Stmt::Expression : public Stmt {
+class ExpressionStmt : public StmtBase {
 public:
-    std::shared_ptr<Expr> expr;
+    Expr expr;
 
-    Expression(std::shared_ptr<Expr> expr) : 
+    ExpressionStmt(Expr expr) : 
         expr{expr} {}
+    ~ExpressionStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitExpressionStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitExpressionStmt(*this);
     }
 };
 
-class Stmt::For : public Stmt {
+class ForStmt : public StmtBase {
 public:
-    std::shared_ptr<Stmt> initializer;
-    std::shared_ptr<Expr> condition;
-    std::shared_ptr<Expr> increment;
-    std::vector<std::shared_ptr<Stmt>> body;
+    Stmt initializer;
+    Expr condition;
+    Expr increment;
+    std::vector<Stmt> body;
+    Token keyword;
 
-    For(std::shared_ptr<Stmt> initializer,std::shared_ptr<Expr> condition,std::shared_ptr<Expr> increment,std::vector<std::shared_ptr<Stmt>> body) : 
-        initializer{initializer},condition{condition},increment{increment},body{body} {}
+    ForStmt(Stmt initializer,Expr condition,Expr increment,std::vector<Stmt> body,Token keyword) :
+        initializer{initializer},condition{condition},increment{increment},body{body},keyword{keyword} {}
+    ~ForStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitForStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitForStmt(*this);
     }
 };
 
-class Stmt::Given : public Stmt {
+class FunctionStmt : public StmtBase {
 public:
-    std::shared_ptr<Expr> value;
+    Token name;
+    std::string returnTypeName;
+    std::vector<NamedTypename> params;
+    std::vector<Stmt> body;
+
+    FunctionStmt(Token name,std::string returnTypeName,std::vector<NamedTypename> params,std::vector<Stmt> body) : 
+        name{name},returnTypeName{returnTypeName},params{params},body{body} {}
+    ~FunctionStmt() override = default;
+
+    std::string accept(StmtVisitor<std::string> *visitor) override {
+        return visitor->visitFunctionStmt(*this);
+    }
+
+    void accept(StmtVisitor<void> *visitor) override {
+        return visitor->visitFunctionStmt(*this);
+    }
+};
+
+class GivenStmt : public StmtBase {
+public:
+    Expr value;
     std::vector<GivenCase> cases;
 
-    Given(std::shared_ptr<Expr> value,std::vector<GivenCase> cases) : 
+    GivenStmt(Expr value,std::vector<GivenCase> cases) : 
         value{value},cases{cases} {}
+    ~GivenStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitGivenStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitGivenStmt(*this);
     }
 };
 
-class Stmt::If : public Stmt {
+class IfStmt : public StmtBase {
 public:
-    std::shared_ptr<Expr> condition;
-    std::vector<std::shared_ptr<Stmt>> thenBlock;
-    std::vector<std::shared_ptr<Stmt>> elseBlock;
+    Expr condition;
+    std::vector<Stmt> thenBlock;
+    std::vector<Stmt> elseBlock;
+    Token keyword;
 
-    If(std::shared_ptr<Expr> condition,std::vector<std::shared_ptr<Stmt>> thenBlock,std::vector<std::shared_ptr<Stmt>> elseBlock) : 
-        condition{condition},thenBlock{thenBlock},elseBlock{elseBlock} {}
+    IfStmt(Expr condition,std::vector<Stmt> thenBlock,std::vector<Stmt> elseBlock,Token keyword) : 
+        condition{condition},thenBlock{thenBlock},elseBlock{elseBlock},keyword{keyword} {}
+    ~IfStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitIfStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitIfStmt(*this);
     }
 };
 
-class Stmt::While : public Stmt {
+class ReturnStmt : public StmtBase {
 public:
-    std::shared_ptr<Expr> condition;
-    std::vector<std::shared_ptr<Stmt>> body;
+    Token keyword;
+    Expr value;
 
-    While(std::shared_ptr<Expr> condition,std::vector<std::shared_ptr<Stmt>> body) : 
-        condition{condition},body{body} {}
+    ReturnStmt(Token keyword,Expr value) : 
+        keyword{keyword},value{value} {}
+    ~ReturnStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
+        return visitor->visitReturnStmt(*this);
+    }
+
+    void accept(StmtVisitor<void> *visitor) override {
+        return visitor->visitReturnStmt(*this);
+    }
+};
+
+class StructStmt : public StmtBase {
+public:
+    Token name;
+    std::vector<Token> traits;
+    std::vector<NamedTypename> fields;
+    std::vector<std::shared_ptr<FunctionStmt>> methods;
+    std::vector<std::shared_ptr<FunctionStmt>> assocFunctions;
+
+    StructStmt(Token name,std::vector<Token> traits,std::vector<NamedTypename> fields,std::vector<std::shared_ptr<FunctionStmt>> methods,std::vector<std::shared_ptr<FunctionStmt>> assocFunctions) : 
+        name{name},traits{traits},fields{fields},methods{methods},assocFunctions{assocFunctions} {}
+    ~StructStmt() override = default;
+
+    std::string accept(StmtVisitor<std::string> *visitor) override {
+        return visitor->visitStructStmt(*this);
+    }
+
+    void accept(StmtVisitor<void> *visitor) override {
+        return visitor->visitStructStmt(*this);
+    }
+};
+
+class TraitStmt : public StmtBase {
+public:
+    Token name;
+    std::vector<std::shared_ptr<FunctionStmt>> methods;
+
+    TraitStmt(Token name,std::vector<std::shared_ptr<FunctionStmt>> methods) : 
+        name{name},methods{methods} {}
+    ~TraitStmt() override = default;
+
+    std::string accept(StmtVisitor<std::string> *visitor) override {
+        return visitor->visitTraitStmt(*this);
+    }
+
+    void accept(StmtVisitor<void> *visitor) override {
+        return visitor->visitTraitStmt(*this);
+    }
+};
+
+class WhileStmt : public StmtBase {
+public:
+    Expr condition;
+    std::vector<Stmt> body;
+    Token keyword;
+
+    WhileStmt(Expr condition,std::vector<Stmt> body,Token keyword) :
+        condition{condition},body{body},keyword{keyword} {}
+    ~WhileStmt() override = default;
+
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitWhileStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitWhileStmt(*this);
     }
 };
 
-class Stmt::Variable : public Stmt {
+class VariableStmt : public StmtBase {
 public:
     Token name;
     std::string typeName;
-    std::shared_ptr<Expr> initializer;
+    Expr initializer;
     bool isConst;
 
-    Variable(Token name,std::string typeName,std::shared_ptr<Expr> initializer,bool isConst) : 
+    VariableStmt(Token name,std::string typeName,Expr initializer,bool isConst) : 
         name{name},typeName{typeName},initializer{initializer},isConst{isConst} {}
+    ~VariableStmt() override = default;
 
-    std::string accept(Stmt::Visitor<std::string> *visitor) override {
+    std::string accept(StmtVisitor<std::string> *visitor) override {
         return visitor->visitVariableStmt(*this);
     }
 
-    void accept(Stmt::Visitor<void> *visitor) override {
+    void accept(StmtVisitor<void> *visitor) override {
         return visitor->visitVariableStmt(*this);
     }
 };

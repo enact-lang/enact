@@ -280,9 +280,10 @@ class WhileStmt : public StmtBase {
 public:
     Expr condition;
     std::vector<Stmt> body;
+    Token keyword;
 
-    WhileStmt(Expr condition,std::vector<Stmt> body) : 
-        condition{condition},body{body} {}
+    WhileStmt(Expr condition,std::vector<Stmt> body,Token keyword) :
+        condition{condition},body{body},keyword{keyword} {}
     ~WhileStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {

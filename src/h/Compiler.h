@@ -60,6 +60,8 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     void emitByte(uint8_t byte);
     void emitByte(OpCode byte);
 
+    void emitShort(uint16_t value);
+  
     void emitLong(uint32_t value);
 
     void emitConstant(Value constant);
@@ -67,6 +69,8 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     size_t emitJump(OpCode jump);
     void patchJump(size_t index, Token where);
 
+    void emitLoop(size_t loopStartIndex, Token where);
+  
     class CompileError : public std::runtime_error {
     public:
         CompileError() : std::runtime_error{"Internal error, raising exception:\nUncaught CompileError!"} {}

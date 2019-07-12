@@ -369,7 +369,10 @@ Stmt Parser::ifStatement() {
 }
 
 Stmt Parser::whileStatement() {
+    Token keyword = m_previous;
+
     Expr condition = expression();
+    
     expect(TokenType::COLON, "Expected ':' after while condition.");
     ignoreNewline();
 
@@ -381,7 +384,7 @@ Stmt Parser::whileStatement() {
     expect(TokenType::END, "Expected 'end' at end of while loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<WhileStmt>(condition, body);
+    return std::make_shared<WhileStmt>(condition, body, keyword);
 }
 
 Stmt Parser::forStatement() {

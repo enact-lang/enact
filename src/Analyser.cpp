@@ -297,6 +297,10 @@ void Analyser::visitTraitStmt(TraitStmt &stmt) {
 
 void Analyser::visitWhileStmt(WhileStmt &stmt) {
     analyse(stmt.condition);
+  
+    if (!stmt.condition->getType()->maybeBool()) {
+        throw errorAt(stmt.keyword, "While condition must be a bool.");
+    }
 
     m_insideLoop = true;
     beginScope();

@@ -12,6 +12,11 @@ void Chunk::write(OpCode byte, line_t line) {
     write(static_cast<uint8_t>(byte), line);
 }
 
+void Chunk::writeShort(uint32_t value, line_t line) {
+    write(static_cast<uint8_t>(value & 0xff), line);
+    write(static_cast<uint8_t>((value >> 8) & 0xff), line);
+}
+
 void Chunk::writeLong(uint32_t value, line_t line) {
     write(static_cast<uint8_t>(value & 0xff), line);
     write(static_cast<uint8_t>((value >> 8) & 0xff), line);
@@ -106,7 +111,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         // Short instructions
         case OpCode::JUMP:
         case OpCode::JUMP_IF_TRUE:
-        case OpCode::JUMP_IF_FALSE: {
+        case OpCode::JUMP_IF_FALSE:
+        case OpCode::LOOP: {
             std::string str;
             std::tie(str, index) = disassembleShort(index);
             s << str;
@@ -279,6 +285,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::JUMP: return "JUMP";
         case OpCode::JUMP_IF_TRUE: return "JUMP_IF_TRUE";
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
+        case OpCode::LOOP: return "LOOP";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.
         default: return "";

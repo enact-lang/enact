@@ -117,6 +117,13 @@ InterpretResult VM::run(const Chunk& chunk) {
                 break;
             }
 
+            case OpCode::LOOP: {
+                uint16_t jumpSize = READ_SHORT();
+                index -= jumpSize;
+                ip -= jumpSize;
+                break;
+            }
+
             case OpCode::RETURN:
                 return InterpretResult::OK;
         }

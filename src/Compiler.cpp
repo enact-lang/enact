@@ -114,7 +114,24 @@ void Compiler::visitTraitStmt(TraitStmt &stmt) {
 }
 
 void Compiler::visitWhileStmt(WhileStmt &stmt) {
-    throw CompileError{};
+    size_t loopStartIndex = m_chunk.getCount();
+
+    compile(stmt.condition);
+    size_t exitJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
+
+    emitByte(OpCode::POP);
+
+    beginScope();
+    for (Stmt& statement : stmt.body) {
+        compile(statement);
+    }
+    endScope();
+
+    emitLoop(loopStartIndex, stmt.keyword);
+
+    patchJump(exitJumpIndex, stmt.keyword);
+
+    emitByte(OpCode::POP);
 }
 
 void Compiler::visitVariableStmt(VariableStmt &stmt) {
@@ -300,6 +317,10 @@ void Compiler::emitByte(OpCode byte) {
     m_chunk.write(byte, m_chunk.getCurrentLine());
 }
 
+void Compiler::emitShort(uint16_t value) {
+    m_chunk.writeShort(value, m_chunk.getCurrentLine());
+}
+
 void Compiler::emitLong(uint32_t value) {
     m_chunk.writeLong(value, m_chunk.getCurrentLine());
 }
@@ -324,4 +345,16 @@ void Compiler::patchJump(size_t index, Token where) {
 
     m_chunk.rewrite(index, jumpSize & 0xff);
     m_chunk.rewrite(index + 1, (jumpSize >> 8) & 0xff);
+}
+
+void Compiler::emitLoop(size_t loopStartIndex, Token where) {
+    emitByte(OpCode::LOOP);
+
+    size_t jumpSize = m_chunk.getCount() - loopStartIndex + 2;
+    if (jumpSize > UINT16_MAX) {
+        throw errorAt(where, "Too much code in loop body.");
+    }
+
+    emitByte(jumpSize & 0xff);
+    emitByte((jumpSize >> 8) & 0xff);
 }

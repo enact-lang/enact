@@ -32,7 +32,9 @@ enum class OpCode : uint8_t {
     JUMP,
     JUMP_IF_TRUE,
     JUMP_IF_FALSE,
-
+  
+    LOOP,
+  
     RETURN,
 };
 
@@ -56,6 +58,8 @@ public:
 
     void write(uint8_t byte, line_t line);
     void write(OpCode byte, line_t line);
+
+    void writeShort(uint32_t value, line_t line);
 
     void writeLong(uint32_t value, line_t line);
 

@@ -58,6 +58,10 @@ void Compiler::visitForStmt(ForStmt &stmt) {
     size_t loopStartIndex = m_chunk.getCount();
 
     compile(stmt.condition);
+    if (stmt.condition->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_BOOL);
+    }
+
     size_t exitJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
 
     emitByte(OpCode::POP);
@@ -139,6 +143,10 @@ void Compiler::visitWhileStmt(WhileStmt &stmt) {
     size_t loopStartIndex = m_chunk.getCount();
 
     compile(stmt.condition);
+    if (stmt.condition->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_BOOL);
+    }
+
     size_t exitJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
 
     emitByte(OpCode::POP);

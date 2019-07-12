@@ -70,7 +70,13 @@ void Analyser::visitExpressionStmt(ExpressionStmt &stmt) {
 
 void Analyser::visitForStmt(ForStmt &stmt) {
     analyse(stmt.initializer);
+
     analyse(stmt.condition);
+    if (!stmt.condition->getType()->maybeBool()) {
+        throw errorAt(stmt.keyword, "Expected for loop condition of type 'bool', not '"
+                + stmt.condition->getType()->toString() + "'.");
+    }
+
     analyse(stmt.increment);
 
     m_insideLoop = true;
@@ -121,7 +127,8 @@ void Analyser::visitIfStmt(IfStmt &stmt) {
     analyse(stmt.condition);
 
     if (!stmt.condition->getType()->maybeBool()) {
-        throw errorAt(stmt.keyword, "If condition must be a bool.");
+        throw errorAt(stmt.keyword, "Expected if statement condition of type 'bool', not '"
+                + stmt.condition->getType()->toString() + "'.");
     }
 
     beginScope();
@@ -299,7 +306,8 @@ void Analyser::visitWhileStmt(WhileStmt &stmt) {
     analyse(stmt.condition);
   
     if (!stmt.condition->getType()->maybeBool()) {
-        throw errorAt(stmt.keyword, "While condition must be a bool.");
+        throw errorAt(stmt.keyword, "Expected while loop condition of type 'bool', not '"
+                + stmt.condition->getType()->toString() + "'.");
     }
 
     m_insideLoop = true;

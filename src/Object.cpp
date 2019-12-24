@@ -31,14 +31,6 @@ bool Object::operator==(const Object &object) const {
     }
 }
 
-std::string Object::toString() const {
-    if (is<StringObject>()) {
-        return as<StringObject>()->asStdString();
-    }
-
-    return "";
-}
-
 std::ostream& operator<<(std::ostream& stream, const Object& object) {
     stream << object.toString();
     return stream;
@@ -48,8 +40,12 @@ StringObject::StringObject(std::string data) : Object{ObjectType::STRING}, m_dat
 
 }
 
-const std::string &StringObject::asStdString() const {
+const std::string& StringObject::asStdString() const {
     return m_data;
+}
+
+std::string StringObject::toString() const {
+    return asStdString();
 }
 
 Type StringObject::getType() const {
@@ -74,6 +70,17 @@ const std::vector<Value>& ArrayObject::asVector() const {
     return m_vector;
 }
 
+std::string ArrayObject::toString() const {
+    std::string output{"["};
+    std::string separator{};
+    for (const Value& item : asVector()) {
+        output += separator;
+        output += item.toString();
+        separator = ", ";
+    }
+    return output;
+}
+
 Type ArrayObject::getType() const {
     Type elementType = DYNAMIC_TYPE;
 
@@ -84,8 +91,8 @@ Type ArrayObject::getType() const {
     return std::make_shared<ArrayType>(elementType);
 }
 
-FunctionObject::FunctionObject(Type type, Chunk chunk) :
-        Object{ObjectType::FUNCTION}, m_type{type}, m_chunk{std::move(chunk)} {
+FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
+        Object{ObjectType::FUNCTION}, m_type{type}, m_chunk{std::move(chunk)}, m_name{std::move(name)} {
     ENACT_ASSERT(m_type->as<FunctionType>()->getArgumentTypes().size() <= UINT8_MAX,
             "FunctionObject::FunctionObject: Exceeded maximum of 255 parameters.");
 }
@@ -94,7 +101,22 @@ const Chunk& FunctionObject::getChunk() const {
     return m_chunk;
 }
 
+const std::string& FunctionObject::getName() const {
+    return m_name;
+}
+
+std::string FunctionObject::toString() const {
+    // Check if this is the global function
+    if (m_name.empty()) {
+        return "<script>";
+    } else {
+        return "<fun " + m_name + ">";
+    }
+}
+
 Type FunctionObject::getType() const {
     return m_type;
 }
+
+
 

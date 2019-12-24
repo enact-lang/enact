@@ -38,8 +38,7 @@ public:
 
     bool operator==(const Object& object) const;
 
-    std::string toString() const;
-
+    virtual std::string toString() const = 0;
     virtual Type getType() const = 0;
 };
 
@@ -84,6 +83,7 @@ public:
 
     const std::string& asStdString() const;
 
+    std::string toString() const override;
     Type getType() const override;
 };
 
@@ -102,6 +102,7 @@ public:
 
     const std::vector<Value>& asVector() const;
 
+    std::string toString() const override;
     Type getType() const override;
 };
 
@@ -110,13 +111,16 @@ public:
 class FunctionObject : public Object {
     Type m_type;
     Chunk m_chunk;
+    std::string m_name;
 
 public:
-    explicit FunctionObject(Type type, Chunk chunk);
+    explicit FunctionObject(Type type, Chunk chunk, std::string name);
     ~FunctionObject() override = default;
 
     const Chunk& getChunk() const;
+    const std::string& getName() const;
 
+    std::string toString() const override;
     Type getType() const override;
 };
 

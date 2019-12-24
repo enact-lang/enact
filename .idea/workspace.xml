@@ -13,68 +13,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.github/ISSUE_TEMPLATE/bug_report.md" beforeDir="false" afterPath="$PROJECT_DIR$/.github/ISSUE_TEMPLATE/bug_report.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/ISSUE_TEMPLATE/feature_request.md" beforeDir="false" afterPath="$PROJECT_DIR$/.github/ISSUE_TEMPLATE/feature_request.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/enact.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/enact.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/enact1.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/enact1.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.travis.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.travis.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CODE_OF_CONDUCT.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODE_OF_CONDUCT.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CONTRIBUTING.md" beforeDir="false" afterPath="$PROJECT_DIR$/CONTRIBUTING.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LICENSE.md" beforeDir="false" afterPath="$PROJECT_DIR$/LICENSE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PULL_REQUEST_TEMPLATE.md" beforeDir="false" afterPath="$PROJECT_DIR$/PULL_REQUEST_TEMPLATE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/img/enact-logo-text.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/img/enact-logo-text.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/img/enact_icon.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/img/enact_icon.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/img/tmp" beforeDir="false" afterPath="$PROJECT_DIR$/docs/img/tmp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/implementation.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/implementation.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Analyser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Analyser.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/AstPrinter.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/AstPrinter.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Chunk.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Chunk.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Compiler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Compiler.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Enact.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Enact.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Parser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Parser.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Scanner.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Scanner.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Type.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Type.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/VM.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/VM.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Value.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Value.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ast/Expr.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/ast/Expr.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ast/Stmt.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/ast/Stmt.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ast/generate.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ast/generate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Analyser.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Analyser.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/AstPrinter.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/AstPrinter.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Chunk.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Chunk.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Compiler.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Compiler.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Enact.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Enact.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/h/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Object.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Parser.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Scanner.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Scanner.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Token.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Token.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Type.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Type.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/VM.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/VM.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Value.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Value.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/common.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/common.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/trivialStructs.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/trivialStructs.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/analysis/any.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/analysis/any.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/analysis/const.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/analysis/const.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/analysis/primitive.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/analysis/primitive.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/block.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/block.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/each.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/each.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/false.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/false.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/for.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/for.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/function.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/function.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/given.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/given.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/if.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/if.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/struct.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/struct.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/trait.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/trait.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/parsing/while.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/parsing/while.en" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -281,7 +222,7 @@
       <workItem from="1565704769873" duration="398000" />
       <workItem from="1566106419075" duration="6000" />
       <workItem from="1566107203078" duration="4000" />
-      <workItem from="1577153465706" duration="412000" />
+      <workItem from="1577153465706" duration="3849000" />
     </task>
     <servers />
   </component>
@@ -298,22 +239,22 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state width="1878" height="244" key="GridCell.Tab.0.bottom" timestamp="1577154016718">
+    <state width="1878" height="244" key="GridCell.Tab.0.bottom" timestamp="1577158790413">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1878" height="244" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1577154016718" />
-    <state width="1878" height="244" key="GridCell.Tab.0.center" timestamp="1577154016717">
+    <state width="1878" height="244" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1577158790413" />
+    <state width="1878" height="244" key="GridCell.Tab.0.center" timestamp="1577158790412">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1878" height="244" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1577154016717" />
-    <state width="1878" height="244" key="GridCell.Tab.0.left" timestamp="1577154016716">
+    <state width="1878" height="244" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1577158790412" />
+    <state width="1878" height="244" key="GridCell.Tab.0.left" timestamp="1577158790411">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1878" height="244" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1577154016716" />
-    <state width="1878" height="244" key="GridCell.Tab.0.right" timestamp="1577154016718">
+    <state width="1878" height="244" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1577158790411" />
+    <state width="1878" height="244" key="GridCell.Tab.0.right" timestamp="1577158790413">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1878" height="244" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1577154016718" />
+    <state width="1878" height="244" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1577158790413" />
     <state x="639" y="352" key="com.intellij.ide.util.TipDialog" timestamp="1577153477239">
       <screen x="0" y="23" width="1920" height="993" />
     </state>

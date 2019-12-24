@@ -5,6 +5,12 @@
 const Chunk& Compiler::compile(std::vector<Stmt> ast) {
     m_hadError = false;
 
+    m_currentFunction = std::make_shared<FunctionObject>(
+            std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}),
+            Chunk(),
+            ""
+    );
+
     beginScope();
     for (auto& stmt : ast) {
         compile(stmt);
@@ -13,7 +19,7 @@ const Chunk& Compiler::compile(std::vector<Stmt> ast) {
 
     emitByte(OpCode::RETURN);
 
-    return m_chunk;
+    return currentChunk();
 }
 
 void Compiler::compile(Stmt stmt) {
@@ -57,7 +63,7 @@ void Compiler::visitForStmt(ForStmt &stmt) {
     beginScope();
     compile(stmt.initializer);
 
-    size_t loopStartIndex = m_chunk.getCount();
+    size_t loopStartIndex = currentChunk().getCount();
 
     compile(stmt.condition);
     if (stmt.condition->getType()->isDynamic()) {
@@ -178,7 +184,7 @@ void Compiler::visitTraitStmt(TraitStmt &stmt) {
 }
 
 void Compiler::visitWhileStmt(WhileStmt &stmt) {
-    size_t loopStartIndex = m_chunk.getCount();
+    size_t loopStartIndex = currentChunk().getCount();
 
     compile(stmt.condition);
     if (stmt.condition->getType()->isDynamic()) {
@@ -384,7 +390,7 @@ void Compiler::endScope() {
     --m_scopeDepth;
 
     while (!m_variables.empty() && m_variables.back().depth > m_scopeDepth) {
-        m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
+        currentChunk().write(OpCode::POP, currentChunk().getCurrentLine());
         m_variables.pop_back();
     }
 }
@@ -413,51 +419,55 @@ uint32_t Compiler::resolveVariable(const Token& name) {
 }
 
 void Compiler::emitByte(uint8_t byte) {
-    m_chunk.write(byte, m_chunk.getCurrentLine());
+    currentChunk().write(byte, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitByte(OpCode byte) {
-    m_chunk.write(byte, m_chunk.getCurrentLine());
+    currentChunk().write(byte, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitShort(uint16_t value) {
-    m_chunk.writeShort(value, m_chunk.getCurrentLine());
+    currentChunk().writeShort(value, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitLong(uint32_t value) {
-    m_chunk.writeLong(value, m_chunk.getCurrentLine());
+    currentChunk().writeLong(value, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitConstant(Value constant) {
-    m_chunk.writeConstant(constant, m_chunk.getCurrentLine());
+    currentChunk().writeConstant(constant, currentChunk().getCurrentLine());
 }
 
 size_t Compiler::emitJump(OpCode jump) {
     emitByte(jump);
     emitByte(0xff);
     emitByte(0xff);
-    return m_chunk.getCount() - 2;
+    return currentChunk().getCount() - 2;
 }
 
 void Compiler::patchJump(size_t index, Token where) {
-    size_t jumpSize = m_chunk.getCount() - index - 2;
+    size_t jumpSize = currentChunk().getCount() - index - 2;
 
     if (jumpSize > UINT16_MAX) {
         throw errorAt(where, "Too much code in control flow block.");
     }
 
-    m_chunk.rewrite(index, jumpSize & 0xff);
-    m_chunk.rewrite(index + 1, (jumpSize >> 8) & 0xff);
+    currentChunk().rewrite(index, jumpSize & 0xff);
+    currentChunk().rewrite(index + 1, (jumpSize >> 8) & 0xff);
 }
 
 void Compiler::emitLoop(size_t loopStartIndex, Token where) {
     emitByte(OpCode::LOOP);
 
-    size_t jumpSize = m_chunk.getCount() - loopStartIndex + 2;
+    size_t jumpSize = currentChunk().getCount() - loopStartIndex + 2;
     if (jumpSize > UINT16_MAX) {
         throw errorAt(where, "Too much code in loop body.");
     }
 
     emitByte(jumpSize & 0xff);
     emitByte((jumpSize >> 8) & 0xff);
+}
+
+Chunk& Compiler::currentChunk() {
+    return m_currentFunction->getChunk();
 }

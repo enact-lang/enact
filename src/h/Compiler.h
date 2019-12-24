@@ -12,7 +12,7 @@ struct Variable {
 };
 
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
-    Chunk m_chunk;
+    std::shared_ptr<FunctionObject> m_currentFunction;
 
     std::vector<Variable> m_variables;
     uint32_t m_scopeDepth = 0;
@@ -71,6 +71,8 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     void patchJump(size_t index, Token where);
 
     void emitLoop(size_t loopStartIndex, Token where);
+
+    Chunk& currentChunk();
   
     class CompileError : public std::runtime_error {
     public:

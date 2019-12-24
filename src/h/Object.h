@@ -117,7 +117,7 @@ public:
     explicit FunctionObject(Type type, Chunk chunk, std::string name);
     ~FunctionObject() override = default;
 
-    const Chunk& getChunk() const;
+    Chunk& getChunk();
     const std::string& getName() const;
 
     std::string toString() const override;

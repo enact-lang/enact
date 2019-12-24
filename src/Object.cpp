@@ -97,7 +97,7 @@ FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
             "FunctionObject::FunctionObject: Exceeded maximum of 255 parameters.");
 }
 
-const Chunk& FunctionObject::getChunk() const {
+Chunk& FunctionObject::getChunk() {
     return m_chunk;
 }
 

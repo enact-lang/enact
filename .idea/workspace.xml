@@ -14,7 +14,9 @@
   <component name="ChangeListManager">
     <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Compiler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Compiler.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/h/Compiler.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Compiler.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/h/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Object.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -46,43 +48,6 @@
         <option value="Python Script" />
       </list>
     </option>
-  </component>
-  <component name="FindInProjectRecents">
-    <findStrings>
-      <find>m_last</find>
-      <find>void</find>
-      <find>errorAtCurrent</find>
-      <find>errorAt</find>
-      <find>error</find>
-      <find>error(</find>
-      <find>array</find>
-      <find>std::string</find>
-      <find>Type</find>
-      <find>std::shared_ptr&lt;Expr&gt;</find>
-      <find>std::shared_ptr&lt;Stmt&gt;</find>
-      <find>AS&lt;</find>
-      <find>left.</find>
-      <find>right.</find>
-      <find>as&lt;</find>
-      <find>m_types.coun</find>
-      <find>std::optional&lt;Type&gt;</find>
-      <find>as</find>
-      <find>consumeTypeName</find>
-      <find>makeToken</find>
-      <find>returnStmt</find>
-      <find>&amp;Parser::binary</find>
-      <find>\([a-zA-Z]+\)[a-z][A-Z]+</find>
-      <find>struc</find>
-      <find>m_locals</find>
-      <find>looselyEquals</find>
-      <find>mightEqual</find>
-      <find>canEqual</find>
-      <find>declareVariable</find>
-      <find>m_functionQueue</find>
-    </findStrings>
-    <replaceStrings>
-      <replace>Sp</replace>
-    </replaceStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -222,7 +187,7 @@
       <workItem from="1565704769873" duration="398000" />
       <workItem from="1566106419075" duration="6000" />
       <workItem from="1566107203078" duration="4000" />
-      <workItem from="1577153465706" duration="3849000" />
+      <workItem from="1577153465706" duration="5225000" />
     </task>
     <servers />
   </component>
@@ -239,21 +204,25 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state width="1878" height="244" key="GridCell.Tab.0.bottom" timestamp="1577158790413">
-      <screen x="0" y="23" width="1920" height="993" />
+    <state width="1398" height="244" key="GridCell.Tab.0.bottom" timestamp="1577160528575">
+      <screen x="0" y="23" width="1440" height="813" />
     </state>
+    <state width="1398" height="244" key="GridCell.Tab.0.bottom/0.23.1440.813@0.23.1440.813" timestamp="1577160528575" />
     <state width="1878" height="244" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1577158790413" />
-    <state width="1878" height="244" key="GridCell.Tab.0.center" timestamp="1577158790412">
-      <screen x="0" y="23" width="1920" height="993" />
+    <state width="1398" height="244" key="GridCell.Tab.0.center" timestamp="1577160528574">
+      <screen x="0" y="23" width="1440" height="813" />
     </state>
+    <state width="1398" height="244" key="GridCell.Tab.0.center/0.23.1440.813@0.23.1440.813" timestamp="1577160528574" />
     <state width="1878" height="244" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1577158790412" />
-    <state width="1878" height="244" key="GridCell.Tab.0.left" timestamp="1577158790411">
-      <screen x="0" y="23" width="1920" height="993" />
+    <state width="1398" height="244" key="GridCell.Tab.0.left" timestamp="1577160528573">
+      <screen x="0" y="23" width="1440" height="813" />
     </state>
+    <state width="1398" height="244" key="GridCell.Tab.0.left/0.23.1440.813@0.23.1440.813" timestamp="1577160528573" />
     <state width="1878" height="244" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1577158790411" />
-    <state width="1878" height="244" key="GridCell.Tab.0.right" timestamp="1577158790413">
-      <screen x="0" y="23" width="1920" height="993" />
+    <state width="1398" height="244" key="GridCell.Tab.0.right" timestamp="1577160528574">
+      <screen x="0" y="23" width="1440" height="813" />
     </state>
+    <state width="1398" height="244" key="GridCell.Tab.0.right/0.23.1440.813@0.23.1440.813" timestamp="1577160528574" />
     <state width="1878" height="244" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1577158790413" />
     <state x="639" y="352" key="com.intellij.ide.util.TipDialog" timestamp="1577153477239">
       <screen x="0" y="23" width="1920" height="993" />

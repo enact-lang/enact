@@ -1,4 +1,5 @@
 #include "h/Compiler.h"
+#include "h/Object.h"
 #include "h/Enact.h"
 
 const Chunk& Compiler::compile(std::vector<Stmt> ast) {

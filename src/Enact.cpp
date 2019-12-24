@@ -14,6 +14,7 @@
 #include "h/Analyser.h"
 
 #include "h/Value.h"
+#include "h/Object.h"
 #include "h/Compiler.h"
 
 std::string Enact::m_source = "";

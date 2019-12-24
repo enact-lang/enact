@@ -3,6 +3,7 @@
 
 #include "../ast/Stmt.h"
 #include "Chunk.h"
+#include "Object.h"
 
 struct Variable {
     Token name;

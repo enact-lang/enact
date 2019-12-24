@@ -1,5 +1,6 @@
 #include "h/Object.h"
 #include "h/Value.h"
+#include "h/Chunk.h"
 
 Object* Object::m_objects = nullptr;
 
@@ -82,3 +83,18 @@ Type ArrayObject::getType() const {
 
     return std::make_shared<ArrayType>(elementType);
 }
+
+FunctionObject::FunctionObject(Type type, Chunk chunk) :
+        Object{ObjectType::FUNCTION}, m_type{type}, m_chunk{std::move(chunk)} {
+    ENACT_ASSERT(m_type->as<FunctionType>()->getArgumentTypes().size() <= UINT8_MAX,
+            "FunctionObject::FunctionObject: Exceeded maximum of 255 parameters.");
+}
+
+const Chunk& FunctionObject::getChunk() const {
+    return m_chunk;
+}
+
+Type FunctionObject::getType() const {
+    return m_type;
+}
+

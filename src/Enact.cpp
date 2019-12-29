@@ -39,7 +39,7 @@ InterpretResult Enact::run(const std::string& source) {
     }
 
     Compiler compiler;
-    const Chunk& chunk = compiler.compile(statements);
+    const Chunk& chunk = compiler.compile(statements)->getChunk();
 
     std::cout << chunk.disassemble();
 

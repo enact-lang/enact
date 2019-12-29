@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="enact" targetName="matilda" />
       <config projectName="enact" targetName="enact" />
+      <config projectName="enact" targetName="matilda" />
     </generated>
   </component>
   <component name="CMakeSettings">
@@ -15,9 +15,8 @@
     <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Compiler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Compiler.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Enact.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Enact.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/h/Compiler.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Compiler.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Object.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -187,7 +186,8 @@
       <workItem from="1565704769873" duration="398000" />
       <workItem from="1566106419075" duration="6000" />
       <workItem from="1566107203078" duration="4000" />
-      <workItem from="1577153465706" duration="5225000" />
+      <workItem from="1577153465706" duration="6417000" />
+      <workItem from="1577510719199" duration="1003000" />
     </task>
     <servers />
   </component>
@@ -204,30 +204,30 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state width="1398" height="244" key="GridCell.Tab.0.bottom" timestamp="1577160528575">
-      <screen x="0" y="23" width="1440" height="813" />
-    </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.bottom/0.23.1440.813@0.23.1440.813" timestamp="1577160528575" />
-    <state width="1878" height="244" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1577158790413" />
-    <state width="1398" height="244" key="GridCell.Tab.0.center" timestamp="1577160528574">
-      <screen x="0" y="23" width="1440" height="813" />
-    </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.center/0.23.1440.813@0.23.1440.813" timestamp="1577160528574" />
-    <state width="1878" height="244" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1577158790412" />
-    <state width="1398" height="244" key="GridCell.Tab.0.left" timestamp="1577160528573">
-      <screen x="0" y="23" width="1440" height="813" />
-    </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.left/0.23.1440.813@0.23.1440.813" timestamp="1577160528573" />
-    <state width="1878" height="244" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1577158790411" />
-    <state width="1398" height="244" key="GridCell.Tab.0.right" timestamp="1577160528574">
-      <screen x="0" y="23" width="1440" height="813" />
-    </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.right/0.23.1440.813@0.23.1440.813" timestamp="1577160528574" />
-    <state width="1878" height="244" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1577158790413" />
-    <state x="639" y="352" key="com.intellij.ide.util.TipDialog" timestamp="1577153477239">
+    <state width="1878" height="244" key="GridCell.Tab.0.bottom" timestamp="1577180492748">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state x="639" y="352" key="com.intellij.ide.util.TipDialog/0.23.1920.993@0.23.1920.993" timestamp="1577153477239" />
+    <state width="1398" height="244" key="GridCell.Tab.0.bottom/0.23.1440.813@0.23.1440.813" timestamp="1577160819522" />
+    <state width="1878" height="244" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1577180492748" />
+    <state width="1878" height="244" key="GridCell.Tab.0.center" timestamp="1577180492747">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="1398" height="244" key="GridCell.Tab.0.center/0.23.1440.813@0.23.1440.813" timestamp="1577160819521" />
+    <state width="1878" height="244" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1577180492747" />
+    <state width="1878" height="244" key="GridCell.Tab.0.left" timestamp="1577180492746">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="1398" height="244" key="GridCell.Tab.0.left/0.23.1440.813@0.23.1440.813" timestamp="1577160819521" />
+    <state width="1878" height="244" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1577180492746" />
+    <state width="1878" height="244" key="GridCell.Tab.0.right" timestamp="1577180492747">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="1398" height="244" key="GridCell.Tab.0.right/0.23.1440.813@0.23.1440.813" timestamp="1577160819522" />
+    <state width="1878" height="244" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1577180492747" />
+    <state x="639" y="352" key="com.intellij.ide.util.TipDialog" timestamp="1577511132944">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="639" y="352" key="com.intellij.ide.util.TipDialog/0.23.1920.993@0.23.1920.993" timestamp="1577511132944" />
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="watch">

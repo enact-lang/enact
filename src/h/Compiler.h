@@ -12,7 +12,7 @@ struct Variable {
 };
 
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
-    std::shared_ptr<FunctionObject> m_currentFunction;
+    FunctionObject* m_currentFunction;
 
     std::vector<Variable> m_variables;
     uint32_t m_scopeDepth = 0;
@@ -84,7 +84,7 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     CompileError errorAt(const Token &token, const std::string &message);
 
 public:
-    const Chunk& compile(std::vector<Stmt> ast);
+    FunctionObject* compile(std::vector<Stmt> ast);
 
     bool hadError();
 };

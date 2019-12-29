@@ -2,14 +2,14 @@
 #include "h/Object.h"
 #include "h/Enact.h"
 
-const Chunk& Compiler::compile(std::vector<Stmt> ast) {
+FunctionObject* Compiler::compile(std::vector<Stmt> ast) {
     m_hadError = false;
 
-    m_currentFunction = std::make_shared<FunctionObject>(
+    m_currentFunction = new FunctionObject{
             std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}),
             Chunk(),
             ""
-    );
+    };
 
     beginScope();
     for (auto& stmt : ast) {
@@ -19,7 +19,7 @@ const Chunk& Compiler::compile(std::vector<Stmt> ast) {
 
     emitByte(OpCode::RETURN);
 
-    return currentChunk();
+    return m_currentFunction;
 }
 
 void Compiler::compile(Stmt stmt) {

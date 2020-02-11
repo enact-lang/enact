@@ -38,8 +38,9 @@ InterpretResult Enact::run(const std::string& source) {
         std::cout << "\n";
     }
 
-    Compiler compiler;
-    const Chunk& chunk = compiler.compile(statements)->getChunk();
+    Compiler compiler{};
+    compiler.compile(FunctionKind::SCRIPT, statements);
+    const Chunk& chunk = compiler.end()->getChunk();
 
     std::cout << chunk.disassemble();
 

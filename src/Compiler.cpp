@@ -2,7 +2,7 @@
 #include "h/Object.h"
 #include "h/Enact.h"
 
-FunctionObject* Compiler::compile(std::vector<Stmt> ast) {
+void Compiler::init(FunctionKind functionType) {
     m_hadError = false;
 
     m_currentFunction = new FunctionObject{
@@ -11,15 +11,25 @@ FunctionObject* Compiler::compile(std::vector<Stmt> ast) {
             ""
     };
 
+    m_functionType = functionType;
+
     beginScope();
+}
+
+FunctionObject* Compiler::end() {
+    endScope();
+    emitByte(OpCode::RETURN);
+    return m_currentFunction;
+}
+
+void Compiler::compile(FunctionKind functionType, std::vector<Stmt> ast) {
+    init(functionType);
+
     for (auto& stmt : ast) {
         compile(stmt);
     }
-    endScope();
 
-    emitByte(OpCode::RETURN);
-
-    return m_currentFunction;
+    end();
 }
 
 void Compiler::compile(Stmt stmt) {
@@ -95,6 +105,7 @@ void Compiler::visitForStmt(ForStmt &stmt) {
 
 void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
     throw errorAt(stmt.name, "Not implemented.");
+    //m_currentFunction = new FunctionObject{};
 }
 
 void Compiler::visitGivenStmt(GivenStmt &stmt) {

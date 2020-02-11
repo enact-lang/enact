@@ -11,8 +11,14 @@ struct Variable {
     bool initialized;
 };
 
+enum class FunctionKind {
+    FUNCTION,
+    SCRIPT
+};
+
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     FunctionObject* m_currentFunction;
+    FunctionKind m_functionType;
 
     std::vector<Variable> m_variables;
     uint32_t m_scopeDepth = 0;
@@ -84,7 +90,12 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     CompileError errorAt(const Token &token, const std::string &message);
 
 public:
-    FunctionObject* compile(std::vector<Stmt> ast);
+    Compiler() = default;
+
+    void init(FunctionKind functionType);
+    FunctionObject* end();
+
+    void compile(FunctionKind functionType, std::vector<Stmt> ast);
 
     bool hadError();
 };

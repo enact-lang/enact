@@ -7,6 +7,7 @@ void Analyser::analyse(std::vector<Stmt> program) {
     m_hadError = false;
 
     beginScope();
+
     for (auto &stmt : program) {
         analyse(stmt);
     }

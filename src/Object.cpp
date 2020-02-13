@@ -1,3 +1,4 @@
+#include <sstream>
 #include "h/Object.h"
 #include "h/Value.h"
 #include "h/Chunk.h"
@@ -93,8 +94,6 @@ Type ArrayObject::getType() const {
 
 FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
         Object{ObjectType::FUNCTION}, m_type{type}, m_chunk{std::move(chunk)}, m_name{std::move(name)} {
-    ENACT_ASSERT(m_type->as<FunctionType>()->getArgumentTypes().size() <= UINT8_MAX,
-            "FunctionObject::FunctionObject: Exceeded maximum of 255 parameters.");
 }
 
 Chunk& FunctionObject::getChunk() {
@@ -110,7 +109,9 @@ std::string FunctionObject::toString() const {
     if (m_name.empty()) {
         return "<script>";
     } else {
-        return "<fun " + m_name + ">";
+        std::stringstream ret;
+        ret << "<" << m_type->toString() << ">";
+        return ret.str();
     }
 }
 
@@ -118,5 +119,22 @@ Type FunctionObject::getType() const {
     return m_type;
 }
 
+NativeObject::NativeObject(Type type, NativeFn function) : Object{ObjectType::NATIVE}, m_type{type}, m_function{function} {
+
+}
+
+NativeFn NativeObject::getFunction() {
+    return m_function;
+}
+
+std::string NativeObject::toString() const {
+    std::stringstream ret;
+    ret << "<native " << m_type->toString() << ">";
+    return ret.str();
+}
+
+Type NativeObject::getType() const {
+    return m_type;
+}
 
 

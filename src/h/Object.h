@@ -8,12 +8,14 @@
 enum class ObjectType {
     STRING,
     ARRAY,
-    FUNCTION
+    FUNCTION,
+    NATIVE
 };
 
 class StringObject;
 class ArrayObject;
 class FunctionObject;
+class NativeObject;
 
 class Object {
     static Object* m_objects;
@@ -46,13 +48,17 @@ std::ostream& operator<<(std::ostream& stream, const Object& object);
 
 template<typename T>
 inline bool Object::is() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject>::value,
-                  "Object::is<T>: T must be StringObject, ArrayObject, or FunctionObject.");
+    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject, NativeObject>::value,
+                  "Object::is<T>: T must be StringObject, ArrayObject, FunctionObject or NativeObject.");
 
     if (std::is_same_v<T, StringObject>) {
         return m_type == ObjectType::STRING;
     } else if (std::is_same_v<T, ArrayObject>) {
         return m_type == ObjectType::ARRAY;
+    } else if (std::is_same_v<T, FunctionObject>) {
+        return m_type == ObjectType::FUNCTION;
+    } else if (std::is_same_v<T, NativeObject>) {
+        return m_type == ObjectType::NATIVE;
     }
 
     return false;
@@ -60,7 +66,7 @@ inline bool Object::is() const {
 
 template<typename T>
 inline T* Object::as() {
-    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject>::value,
+    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject, NativeObject>::value,
                   "Object::as<T>: T must be StringObject, ArrayObject, or FunctionObject.");
 
     return static_cast<T*>(this);
@@ -68,7 +74,7 @@ inline T* Object::as() {
 
 template<typename T>
 inline const T* Object::as() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject>::value,
+    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject, NativeObject>::value,
                   "Object::as<T>: T must be StringObject, ArrayObject, or FunctionObject.");
     return static_cast<const T*>(this);
 }
@@ -119,6 +125,22 @@ public:
 
     Chunk& getChunk();
     const std::string& getName() const;
+
+    std::string toString() const override;
+    Type getType() const override;
+};
+
+typedef Value (*NativeFn)(uint8_t argCount, Value* args);
+
+class NativeObject : public Object {
+    Type m_type;
+    NativeFn m_function;
+
+public:
+    explicit NativeObject(Type type, NativeFn function);
+    ~NativeObject() override = default;
+
+    NativeFn getFunction();
 
     std::string toString() const override;
     Type getType() const override;

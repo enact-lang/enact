@@ -3,6 +3,8 @@ project(enact CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
+add_compile_definitions(DEBUG)
+
 add_executable( enact
         src/h/Type.h
         src/Type.cpp
@@ -28,4 +30,4 @@ add_executable( enact
         src/h/AstPrinter.h
         src/Analyser.cpp
         src/h/Analyser.h
-        src/h/Compiler.h src/Compiler.cpp)
+        src/h/Compiler.h src/Compiler.cpp src/h/Natives.h src/Natives.cpp)

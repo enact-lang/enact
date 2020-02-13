@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated>
-      <config projectName="enact" targetName="enact" />
       <config projectName="enact" targetName="matilda" />
+      <config projectName="enact" targetName="enact" />
     </generated>
   </component>
   <component name="CMakeSettings">
@@ -13,12 +13,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Natives.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/h/Natives.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Analyser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Analyser.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Chunk.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Chunk.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Compiler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Compiler.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Enact.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Enact.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Type.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Type.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/VM.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/VM.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ast/Stmt.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/ast/Stmt.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/h/Chunk.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Chunk.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/h/Compiler.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Compiler.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/h/Enact.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Enact.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/h/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Object.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/h/VM.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/VM.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/h/common.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/common.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -193,7 +205,7 @@
       <workItem from="1577663835173" duration="5000" />
       <workItem from="1578879950353" duration="275000" />
       <workItem from="1581332102575" duration="1871000" />
-      <workItem from="1581408334154" duration="996000" />
+      <workItem from="1581408334154" duration="30739000" />
     </task>
     <servers />
   </component>
@@ -210,89 +222,206 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state width="1878" height="244" key="GridCell.Tab.0.bottom" timestamp="1577663712084">
+    <state x="1333" y="387" key="#xdebugger.evaluate" timestamp="1581585252544">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.bottom/0.23.1440.813@0.23.1440.813" timestamp="1577160819522" />
-    <state width="1878" height="244" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1577663712084" />
-    <state width="1878" height="244" key="GridCell.Tab.0.center" timestamp="1577663712083">
+    <state x="711" y="257" key="#xdebugger.evaluate/0.23.1440.813@0.23.1440.813" timestamp="1581458931385" />
+    <state x="1333" y="387" key="#xdebugger.evaluate/0.23.1920.993@0.23.1920.993" timestamp="1581585252544" />
+    <state width="490" height="466" key="DebuggerActiveHint" timestamp="1581577648369">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.center/0.23.1440.813@0.23.1440.813" timestamp="1577160819521" />
-    <state width="1878" height="244" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1577663712083" />
-    <state width="1878" height="244" key="GridCell.Tab.0.left" timestamp="1577663712082">
+    <state width="490" height="466" key="DebuggerActiveHint/0.23.1920.993@0.23.1920.993" timestamp="1581577648369" />
+    <state width="1277" height="200" key="GridCell.Tab.0.bottom" timestamp="1581585383411">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.left/0.23.1440.813@0.23.1440.813" timestamp="1577160819521" />
-    <state width="1878" height="244" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1577663712082" />
-    <state width="1878" height="244" key="GridCell.Tab.0.right" timestamp="1577663712083">
+    <state width="951" height="200" key="GridCell.Tab.0.bottom/0.23.1440.813@0.23.1440.813" timestamp="1581549473863" />
+    <state width="1277" height="200" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1581585383411" />
+    <state width="1277" height="200" key="GridCell.Tab.0.center" timestamp="1581585383411">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
-    <state width="1398" height="244" key="GridCell.Tab.0.right/0.23.1440.813@0.23.1440.813" timestamp="1577160819522" />
-    <state width="1878" height="244" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1577663712083" />
+    <state width="951" height="200" key="GridCell.Tab.0.center/0.23.1440.813@0.23.1440.813" timestamp="1581549473862" />
+    <state width="1277" height="200" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1581585383411" />
+    <state width="1277" height="200" key="GridCell.Tab.0.left" timestamp="1581585383411">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="200" key="GridCell.Tab.0.left/0.23.1440.813@0.23.1440.813" timestamp="1581549473861" />
+    <state width="1277" height="200" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1581585383411" />
+    <state width="1277" height="200" key="GridCell.Tab.0.right" timestamp="1581585383411">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="200" key="GridCell.Tab.0.right/0.23.1440.813@0.23.1440.813" timestamp="1581549473863" />
+    <state width="1277" height="200" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1581585383411" />
+    <state width="1277" height="200" key="GridCell.Tab.1.bottom" timestamp="1581585365907">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="200" key="GridCell.Tab.1.bottom/0.23.1440.813@0.23.1440.813" timestamp="1581549495638" />
+    <state width="1277" height="200" key="GridCell.Tab.1.bottom/0.23.1920.993@0.23.1920.993" timestamp="1581585365907" />
+    <state width="1277" height="200" key="GridCell.Tab.1.center" timestamp="1581585365906">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="200" key="GridCell.Tab.1.center/0.23.1440.813@0.23.1440.813" timestamp="1581549495638" />
+    <state width="1277" height="200" key="GridCell.Tab.1.center/0.23.1920.993@0.23.1920.993" timestamp="1581585365906" />
+    <state width="1277" height="200" key="GridCell.Tab.1.left" timestamp="1581585365905">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="200" key="GridCell.Tab.1.left/0.23.1440.813@0.23.1440.813" timestamp="1581549495637" />
+    <state width="1277" height="200" key="GridCell.Tab.1.left/0.23.1920.993@0.23.1920.993" timestamp="1581585365905" />
+    <state width="1277" height="200" key="GridCell.Tab.1.right" timestamp="1581585365906">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="200" key="GridCell.Tab.1.right/0.23.1440.813@0.23.1440.813" timestamp="1581549495638" />
+    <state width="1277" height="200" key="GridCell.Tab.1.right/0.23.1920.993@0.23.1920.993" timestamp="1581585365906" />
     <state x="769" y="158" key="SettingsEditor" timestamp="1581408407163">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
     <state x="769" y="158" key="SettingsEditor/0.23.1920.993@0.23.1920.993" timestamp="1581408407163" />
+    <state width="659" height="496" key="XDebugger.FullValuePopup" timestamp="1581577648363">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="659" height="496" key="XDebugger.FullValuePopup/0.23.1920.993@0.23.1920.993" timestamp="1581577648363" />
     <state x="639" y="352" key="com.intellij.ide.util.TipDialog" timestamp="1581408339750">
       <screen x="0" y="23" width="1920" height="993" />
     </state>
     <state x="639" y="352" key="com.intellij.ide.util.TipDialog/0.23.1920.993@0.23.1920.993" timestamp="1581408339750" />
+    <state x="925" y="242" width="670" height="676" key="search.everywhere.popup" timestamp="1581582141874">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="925" y="242" width="670" height="676" key="search.everywhere.popup/0.23.1920.993@0.23.1920.993" timestamp="1581582141874" />
   </component>
-  <component name="debuggerHistoryManager">
-    <expressions id="watch">
-      <expression>
-        <expression-string>m_stack</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-    </expressions>
-    <expressions id="evaluateExpression">
-      <expression>
-        <expression-string>INT_TYPE</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>s.str()</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>lookUpType(typeName, stmt.name)</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>m_globals.find(&quot;me&quot;).isObject()</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>m_globals.find(&quot;me&quot;).asObject()</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>m_globals.find(&quot;me&quot;)</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>m_globals.m_variables[&quot;me&quot;]</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>m_globals.m_variables[name]</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>peek(0)</expression-string>
-        <language-id>ObjectiveC</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-    </expressions>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>168</line>
+          <option name="timeStamp" value="16" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>15</line>
+          <option name="timeStamp" value="18" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>150</line>
+          <option name="timeStamp" value="19" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>114</line>
+          <option name="timeStamp" value="20" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>47</line>
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>210</line>
+          <option name="timeStamp" value="23" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>214</line>
+          <option name="timeStamp" value="24" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>218</line>
+          <option name="timeStamp" value="25" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>219</line>
+          <option name="timeStamp" value="26" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>220</line>
+          <option name="timeStamp" value="27" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>147</line>
+          <option name="timeStamp" value="28" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Natives.cpp</url>
+          <line>3</line>
+          <option name="timeStamp" value="29" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>154</line>
+          <option name="timeStamp" value="30" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>157</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>158</line>
+          <option name="timeStamp" value="33" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Natives.cpp</url>
+          <line>8</line>
+          <option name="timeStamp" value="34" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>160</line>
+          <option name="timeStamp" value="35" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>450</line>
+          <option name="timeStamp" value="36" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>462</line>
+          <option name="timeStamp" value="37" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>325</line>
+          <option name="timeStamp" value="38" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>405</line>
+          <option name="timeStamp" value="39" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>463</line>
+          <option name="timeStamp" value="40" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>465</line>
+          <option name="timeStamp" value="41" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>323</line>
+          <option name="timeStamp" value="42" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>451</line>
+          <option name="timeStamp" value="43" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Object.cpp</url>
+          <line>132</line>
+          <option name="timeStamp" value="44" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

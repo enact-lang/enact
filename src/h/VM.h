@@ -4,8 +4,11 @@
 #include "common.h"
 #include "Value.h"
 #include "Chunk.h"
+#include "Object.h"
 
 #include <optional>
+
+constexpr size_t FRAMES_MAX = 64;
 
 enum class InterpretResult {
     PARSE_ERROR,
@@ -15,22 +18,30 @@ enum class InterpretResult {
     OK,
 };
 
-class VM {
-    const std::vector<uint8_t>* m_code;
-    const std::vector<Value>* m_constants;
+struct CallFrame {
+    FunctionObject* function;
+    const uint8_t* ip;
+    size_t slotsBegin;
+};
 
+class VM {
     std::vector<Value> m_stack;
+
+    std::array<CallFrame, FRAMES_MAX> m_frames{CallFrame{nullptr, nullptr, 0}};
+    size_t m_frameCount = 0;
 
 public:
     VM();
 
-    InterpretResult run(const Chunk& chunk);
+    InterpretResult run(FunctionObject* function);
 
     void push(Value value);
     Value pop();
     Value peek(size_t depth);
 
-    void runtimeError(line_t line, const std::string& msg);
+    void call(FunctionObject* function);
+
+    void runtimeError(const std::string& msg);
 };
 
 #endif //ENACT_VM_H

@@ -8,6 +8,10 @@ void Analyser::analyse(std::vector<Stmt> program) {
 
     beginScope();
 
+    declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
+    declareVariable("print", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+    declareVariable("put", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+
     for (auto &stmt : program) {
         analyse(stmt);
     }
@@ -92,10 +96,10 @@ void Analyser::visitForStmt(ForStmt &stmt) {
 }
 
 void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
-    Type type = getFunctionType(stmt);
-    auto functionType = type->as<FunctionType>();
+    stmt.type = getFunctionType(stmt);
+    auto functionType = stmt.type->as<FunctionType>();
 
-    declareVariable(stmt.name.lexeme, Variable{type, true});
+    declareVariable(stmt.name.lexeme, Variable{stmt.type, true});
 
     if (m_scopes.size() > 1) {
         m_globalFunctions.push_back(stmt);
@@ -666,7 +670,16 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
 }
 
 Type Analyser::getFunctionType(const FunctionStmt &stmt) {
-    Type returnType = lookUpType(stmt.returnTypeName, stmt.name);
+    Type returnType;
+    if (stmt.returnTypeName.empty()) {
+        returnType = NOTHING_TYPE;
+    } else {
+        returnType = lookUpType(stmt.returnTypeName, stmt.name);
+    }
+
+    if (stmt.params.size() > 255) {
+        throw errorAt(stmt.name, "Cannot have more than 255 arguments to a function.");
+    }
 
     std::vector<Type> parameterTypes;
     for (const NamedTypename &parameter : stmt.params) {

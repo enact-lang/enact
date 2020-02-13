@@ -15,8 +15,6 @@ enum class ExitCode {
 
 class Enact {
     static std::string m_source;
-    static Analyser m_analyser;
-    static VM m_vm;
 public:
     static InterpretResult run(const std::string &source);
     static void runFile(const std::string &path);

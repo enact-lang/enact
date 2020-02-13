@@ -168,6 +168,7 @@ public:
     std::string returnTypeName;
     std::vector<NamedTypename> params;
     std::vector<Stmt> body;
+    Type type = nullptr;
 
     FunctionStmt(Token name,std::string returnTypeName,std::vector<NamedTypename> params,std::vector<Stmt> body) : 
         name{name},returnTypeName{returnTypeName},params{params},body{body} {}

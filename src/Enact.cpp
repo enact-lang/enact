@@ -18,35 +18,42 @@
 #include "h/Compiler.h"
 
 std::string Enact::m_source = "";
-Analyser Enact::m_analyser{};
-VM Enact::m_vm{};
 
 InterpretResult Enact::run(const std::string& source) {
     m_source = source;
+    FunctionObject* script;
 
-    Parser parser{m_source};
-    std::vector<Stmt> statements = parser.parse();
+    { // Free up memory for the VM
+        Parser parser{m_source};
+        std::vector<Stmt> statements = parser.parse();
 
-    m_analyser.analyse(statements);
+        Analyser analyser{};
+        analyser.analyse(statements);
 
-    if (parser.hadError()) return InterpretResult::PARSE_ERROR;
-    if (m_analyser.hadError()) return InterpretResult::ANALYSIS_ERROR;
+        if (parser.hadError()) return InterpretResult::PARSE_ERROR;
+        if (analyser.hadError()) return InterpretResult::ANALYSIS_ERROR;
 
-    AstPrinter astPrinter;
-    for (const Stmt& stmt : statements) {
-        astPrinter.print(stmt);
-        std::cout << "\n";
+        #ifdef DEBUG_PRINT_AST
+        AstPrinter astPrinter;
+        for (const Stmt &stmt : statements) {
+            astPrinter.print(stmt);
+            std::cout << "\n";
+        }
+        #endif
+
+        Compiler compiler{};
+        compiler.init(FunctionKind::SCRIPT);
+        compiler.compile(statements);
+        script = compiler.end();
+        if (compiler.hadError()) return InterpretResult::COMPILE_ERROR;
     }
 
-    Compiler compiler{};
-    compiler.compile(FunctionKind::SCRIPT, statements);
-    const Chunk& chunk = compiler.end()->getChunk();
+    #ifdef DEBUG_DISASSEMBLE_CHUNK
+    std::cout << script->getChunk().disassemble();
+    #endif
 
-    std::cout << chunk.disassemble();
-
-    if (compiler.hadError()) return InterpretResult::COMPILE_ERROR;
-
-    return m_vm.run(chunk);
+    VM vm = VM{};
+    return vm.run(script);
 }
 
 void Enact::runFile(const std::string &path) {

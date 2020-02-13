@@ -1,35 +1,44 @@
 #include "h/Compiler.h"
 #include "h/Object.h"
 #include "h/Enact.h"
+#include "h/Natives.h"
 
-void Compiler::init(FunctionKind functionType) {
+Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {}
+
+void Compiler::init(FunctionKind functionKind, Type functionType, const std::string& name) {
     m_hadError = false;
 
     m_currentFunction = new FunctionObject{
-            std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}),
+            functionType,
             Chunk(),
-            ""
+            name
     };
 
-    m_functionType = functionType;
+    m_functionType = functionKind;
+
+    m_scopeDepth = 0;
 
     beginScope();
+
+    if (functionKind == FunctionKind::SCRIPT) {
+        addVariable(Token{TokenType::IDENTIFIER, "", 0, 0});
+        defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                     &Natives::print);
+        defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                     &Natives::put);
+    }
 }
 
 FunctionObject* Compiler::end() {
-    endScope();
+    emitByte(OpCode::NIL);
     emitByte(OpCode::RETURN);
     return m_currentFunction;
 }
 
-void Compiler::compile(FunctionKind functionType, std::vector<Stmt> ast) {
-    init(functionType);
-
+void Compiler::compile(std::vector<Stmt> ast) {
     for (auto& stmt : ast) {
         compile(stmt);
     }
-
-    end();
 }
 
 void Compiler::compile(Stmt stmt) {
@@ -104,8 +113,21 @@ void Compiler::visitForStmt(ForStmt &stmt) {
 }
 
 void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
-    throw errorAt(stmt.name, "Not implemented.");
-    //m_currentFunction = new FunctionObject{};
+    addVariable(stmt.name);
+    m_variables.back().initialized = true;
+
+    Compiler compiler{this};
+    compiler.init(FunctionKind::FUNCTION, stmt.type, stmt.name.lexeme);
+
+    for (const NamedTypename& param : stmt.params) {
+        compiler.addVariable(param.name);
+        compiler.m_variables.back().initialized = true;
+    }
+
+    compiler.compile(stmt.body);
+    FunctionObject* function = compiler.end();
+
+    emitConstant(Value{function});
 }
 
 void Compiler::visitGivenStmt(GivenStmt &stmt) {
@@ -183,7 +205,8 @@ void Compiler::visitIfStmt(IfStmt &stmt) {
 }
 
 void Compiler::visitReturnStmt(ReturnStmt &stmt) {
-    throw errorAt(stmt.keyword, "Not implemented.");
+    compile(stmt.value);
+    emitByte(OpCode::RETURN);
 }
 
 void Compiler::visitStructStmt(StructStmt &stmt) {
@@ -298,7 +321,14 @@ void Compiler::visitBooleanExpr(BooleanExpr &expr) {
 }
 
 void Compiler::visitCallExpr(CallExpr &expr) {
-    throw errorAt(expr.paren, "Not implemented.");
+    compile(expr.callee);
+
+    for (Expr& argument : expr.arguments) {
+        compile(argument);
+    }
+
+    emitByte(OpCode::CALL);
+    emitByte(static_cast<uint8_t>(expr.arguments.size()));
 }
 
 void Compiler::visitFieldExpr(FieldExpr &expr) {
@@ -427,6 +457,14 @@ uint32_t Compiler::resolveVariable(const Token& name) {
     }
 
     throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
+}
+
+void Compiler::defineNative(std::string name, Type functionType, NativeFn function) {
+    NativeObject* native = new NativeObject{functionType, function};
+    emitConstant(Value{native});
+
+    addVariable(Token{TokenType::IDENTIFIER, name, 0, 0});
+    m_variables.back().initialized = true;
 }
 
 void Compiler::emitByte(uint8_t byte) {

@@ -17,6 +17,8 @@ enum class FunctionKind {
 };
 
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
+    Compiler* m_enclosing;
+
     FunctionObject* m_currentFunction;
     FunctionKind m_functionType;
 
@@ -64,6 +66,8 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     void addVariable(const Token& name);
     uint32_t resolveVariable(const Token& name);
 
+    void defineNative(std::string name, Type functionType, NativeFn function);
+
     void emitByte(uint8_t byte);
     void emitByte(OpCode byte);
 
@@ -90,12 +94,12 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     CompileError errorAt(const Token &token, const std::string &message);
 
 public:
-    Compiler() = default;
+    Compiler(Compiler* enclosing = nullptr);
 
-    void init(FunctionKind functionType);
+    void init(FunctionKind functionKind, Type functionType = NOTHING_TYPE, const std::string& name = "");
     FunctionObject* end();
 
-    void compile(FunctionKind functionType, std::vector<Stmt> ast);
+    void compile(std::vector<Stmt> ast);
 
     bool hadError();
 };

@@ -101,7 +101,7 @@ void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
 
     declareVariable(stmt.name.lexeme, Variable{stmt.type, true});
 
-    if (m_scopes.size() > 1) {
+    if (m_scopes.size() == 1) {
         m_globalFunctions.push_back(stmt);
     } else {
         analyseFunctionBody(stmt);

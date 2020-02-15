@@ -12,23 +12,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/tests/closures/closed.en" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Analyser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Analyser.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Chunk.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Chunk.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Compiler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Compiler.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Natives.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Natives.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Object.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Object.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/VM.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/VM.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Analyser.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Analyser.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Chunk.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Chunk.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Compiler.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Compiler.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Natives.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Natives.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/Object.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/Object.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/h/VM.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/h/VM.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/closures/stack.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/closures/open.en" afterDir="false" />
-    </list>
+    <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -203,7 +187,7 @@
       <workItem from="1578879950353" duration="275000" />
       <workItem from="1581332102575" duration="1871000" />
       <workItem from="1581408334154" duration="37236000" />
-      <workItem from="1581654401968" duration="27417000" />
+      <workItem from="1581654401968" duration="27681000" />
     </task>
     <servers />
   </component>

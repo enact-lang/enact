@@ -85,6 +85,13 @@ InterpretResult VM::run(FunctionObject* function) {
                 }
                 break;
             }
+            case OpCode::CHECK_CALLABLE: {
+                Value value = peek(0);
+                if (!value.getType()->isFunction()) {
+                    runtimeError("Only functions can be called.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+            }
 
             case OpCode::NEGATE: {
                 Value value = pop();
@@ -342,7 +349,7 @@ void VM::runtimeError(const std::string& msg) {
         std::cerr << "^";
     }
     std::cerr << "\n" << msg << "\n";
-    for (uint8_t i = m_frameCount - 1; i >= 0; i--) {
+    for (int i = m_frameCount - 1; i >= 0; --i) {
         CallFrame* frame = &m_frames[i];
         FunctionObject* function = frame->closure->getFunction();
 

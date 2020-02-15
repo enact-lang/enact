@@ -343,6 +343,9 @@ void Compiler::visitBooleanExpr(BooleanExpr &expr) {
 
 void Compiler::visitCallExpr(CallExpr &expr) {
     compile(expr.callee);
+    if (expr.callee->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_CALLABLE);
+    }
 
     for (Expr& argument : expr.arguments) {
         compile(argument);

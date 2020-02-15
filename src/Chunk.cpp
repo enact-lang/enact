@@ -88,6 +88,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::NIL:
         case OpCode::CHECK_NUMERIC:
         case OpCode::CHECK_BOOL:
+        case OpCode::CHECK_CALLABLE:
         case OpCode::NEGATE:
         case OpCode::NOT:
         case OpCode::ADD:
@@ -351,6 +352,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::NIL: return "NIL";
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
+        case OpCode::CHECK_CALLABLE: return "CHECK_CALLABLE";
         case OpCode::NEGATE: return "NEGATE";
         case OpCode::NOT: return "NOT";
         case OpCode::ADD: return "ADD";

@@ -169,20 +169,21 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
             FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
             for (int j = 0; j < function->getUpvalueCount(); j++) {
-                uint8_t isLocal = m_code[index++];
+                uint8_t isLocal = m_code[++index];
                 uint32_t i;
                 if (j < UINT8_MAX) {
-                    i = m_code[index++];
+                    i = m_code[++index];
                 } else {
-                    i = m_code[index] |
-                        (m_code[index + 1] << 8) |
-                        (m_code[index + 2] << 16);
-                    index += 2;
+                    i = m_code[index + 1] |
+                        (m_code[index + 2] << 8) |
+                        (m_code[index + 3] << 16);
+                    index += 3;
                 }
                 s << std::setfill('0') << std::setw(4) << index - 2;
                 s.flags(f);
                 s << "      |                  " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
             }
+            ++index;
             break;
         }
         case OpCode::CLOSURE_LONG: {
@@ -202,22 +203,21 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
             FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
             for (int j = 0; j < function->getUpvalueCount(); j++) {
-                uint8_t isLocal = m_code[index++];
+                uint8_t isLocal = m_code[++index];
                 uint32_t i;
                 if (j < UINT8_MAX) {
-                    i = m_code[index++];
+                    i = m_code[++index];
                 } else {
-                    i = m_code[index] |
-                        (m_code[index + 1] << 8) |
-                        (m_code[index + 2] << 16);
-                    index += 2;
+                    i = m_code[index + 1] |
+                        (m_code[index + 2] << 8) |
+                        (m_code[index + 3] << 16);
+                    index += 3;
                 }
                 s << std::setfill('0') << std::setw(4) << index - 2;
                 s.flags(f);
                 s << "      |                     " << (isLocal ? "local" : "upvalue") << " " << index << "\n";
             }
-
-            std::cout << s.str();
+            ++index;
             break;
         }
     }

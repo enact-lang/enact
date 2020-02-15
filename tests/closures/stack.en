@@ -5,3 +5,5 @@ fun outer():
   end
   inner()
 end
+
+outer()

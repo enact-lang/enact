@@ -30,11 +30,17 @@ enum class OpCode : uint8_t {
 
     POP,
 
-    GET_VARIABLE,
-    GET_VARIABLE_LONG,
+    GET_LOCAL,
+    GET_LOCAL_LONG,
 
-    SET_VARIABLE,
-    SET_VARIABLE_LONG,
+    SET_LOCAL,
+    SET_LOCAL_LONG,
+
+    GET_UPVALUE,
+    GET_UPVALUE_LONG,
+
+    SET_UPVALUE,
+    SET_UPVALUE_LONG,
 
     JUMP,
     JUMP_IF_TRUE,
@@ -43,6 +49,9 @@ enum class OpCode : uint8_t {
     LOOP,
 
     CALL,
+
+    CLOSURE,
+    CLOSURE_LONG,
   
     RETURN,
 };

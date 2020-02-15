@@ -5,10 +5,15 @@
 #include "Chunk.h"
 #include "Object.h"
 
-struct Variable {
+struct Local {
     Token name;
     uint32_t depth;
     bool initialized;
+};
+
+struct Upvalue {
+    uint32_t index;
+    bool isLocal;
 };
 
 enum class FunctionKind {
@@ -22,8 +27,10 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     FunctionObject* m_currentFunction;
     FunctionKind m_functionType;
 
-    std::vector<Variable> m_variables;
+    std::vector<Local> m_locals;
     uint32_t m_scopeDepth = 0;
+
+    std::vector<Upvalue> m_upvalues{};
 
     void compile(Stmt stmt);
     void compile(Expr expr);
@@ -63,8 +70,11 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     void beginScope();
     void endScope();
 
-    void addVariable(const Token& name);
-    uint32_t resolveVariable(const Token& name);
+    void addLocal(const Token& name);
+    uint32_t resolveLocal(const Token& name);
+
+    void addUpvalue(uint32_t index, bool isLocal);
+    uint32_t resolveUpvalue(const Token& name);
 
     void defineNative(std::string name, Type functionType, NativeFn function);
 
@@ -85,8 +95,13 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     Chunk& currentChunk();
   
     class CompileError : public std::runtime_error {
+        Token m_token;
+        std::string m_message;
+
     public:
-        CompileError() : std::runtime_error{"Internal error, raising exception:\nUncaught CompileError!"} {}
+        CompileError(Token token, std::string message) : std::runtime_error{"Internal error, raising exception:\nUncaught CompileError!"}, m_token{std::move(token)}, m_message{std::move(message)} {}
+        const Token& getToken() const { return m_token; }
+        const std::string& getMessage() const { return m_message; }
     };
 
     bool m_hadError = false;

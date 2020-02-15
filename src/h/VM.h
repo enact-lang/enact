@@ -19,7 +19,7 @@ enum class InterpretResult {
 };
 
 struct CallFrame {
-    FunctionObject* function;
+    ClosureObject* closure;
     const uint8_t* ip;
     size_t slotsBegin;
 };
@@ -39,7 +39,8 @@ public:
     Value pop();
     Value peek(size_t depth);
 
-    void call(FunctionObject* function);
+    void call(ClosureObject* closure);
+    UpvalueObject* captureUpvalue(uint32_t location);
 
     void runtimeError(const std::string& msg);
 };

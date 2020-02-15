@@ -8,7 +8,9 @@ InterpretResult VM::run(FunctionObject* function) {
     push(Value{function});
 
     CallFrame* frame = &m_frames[m_frameCount++];
-    frame->function = function;
+    frame->closure = new ClosureObject{function};
+    pop();
+    push(Value{frame->closure});
     frame->ip = function->getChunk().getCode().data();
     frame->slotsBegin = 0;
 
@@ -16,8 +18,8 @@ InterpretResult VM::run(FunctionObject* function) {
         #define READ_BYTE() (*frame->ip++)
         #define READ_SHORT() (static_cast<uint16_t>(READ_BYTE() | (READ_BYTE() << 8)))
         #define READ_LONG() (static_cast<uint32_t>(READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)))
-        #define READ_CONSTANT() ((frame->function->getChunk().getConstants())[READ_BYTE()])
-        #define READ_CONSTANT_LONG() ((frame->function->getChunk().getConstants())[READ_LONG()])
+        #define READ_CONSTANT() ((frame->closure->getFunction()->getChunk().getConstants())[READ_BYTE()])
+        #define READ_CONSTANT_LONG() ((frame->closure->getFunction()->getChunk().getConstants())[READ_LONG()])
         #define NUMERIC_OP(op) \
             do { \
                 Value b = pop(); \
@@ -40,8 +42,8 @@ InterpretResult VM::run(FunctionObject* function) {
         }
         std::cout << "\n";
 
-        std::cout << frame->function->getChunk()
-                .disassembleInstruction(frame->ip - frame->function->getChunk().getCode().data()).first;
+        std::cout << frame->closure->getFunction()->getChunk()
+                .disassembleInstruction(frame->ip - frame->closure->getFunction()->getChunk().getCode().data()).first;
         #endif
 
         Value* slots = &m_stack[frame->slotsBegin];
@@ -111,15 +113,33 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::POP: pop(); break;
 
-            case OpCode::GET_VARIABLE: {
+            case OpCode::GET_LOCAL: push(slots[READ_BYTE()]); break;
+            case OpCode::GET_LOCAL_LONG: push(slots[READ_LONG()]); break;
+
+            case OpCode::SET_LOCAL: slots[READ_BYTE()] = peek(0); break;
+            case OpCode::SET_LOCAL_LONG: slots[READ_LONG()] = peek(0); break;
+
+            case OpCode::GET_UPVALUE: {
                 uint8_t slot = READ_BYTE();
-                push(slots[slot]);
+                push(m_stack[frame->closure->getUpvalues()[slot]->getLocation()]);
                 break;
             }
-            case OpCode::GET_VARIABLE_LONG: push(slots[READ_LONG()]); break;
+            case OpCode::GET_UPVALUE_LONG: {
+                uint32_t slot = READ_LONG();
+                push(m_stack[frame->closure->getUpvalues()[slot]->getLocation()]);
+                break;
+            }
 
-            case OpCode::SET_VARIABLE: slots[READ_BYTE()] = peek(0); break;
-            case OpCode::SET_VARIABLE_LONG: slots[READ_LONG()] = peek(0); break;
+            case OpCode::SET_UPVALUE: {
+                uint8_t slot = READ_BYTE();
+                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                break;
+            }
+            case OpCode::SET_UPVALUE_LONG: {
+                uint32_t slot = READ_LONG();
+                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                break;
+            }
 
             case OpCode::JUMP: {
                 uint16_t jumpSize = READ_SHORT();
@@ -149,18 +169,64 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::CALL: {
                 uint8_t argCount = READ_BYTE();
-                Value functionValue = peek(argCount);
+                Object* callee = peek(argCount).asObject();
 
-                if (functionValue.asObject()->is<FunctionObject>()) {
-                    call(functionValue.asObject()->as<FunctionObject>());
+                if (callee->is<ClosureObject>()) {
+                    call(callee->as<ClosureObject>());
                     frame = &m_frames[m_frameCount - 1];
                 } else {
-                    NativeFn native = functionValue.asObject()->as<NativeObject>()->getFunction();
+                    NativeFn native = callee->as<NativeObject>()->getFunction();
                     Value result = native(argCount, &m_stack.back() - argCount + 1);
 
                     m_stack.erase(m_stack.begin() + frame->slotsBegin + argCount + 1, m_stack.end());
 
                     push(result);
+                }
+                break;
+            }
+
+            case OpCode::CLOSURE: {
+                FunctionObject* function = READ_CONSTANT().asObject()->as<FunctionObject>();
+                ClosureObject* closure = new ClosureObject{function};
+                push(Value{closure});
+
+                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
+                    uint8_t isLocal = READ_BYTE();
+                    uint32_t index;
+                    if (i < UINT8_MAX) {
+                        index = READ_BYTE();
+                    } else {
+                        index = READ_LONG();
+                    }
+
+                    if (isLocal) {
+                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
+                    } else {
+                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
+                    }
+                }
+                break;
+            }
+
+            case OpCode::CLOSURE_LONG: {
+                FunctionObject* function = READ_CONSTANT_LONG().asObject()->as<FunctionObject>();
+                ClosureObject* closure = new ClosureObject{function};
+                push(Value{closure});
+
+                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
+                    uint8_t isLocal = READ_BYTE();
+                    uint32_t index;
+                    if (i < UINT8_MAX) {
+                        index = READ_BYTE();
+                    } else {
+                        index = READ_LONG();
+                    }
+
+                    if (isLocal) {
+                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
+                    } else {
+                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
+                    }
                 }
                 break;
             }
@@ -207,23 +273,28 @@ Value VM::peek(size_t depth) {
     return m_stack[m_stack.size() - 1 - depth];
 }
 
-void VM::call(FunctionObject* function) {
+void VM::call(ClosureObject* closure) {
     if (m_frameCount == FRAMES_MAX) {
         runtimeError("Stack overflow.");
     }
 
     CallFrame* frame = &m_frames[m_frameCount++];
-    frame->function = function;
-    frame->ip = function->getChunk().getCode().data();
+    frame->closure = closure;
+    frame->ip = closure->getFunction()->getChunk().getCode().data();
 
-    uint8_t paramCount = function->getType()->as<FunctionType>()->getArgumentTypes().size();
+    uint8_t paramCount = closure->getFunction()->getType()->as<FunctionType>()->getArgumentTypes().size();
     frame->slotsBegin = m_stack.size() - paramCount - 1;
+}
+
+UpvalueObject* VM::captureUpvalue(uint32_t location) {
+    UpvalueObject* createdUpvalue = new UpvalueObject{location};
+    return createdUpvalue;
 }
 
 void VM::runtimeError(const std::string& msg) {
     CallFrame* frame = &m_frames[m_frameCount - 1];
-    size_t instruction = frame->ip - frame->function->getChunk().getCode().data();
-    line_t line = frame->function->getChunk().getLine(instruction);
+    size_t instruction = frame->ip - frame->closure->getFunction()->getChunk().getCode().data();
+    line_t line = frame->closure->getFunction()->getChunk().getLine(instruction);
 
     const std::string source = Enact::getSourceLine(line);
 
@@ -234,7 +305,7 @@ void VM::runtimeError(const std::string& msg) {
     std::cerr << "\n" << msg << "\n";
     for (uint8_t i = m_frameCount - 1; i >= 0; i--) {
         CallFrame* frame = &m_frames[i];
-        FunctionObject* function = frame->function;
+        FunctionObject* function = frame->closure->getFunction();
 
         // -1 because the IP is sitting on the next instruction to be executed
         size_t instruction = frame->ip - function->getChunk().getCode().data() - 1;

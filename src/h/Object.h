@@ -8,12 +8,16 @@
 enum class ObjectType {
     STRING,
     ARRAY,
+    UPVALUE,
+    CLOSURE,
     FUNCTION,
     NATIVE
 };
 
 class StringObject;
 class ArrayObject;
+class UpvalueObject;
+class ClosureObject;
 class FunctionObject;
 class NativeObject;
 
@@ -48,13 +52,17 @@ std::ostream& operator<<(std::ostream& stream, const Object& object);
 
 template<typename T>
 inline bool Object::is() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject, NativeObject>::value,
-                  "Object::is<T>: T must be StringObject, ArrayObject, FunctionObject or NativeObject.");
+    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject>::value,
+                  "Object::is<T>: T must inherit Object.");
 
     if (std::is_same_v<T, StringObject>) {
         return m_type == ObjectType::STRING;
     } else if (std::is_same_v<T, ArrayObject>) {
         return m_type == ObjectType::ARRAY;
+    } else if (std::is_same_v<T, UpvalueObject>) {
+        return m_type == ObjectType::UPVALUE;
+    } else if (std::is_same_v<T, ClosureObject>) {
+        return m_type == ObjectType::CLOSURE;
     } else if (std::is_same_v<T, FunctionObject>) {
         return m_type == ObjectType::FUNCTION;
     } else if (std::is_same_v<T, NativeObject>) {
@@ -66,16 +74,16 @@ inline bool Object::is() const {
 
 template<typename T>
 inline T* Object::as() {
-    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject, NativeObject>::value,
-                  "Object::as<T>: T must be StringObject, ArrayObject, or FunctionObject.");
+    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject>::value,
+                  "Object::as<T>: T must inherit Object.");
 
     return static_cast<T*>(this);
 }
 
 template<typename T>
 inline const T* Object::as() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, FunctionObject, NativeObject>::value,
-                  "Object::as<T>: T must be StringObject, ArrayObject, or FunctionObject.");
+    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject>::value,
+                  "Object::as<T>: T must inherit Object.");
     return static_cast<const T*>(this);
 }
 
@@ -112,12 +120,41 @@ public:
     Type getType() const override;
 };
 
+class UpvalueObject : public Object {
+    uint32_t m_location;
+
+public:
+    explicit UpvalueObject(uint32_t location);
+    ~UpvalueObject() override = default;
+
+    uint32_t getLocation();
+
+    std::string toString() const override;
+    Type getType() const override;
+};
+
+class ClosureObject : public Object {
+    FunctionObject* m_function;
+    std::vector<UpvalueObject*> m_upvalues;
+
+public:
+    explicit ClosureObject(FunctionObject* function);
+    ~ClosureObject() override = default;
+
+    FunctionObject* getFunction();
+    std::vector<UpvalueObject*>& getUpvalues();
+
+    std::string toString() const override;
+    Type getType() const override;
+};
+
 #include "Chunk.h"
 
 class FunctionObject : public Object {
     Type m_type;
     Chunk m_chunk;
     std::string m_name;
+    uint32_t m_upvalueCount = 0;
 
 public:
     explicit FunctionObject(Type type, Chunk chunk, std::string name);
@@ -125,6 +162,7 @@ public:
 
     Chunk& getChunk();
     const std::string& getName() const;
+    uint32_t& getUpvalueCount();
 
     std::string toString() const override;
     Type getType() const override;

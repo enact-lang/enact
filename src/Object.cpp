@@ -92,6 +92,42 @@ Type ArrayObject::getType() const {
     return std::make_shared<ArrayType>(elementType);
 }
 
+UpvalueObject::UpvalueObject(uint32_t location) : Object{ObjectType::UPVALUE}, m_location{location} {
+
+}
+
+uint32_t UpvalueObject::getLocation() {
+    return m_location;
+}
+
+std::string UpvalueObject::toString() const {
+    return "upvalue";
+}
+
+Type UpvalueObject::getType() const {
+    return NOTHING_TYPE;
+}
+
+
+ClosureObject::ClosureObject(FunctionObject *function) : Object{ObjectType::CLOSURE}, m_function{function}, m_upvalues{function->getUpvalueCount()} {
+}
+
+FunctionObject* ClosureObject::getFunction() {
+    return m_function;
+}
+
+std::vector<UpvalueObject*>& ClosureObject::getUpvalues() {
+    return m_upvalues;
+}
+
+std::string ClosureObject::toString() const {
+    return m_function->toString();
+}
+
+Type ClosureObject::getType() const {
+    return m_function->getType();
+}
+
 FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
         Object{ObjectType::FUNCTION}, m_type{type}, m_chunk{std::move(chunk)}, m_name{std::move(name)} {
 }
@@ -102,6 +138,10 @@ Chunk& FunctionObject::getChunk() {
 
 const std::string& FunctionObject::getName() const {
     return m_name;
+}
+
+uint32_t& FunctionObject::getUpvalueCount() {
+    return m_upvalueCount;
 }
 
 std::string FunctionObject::toString() const {
@@ -120,7 +160,6 @@ Type FunctionObject::getType() const {
 }
 
 NativeObject::NativeObject(Type type, NativeFn function) : Object{ObjectType::NATIVE}, m_type{type}, m_function{function} {
-
 }
 
 NativeFn NativeObject::getFunction() {
@@ -136,5 +175,3 @@ std::string NativeObject::toString() const {
 Type NativeObject::getType() const {
     return m_type;
 }
-
-

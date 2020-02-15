@@ -52,6 +52,8 @@ enum class OpCode : uint8_t {
 
     CLOSURE,
     CLOSURE_LONG,
+
+    CLOSE_UPVALUE,
   
     RETURN,
 };

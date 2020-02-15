@@ -122,12 +122,22 @@ public:
 
 class UpvalueObject : public Object {
     uint32_t m_location;
+    UpvalueObject* m_next = nullptr;
+
+    bool m_isClosed = false;
+    Value m_closed{};
 
 public:
     explicit UpvalueObject(uint32_t location);
     ~UpvalueObject() override = default;
 
     uint32_t getLocation();
+    UpvalueObject* getNext();
+    void setNext(UpvalueObject* next);
+
+    bool isClosed() const;
+    Value getClosed() const;
+    void setClosed(Value value);
 
     std::string toString() const override;
     Type getType() const override;

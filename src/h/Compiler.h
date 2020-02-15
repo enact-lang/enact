@@ -9,6 +9,7 @@ struct Local {
     Token name;
     uint32_t depth;
     bool initialized;
+    bool isCaptured;
 };
 
 struct Upvalue {

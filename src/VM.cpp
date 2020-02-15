@@ -121,12 +121,18 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::GET_UPVALUE: {
                 uint8_t slot = READ_BYTE();
-                push(m_stack[frame->closure->getUpvalues()[slot]->getLocation()]);
+                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                push(upvalue->isClosed() ?
+                        upvalue->getClosed() :
+                        m_stack[upvalue->getLocation()]);
                 break;
             }
             case OpCode::GET_UPVALUE_LONG: {
-                uint32_t slot = READ_LONG();
-                push(m_stack[frame->closure->getUpvalues()[slot]->getLocation()]);
+                uint8_t slot = READ_BYTE();
+                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                push(upvalue->isClosed() ?
+                      upvalue->getClosed() :
+                      m_stack[upvalue->getLocation()]);
                 break;
             }
 
@@ -231,8 +237,15 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
 
+            case OpCode::CLOSE_UPVALUE:
+                closeUpvalues(m_stack.size() - 1);
+                pop();
+                break;
+
             case OpCode::RETURN: {
                 Value result = pop();
+
+                closeUpvalues(frame->slotsBegin);
 
                 m_frameCount--;
                 if (m_frameCount == 0) {
@@ -240,7 +253,7 @@ InterpretResult VM::run(FunctionObject* function) {
                     return InterpretResult::OK;
                 }
 
-                m_stack.erase(m_stack.begin() + frame->slotsBegin + 1, m_stack.end());
+                m_stack.erase(m_stack.begin() + frame->slotsBegin, m_stack.end());
                 push(result);
 
                 frame = &m_frames[m_frameCount - 1];
@@ -287,8 +300,34 @@ void VM::call(ClosureObject* closure) {
 }
 
 UpvalueObject* VM::captureUpvalue(uint32_t location) {
+    UpvalueObject* prevUpvalue = nullptr;
+    UpvalueObject* upvalue = m_openUpvalues;
+
+    while (upvalue != nullptr && upvalue->getLocation() == location) {
+        prevUpvalue = upvalue;
+        upvalue = upvalue->getNext();
+    }
+
+    if (upvalue != nullptr && upvalue->getLocation() == location) return upvalue;
+
     UpvalueObject* createdUpvalue = new UpvalueObject{location};
+    createdUpvalue->setNext(upvalue);
+
+    if (prevUpvalue == nullptr) {
+        m_openUpvalues = createdUpvalue;
+    } else {
+        prevUpvalue->setNext(createdUpvalue);
+    }
+
     return createdUpvalue;
+}
+
+void VM::closeUpvalues(uint32_t last) {
+    while (m_openUpvalues != nullptr && m_openUpvalues->getLocation() >= last) {
+        UpvalueObject* upvalue = m_openUpvalues;
+        upvalue->setClosed(m_stack[upvalue->getLocation()]);
+        m_openUpvalues = upvalue->getNext();
+    }
 }
 
 void VM::runtimeError(const std::string& msg) {

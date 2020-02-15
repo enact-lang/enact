@@ -27,6 +27,8 @@ void Compiler::init(FunctionKind functionKind, Type functionType, const std::str
                      &Natives::print);
         defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
                      &Natives::put);
+        defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                     &Natives::dis);
     }
 }
 
@@ -461,7 +463,11 @@ void Compiler::endScope() {
     --m_scopeDepth;
 
     while (!m_locals.empty() && m_locals.back().depth > m_scopeDepth) {
-        currentChunk().write(OpCode::POP, currentChunk().getCurrentLine());
+        if (m_locals.back().isCaptured) {
+            emitByte(OpCode::CLOSE_UPVALUE);
+        } else {
+            emitByte(OpCode::POP);
+        }
         m_locals.pop_back();
     }
 }
@@ -470,6 +476,7 @@ void Compiler::addLocal(const Token& name) {
     m_locals.push_back(Local{
             name,
             m_scopeDepth,
+            false,
             false
     });
 }
@@ -509,13 +516,18 @@ uint32_t Compiler::resolveUpvalue(const Token &name) {
             }
         }
 
+        m_enclosing->m_locals[local].isCaptured = true;
         addUpvalue(local, true);
         return m_upvalues.size() - 1;
     } catch (CompileError& error) {}
 
-    uint32_t upvalue = m_enclosing->resolveUpvalue(name);
-    addUpvalue(upvalue, false);
-    return m_upvalues.size() - 1;
+    try {
+        uint32_t upvalue = m_enclosing->resolveUpvalue(name);
+        addUpvalue(upvalue, false);
+        return m_upvalues.size() - 1;
+    } catch (CompileError& error) {}
+
+    throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
 }
 
 void Compiler::defineNative(std::string name, Type functionType, NativeFn function) {

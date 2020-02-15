@@ -11,6 +11,7 @@ void Analyser::analyse(std::vector<Stmt> program) {
     declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
     declareVariable("print", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
     declareVariable("put", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+    declareVariable("dis", Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
 
     for (auto &stmt : program) {
         analyse(stmt);
@@ -97,7 +98,6 @@ void Analyser::visitForStmt(ForStmt &stmt) {
 
 void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
     stmt.type = getFunctionType(stmt);
-    auto functionType = stmt.type->as<FunctionType>();
 
     declareVariable(stmt.name.lexeme, Variable{stmt.type, true});
 
@@ -152,13 +152,13 @@ void Analyser::visitIfStmt(IfStmt &stmt) {
 }
 
 void Analyser::visitReturnStmt(ReturnStmt &stmt) {
-    if (!m_currentFunction) {
+    if (m_currentFunctions.empty()) {
         throw errorAt(stmt.keyword, "Return is only allowed inside functions.");
     }
 
     analyse(stmt.value);
 
-    Type returnType = m_currentFunction->getReturnType();
+    Type returnType = m_currentFunctions.back().getReturnType();
     if (!returnType->looselyEquals(*stmt.value->getType())) {
         throw errorAt(stmt.keyword, "Cannot return from function with return type '" +
                                     returnType->toString() + "' with value of type '" +
@@ -655,7 +655,7 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
     auto functionType = type->as<FunctionType>();
 
     beginScope();
-    m_currentFunction = *type->as<FunctionType>();
+    m_currentFunctions.push_back(*functionType);
 
     for (int i = 0; i < stmt.params.size(); ++i) {
         declareVariable(stmt.params[i].name.lexeme, Variable{functionType->getArgumentTypes()[i]});
@@ -665,7 +665,7 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
         analyse(statement);
     }
 
-    m_currentFunction = {};
+    m_currentFunctions.pop_back();
     endScope();
 }
 

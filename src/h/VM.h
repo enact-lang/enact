@@ -30,6 +30,8 @@ class VM {
     std::array<CallFrame, FRAMES_MAX> m_frames{CallFrame{nullptr, nullptr, 0}};
     size_t m_frameCount = 0;
 
+    UpvalueObject* m_openUpvalues = nullptr;
+
 public:
     VM();
 
@@ -40,7 +42,9 @@ public:
     Value peek(size_t depth);
 
     void call(ClosureObject* closure);
+
     UpvalueObject* captureUpvalue(uint32_t location);
+    void closeUpvalues(uint32_t last);
 
     void runtimeError(const std::string& msg);
 };

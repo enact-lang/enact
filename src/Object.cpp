@@ -100,6 +100,27 @@ uint32_t UpvalueObject::getLocation() {
     return m_location;
 }
 
+UpvalueObject* UpvalueObject::getNext() {
+    return m_next;
+}
+
+void UpvalueObject::setNext(UpvalueObject *next) {
+    m_next = next;
+}
+
+bool UpvalueObject::isClosed() const {
+    return m_isClosed;
+}
+
+Value UpvalueObject::getClosed() const {
+    return m_closed;
+}
+
+void UpvalueObject::setClosed(Value value) {
+    m_isClosed = true;
+    m_closed = value;
+}
+
 std::string UpvalueObject::toString() const {
     return "upvalue";
 }

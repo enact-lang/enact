@@ -98,6 +98,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::GREATER:
         case OpCode::EQUAL:
         case OpCode::POP:
+        case OpCode::CLOSE_UPVALUE:
         case OpCode::RETURN: {
             std::string str;
             std::tie(str, index) = disassembleSimple(index);
@@ -360,10 +361,10 @@ std::string opCodeToString(OpCode code) {
         case OpCode::GREATER: return "GREATER";
         case OpCode::EQUAL: return "EQUAL";
         case OpCode::POP: return "POP";
-        case OpCode::GET_LOCAL: return "GET_VARIABLE";
-        case OpCode::GET_LOCAL_LONG: return "GET_VARIABLE_LONG";
-        case OpCode::SET_LOCAL: return "SET_VARIABLE";
-        case OpCode::SET_LOCAL_LONG: return "SET_VARIABLE_LONG";
+        case OpCode::GET_LOCAL: return "GET_LOCAL";
+        case OpCode::GET_LOCAL_LONG: return "GET_LOCAL_LONG";
+        case OpCode::SET_LOCAL: return "SET_LOCAL";
+        case OpCode::SET_LOCAL_LONG: return "SET_LOCAL_LONG";
         case OpCode::GET_UPVALUE: return "GET_UPVALUE";
         case OpCode::GET_UPVALUE_LONG: return "GET_UPVALUE_LONG";
         case OpCode::SET_UPVALUE: return "SET_UPVALUE";
@@ -375,6 +376,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::CALL: return "CALL";
         case OpCode::CLOSURE: return "CLOSURE";
         case OpCode::CLOSURE_LONG: return "CLOSURE_LONG";
+        case OpCode::CLOSE_UPVALUE: return "CLOSE_UPVALUE";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.
         default: return "";

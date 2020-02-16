@@ -11,7 +11,8 @@ enum class ObjectType {
     UPVALUE,
     CLOSURE,
     FUNCTION,
-    NATIVE
+    NATIVE,
+    TYPE
 };
 
 class StringObject;
@@ -20,6 +21,7 @@ class UpvalueObject;
 class ClosureObject;
 class FunctionObject;
 class NativeObject;
+class TypeObject;
 
 class Object {
     static Object* m_objects;
@@ -52,7 +54,7 @@ std::ostream& operator<<(std::ostream& stream, const Object& object);
 
 template<typename T>
 inline bool Object::is() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject>::value,
+    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
                   "Object::is<T>: T must inherit Object.");
 
     if (std::is_same_v<T, StringObject>) {
@@ -67,6 +69,8 @@ inline bool Object::is() const {
         return m_type == ObjectType::FUNCTION;
     } else if (std::is_same_v<T, NativeObject>) {
         return m_type == ObjectType::NATIVE;
+    } else if (std::is_same_v<T, TypeObject>) {
+        return m_type == ObjectType::TYPE;
     }
 
     return false;
@@ -74,7 +78,7 @@ inline bool Object::is() const {
 
 template<typename T>
 inline T* Object::as() {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject>::value,
+    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
                   "Object::as<T>: T must inherit Object.");
 
     return static_cast<T*>(this);
@@ -82,7 +86,7 @@ inline T* Object::as() {
 
 template<typename T>
 inline const T* Object::as() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject>::value,
+    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
                   "Object::as<T>: T must inherit Object.");
     return static_cast<const T*>(this);
 }
@@ -189,6 +193,19 @@ public:
     ~NativeObject() override = default;
 
     NativeFn getFunction();
+
+    std::string toString() const override;
+    Type getType() const override;
+};
+
+class TypeObject : public Object {
+    Type m_containedType;
+
+public:
+    explicit TypeObject(Type containedType);
+    ~TypeObject() override = default;
+
+    Type getContainedType();
 
     std::string toString() const override;
     Type getType() const override;

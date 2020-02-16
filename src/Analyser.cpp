@@ -478,6 +478,9 @@ void Analyser::visitBooleanExpr(BooleanExpr &expr) {
 
 void Analyser::visitCallExpr(CallExpr &expr) {
     analyse(expr.callee);
+    for (auto& argument : expr.arguments) {
+        analyse(argument);
+    }
 
     Type type = expr.callee->getType();
 
@@ -496,7 +499,6 @@ void Analyser::visitCallExpr(CallExpr &expr) {
 
         // Are the arguments we have the right type?
         for (int i = 0; i < expr.arguments.size(); ++i) {
-            analyse(expr.arguments[i]);
             if (!expr.arguments[i]->getType()->looselyEquals(*calleeType->getArgumentTypes()[i])) {
                 throw errorAt(expr.paren,
                               "Expected argument of type '" + calleeType->getArgumentTypes()[i]->toString() +
@@ -508,7 +510,7 @@ void Analyser::visitCallExpr(CallExpr &expr) {
         expr.setType(calleeType->getReturnType());
     } else if (type->isDynamic()) {
         // We'll have to check this one at runtime.
-        expr.setType(std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC));
+        expr.setType(DYNAMIC_TYPE);
     } else {
         throw errorAt(expr.paren, "Only functions can be called.");
     }

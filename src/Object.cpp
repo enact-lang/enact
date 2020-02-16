@@ -196,3 +196,19 @@ std::string NativeObject::toString() const {
 Type NativeObject::getType() const {
     return m_type;
 }
+
+TypeObject::TypeObject(Type containedType) : Object{ObjectType::TYPE}, m_containedType{containedType} {
+
+}
+
+Type TypeObject::getContainedType() {
+    return m_containedType;
+}
+
+std::string TypeObject::toString() const {
+    return m_containedType->toString();
+}
+
+Type TypeObject::getType() const {
+    return NOTHING_TYPE;
+}

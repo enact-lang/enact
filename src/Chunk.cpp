@@ -88,7 +88,6 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::NIL:
         case OpCode::CHECK_NUMERIC:
         case OpCode::CHECK_BOOL:
-        case OpCode::CHECK_CALLABLE:
         case OpCode::NEGATE:
         case OpCode::NOT:
         case OpCode::ADD:
@@ -108,6 +107,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Byte instructions
+        case OpCode::CHECK_CALLABLE:
         case OpCode::GET_LOCAL:
         case OpCode::SET_LOCAL:
         case OpCode::GET_UPVALUE:
@@ -142,7 +142,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Constant instructions
-        case OpCode::CONSTANT: {
+        case OpCode::CONSTANT:
+        case OpCode::CHECK_TYPE: {
             std::string str;
             std::tie(str, index) = disassembleConstant(index);
             s << str;
@@ -150,7 +151,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Long constant instructions
-        case OpCode::CONSTANT_LONG: {
+        case OpCode::CONSTANT_LONG:
+        case OpCode::CHECK_TYPE_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLongConstant(index);
             s << str;
@@ -353,6 +355,8 @@ std::string opCodeToString(OpCode code) {
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
         case OpCode::CHECK_CALLABLE: return "CHECK_CALLABLE";
+        case OpCode::CHECK_TYPE: return "CHECK_TYPE";
+        case OpCode::CHECK_TYPE_LONG: return "CHECK_TYPE_LONG";
         case OpCode::NEGATE: return "NEGATE";
         case OpCode::NOT: return "NOT";
         case OpCode::ADD: return "ADD";

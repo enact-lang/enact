@@ -1,3 +1,4 @@
+#include <sstream>
 #include "h/VM.h"
 #include "h/Enact.h"
 
@@ -86,11 +87,59 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
             case OpCode::CHECK_CALLABLE: {
-                Value value = peek(0);
-                if (!value.getType()->isFunction()) {
+                uint8_t argCount = READ_BYTE();
+
+                Value functionValue = peek(argCount);
+                if (!functionValue.getType()->isFunction()) {
                     runtimeError("Only functions can be called.");
                     return InterpretResult::RUNTIME_ERROR;
                 }
+
+                const FunctionType* functionType = functionValue.getType()->as<FunctionType>();
+
+                uint8_t paramCount = functionType->getArgumentTypes().size();
+                if (argCount != paramCount) {
+                    std::stringstream s;
+                    s << "Expected " << static_cast<size_t>(paramCount) << " arguments to function, but got " <<
+                            static_cast<size_t>(argCount) << ".";
+                    runtimeError(s.str());
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                for (uint8_t i = 0; i < argCount; ++i) {
+                    Type shouldBe = functionType->getArgumentTypes()[i];
+                    Type argumentType = peek(i).getType();
+                    if (!argumentType->looselyEquals(*shouldBe)) {
+                        std::stringstream s;
+                        s << "Expected argument number " << static_cast<size_t>(i) << " to be of type '" <<
+                            shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
+                            "' instead.";
+                        runtimeError(s.str());
+                        return InterpretResult::RUNTIME_ERROR;
+                    }
+                }
+
+                break;
+            }
+            case OpCode::CHECK_TYPE: {
+                Type shouldBe = READ_CONSTANT().asObject()->getType();
+                Value value = peek(0);
+                if (!shouldBe->looselyEquals(*value.getType())) {
+                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                            "' but got a value of type '" + value.getType()->toString() + "' instead.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+            case OpCode::CHECK_TYPE_LONG: {
+                Type shouldBe = READ_CONSTANT_LONG().asObject()->getType();
+                Value value = peek(0);
+                if (!shouldBe->looselyEquals(*value.getType())) {
+                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                                 "' but got a value of type '" + value.getType()->toString() + "' instead.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
             }
 
             case OpCode::NEGATE: {

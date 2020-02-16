@@ -299,7 +299,9 @@ void Compiler::visitAssignExpr(AssignExpr &expr) {
 void Compiler::visitBinaryExpr(BinaryExpr &expr) {
     compile(expr.left);
 
-    if (expr.left->getType()->isDynamic()) {
+    if (expr.oper.type != TokenType::EQUAL
+            && expr.oper.type != TokenType::BANG_EQUAL
+            && expr.left->getType()->isDynamic()) {
         emitByte(OpCode::CHECK_NUMERIC);
     }
 
@@ -343,12 +345,19 @@ void Compiler::visitBooleanExpr(BooleanExpr &expr) {
 
 void Compiler::visitCallExpr(CallExpr &expr) {
     compile(expr.callee);
-    if (expr.callee->getType()->isDynamic()) {
-        emitByte(OpCode::CHECK_CALLABLE);
+
+    bool needRuntimeCheck = expr.callee->getType()->isDynamic();
+
+    for (int i = 0; i < expr.arguments.size(); ++i) {
+        compile(expr.arguments[i]);
+        if (expr.arguments[i]->getType()->isDynamic()) {
+            needRuntimeCheck = true;
+        }
     }
 
-    for (Expr& argument : expr.arguments) {
-        compile(argument);
+    if (needRuntimeCheck) {
+        emitByte(OpCode::CHECK_CALLABLE);
+        emitByte(expr.arguments.size());
     }
 
     emitByte(OpCode::CALL);

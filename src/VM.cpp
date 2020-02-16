@@ -111,7 +111,7 @@ InterpretResult VM::run(FunctionObject* function) {
                     Type argumentType = peek(i).getType();
                     if (!argumentType->looselyEquals(*shouldBe)) {
                         std::stringstream s;
-                        s << "Expected argument number " << static_cast<size_t>(i) << " to be of type '" <<
+                        s << "Expected argument " << static_cast<size_t>(i) + 1 << " to be of type '" <<
                             shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
                             "' instead.";
                         runtimeError(s.str());

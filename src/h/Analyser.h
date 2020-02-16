@@ -84,6 +84,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
 
     Type lookUpType(const Token& name);
     Type lookUpType(const std::string& name, const Token& where);
+    Type lookUpFunctionType(const std::string& name, const Token& where);
 
     Variable& lookUpVariable(const Token& name);
     void declareVariable(const std::string& name, const Variable& variable);

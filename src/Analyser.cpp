@@ -1,5 +1,6 @@
 #include <vector>
 #include <set>
+#include <sstream>
 #include "h/Analyser.h"
 #include "h/Enact.h"
 
@@ -703,11 +704,46 @@ Type Analyser::lookUpType(const std::string &name, const Token &where) {
         }
     }
 
+    if (name.size() >= 4 &&
+            name[0] == 'f' &&
+            name[1] == 'u' &&
+            name[2] == 'n' &&
+            (name[3] == ' ' || name[3] == '(')) {
+        return lookUpFunctionType(name, where);
+    }
+
     if (m_types.count(name) > 0) {
         return m_types[name];
     }
 
     throw errorAt(where, "Undefined type '" + name + "'.");
+}
+
+Type Analyser::lookUpFunctionType(const std::string& name, const Token& where) {
+    int current = 3;
+
+    while (name[current] == ' ' || name[current] == '(') ++current;
+
+    std::vector<Type> paramTypes;
+    while (name[current] != ')') {
+        std::string paramTypeName;
+        do {
+            if (name[current] == ' ') continue;
+            paramTypeName.push_back(name[current]);
+            ++current;
+        } while (name[current] != ',' && name[current] != ')');
+
+        paramTypes.push_back(lookUpType(paramTypeName, where));
+    }
+
+    std::string returnTypeName;
+    while (++current < name.size()) {
+        if (name[current] == ' ') continue;
+        returnTypeName.push_back(name[current]);
+    }
+    Type returnType = lookUpType(returnTypeName, where);
+
+    return std::make_shared<FunctionType>(returnType, paramTypes);
 }
 
 Analyser::Variable &Analyser::lookUpVariable(const Token &name) {

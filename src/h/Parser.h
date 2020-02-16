@@ -166,7 +166,7 @@ private:
     Stmt continueStatement();
     Stmt expressionStatement();
 
-    std::string consumeTypeName();
+    std::string consumeTypeName(bool emptyAllowed = false);
 
     void synchronise();
 

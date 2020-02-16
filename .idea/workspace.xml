@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="enact" targetName="enact" />
+      <config projectName="enact" targetName="matilda" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/tests/types/functions.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Analyser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/Analyser.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/VM.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/VM.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/analysis/any.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/types/any.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/analysis/const.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/types/const.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/analysis/primitive.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/types/primitive.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/block.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/block.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/each.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/each.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/false.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/false.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/for.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/for.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/function.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/function.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/given.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/given.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/if.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/if.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/struct.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/struct.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/trait.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/trait.en" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/parsing/while.en" beforeDir="false" afterPath="$PROJECT_DIR$/tests/statements/while.en" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_DATA_SOURCES" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+    <option name="HIDDEN_KINDS">
+      <set />
+    </option>
+    <expand />
+    <select />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1VPSuUk3TDiITpeZbCQXJWiJeuX" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/h" />
+      <recent name="$PROJECT_DIR$/src/ast" />
+      <recent name="$PROJECT_DIR$/h" />
+      <recent name="$PROJECT_DIR$/src" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/ast" />
+    </key>
+  </component>
+  <component name="RunManager" selected="CMake Application.enact">
+    <configuration name="Build All" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" CONFIG_NAME="Debug" EXPLICIT_BUILD_TARGET_NAME="all">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="enact" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="tests/types/functions.en" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="enact" TARGET_NAME="enact" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="enact" RUN_TARGET_NAME="enact">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="CMake Application.Build All" />
+      <item itemvalue="CMake Application.enact" />
+    </list>
+  </component>
+  <component name="ServiceViewManager">
+    <option name="viewStates">
+      <list>
+        <serviceView>
+          <treeState>
+            <expand />
+            <select />
+          </treeState>
+        </serviceView>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2be96c61-a869-49e1-a6f0-06fa04b9dd52" name="Default Changelist" comment="" />
+      <created>1539998528931</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1539998528931</updated>
+      <workItem from="1539998532583" duration="5070000" />
+      <workItem from="1540003835174" duration="218000" />
+      <workItem from="1540004152366" duration="19340000" />
+      <workItem from="1540106288325" duration="233000" />
+      <workItem from="1541990311501" duration="8891000" />
+      <workItem from="1542063843974" duration="1726000" />
+      <workItem from="1542066890604" duration="59000" />
+      <workItem from="1542147155070" duration="22000" />
+      <workItem from="1542409758464" duration="13767000" />
+      <workItem from="1542501359149" duration="13521000" />
+      <workItem from="1542583813345" duration="1195000" />
+      <workItem from="1542630781568" duration="118000" />
+      <workItem from="1543382814656" duration="158000" />
+      <workItem from="1543393197841" duration="9263000" />
+      <workItem from="1543441098692" duration="5484000" />
+      <workItem from="1543718426397" duration="12843000" />
+      <workItem from="1543808889725" duration="7641000" />
+      <workItem from="1543962977638" duration="48000" />
+      <workItem from="1543965995288" duration="1401000" />
+      <workItem from="1544072125519" duration="2928000" />
+      <workItem from="1544246220754" duration="2993000" />
+      <workItem from="1546385606127" duration="12523000" />
+      <workItem from="1547105462738" duration="13440000" />
+      <workItem from="1547610970946" duration="2667000" />
+      <workItem from="1548480728679" duration="598000" />
+      <workItem from="1548558329537" duration="5000" />
+      <workItem from="1548561103954" duration="7000" />
+      <workItem from="1548564312373" duration="14929000" />
+      <workItem from="1548884520127" duration="805000" />
+      <workItem from="1548922155407" duration="2814000" />
+      <workItem from="1549003296631" duration="2560000" />
+      <workItem from="1549064547604" duration="8613000" />
+      <workItem from="1549148397168" duration="5440000" />
+      <workItem from="1549353601890" duration="236000" />
+      <workItem from="1549353859015" duration="1252000" />
+      <workItem from="1549402555013" duration="2234000" />
+      <workItem from="1549428630788" duration="6269000" />
+      <workItem from="1549528674881" duration="127000" />
+      <workItem from="1549552310941" duration="1955000" />
+      <workItem from="1549575147372" duration="2775000" />
+      <workItem from="1549606176107" duration="6638000" />
+      <workItem from="1549934055737" duration="2124000" />
+      <workItem from="1550136422486" duration="194000" />
+      <workItem from="1550370100760" duration="7247000" />
+      <workItem from="1550891973755" duration="4857000" />
+      <workItem from="1550898957239" duration="633000" />
+      <workItem from="1550899608876" duration="1042000" />
+      <workItem from="1550900722152" duration="1225000" />
+      <workItem from="1550909453420" duration="5210000" />
+      <workItem from="1551047539112" duration="527000" />
+      <workItem from="1551168327582" duration="1179000" />
+      <workItem from="1551171943331" duration="599000" />
+      <workItem from="1551343667108" duration="5356000" />
+      <workItem from="1551454669724" duration="5311000" />
+      <workItem from="1551560180352" duration="369000" />
+      <workItem from="1551600081721" duration="1804000" />
+      <workItem from="1551736842812" duration="4753000" />
+      <workItem from="1552077876232" duration="116000" />
+      <workItem from="1553243348638" duration="3873000" />
+      <workItem from="1553408814065" duration="81000" />
+      <workItem from="1553504273149" duration="25000" />
+      <workItem from="1554511266244" duration="10287000" />
+      <workItem from="1554591968138" duration="5643000" />
+      <workItem from="1554870638431" duration="1328000" />
+      <workItem from="1555454356199" duration="2008000" />
+      <workItem from="1562544331146" duration="6603000" />
+      <workItem from="1562807364769" duration="9639000" />
+      <workItem from="1563285610592" duration="570000" />
+      <workItem from="1563889640035" duration="2398000" />
+      <workItem from="1565704151442" duration="227000" />
+      <workItem from="1565704769873" duration="398000" />
+      <workItem from="1566106419075" duration="6000" />
+      <workItem from="1566107203078" duration="4000" />
+      <workItem from="1577153465706" duration="6417000" />
+      <workItem from="1577510719199" duration="1607000" />
+      <workItem from="1577663835173" duration="5000" />
+      <workItem from="1578879950353" duration="275000" />
+      <workItem from="1581332102575" duration="1871000" />
+      <workItem from="1581408334154" duration="37236000" />
+      <workItem from="1581654401968" duration="28361000" />
+      <workItem from="1581756495014" duration="15530000" />
+      <workItem from="1581829156336" duration="4889000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="424" y="181" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1581827382223">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="424" y="181" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1920.993@0.23.1920.993" timestamp="1581827382223" />
+    <state x="986" y="329" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1581727428559">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="986" y="329" key="#com.intellij.fileTypes.FileTypeChooser/0.23.1920.993@0.23.1920.993" timestamp="1581727428559" />
+    <state x="1069" y="242" key="#com.intellij.ide.util.MemberChooser" timestamp="1581757808426">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="1069" y="242" key="#com.intellij.ide.util.MemberChooser/0.23.1920.993@0.23.1920.993" timestamp="1581757808426" />
+    <state x="1333" y="387" key="#xdebugger.evaluate" timestamp="1581740100859">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="711" y="257" key="#xdebugger.evaluate/0.23.1440.813@0.23.1440.813" timestamp="1581458931385" />
+    <state x="1333" y="387" key="#xdebugger.evaluate/0.23.1920.993@0.23.1920.993" timestamp="1581740100859" />
+    <state width="490" height="466" key="DebuggerActiveHint" timestamp="1581735726799">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="490" height="466" key="DebuggerActiveHint/0.23.1920.993@0.23.1920.993" timestamp="1581735726799" />
+    <state width="1878" height="198" key="GridCell.Tab.0.bottom" timestamp="1581835158874">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.0.bottom/0.23.1440.813@0.23.1440.813" timestamp="1581654088072" />
+    <state width="1878" height="198" key="GridCell.Tab.0.bottom/0.23.1920.993@0.23.1920.993" timestamp="1581835158874" />
+    <state width="1878" height="198" key="GridCell.Tab.0.center" timestamp="1581835158873">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.0.center/0.23.1440.813@0.23.1440.813" timestamp="1581654088072" />
+    <state width="1878" height="198" key="GridCell.Tab.0.center/0.23.1920.993@0.23.1920.993" timestamp="1581835158873" />
+    <state width="1878" height="198" key="GridCell.Tab.0.left" timestamp="1581835158873">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.0.left/0.23.1440.813@0.23.1440.813" timestamp="1581654088071" />
+    <state width="1878" height="198" key="GridCell.Tab.0.left/0.23.1920.993@0.23.1920.993" timestamp="1581835158873" />
+    <state width="1878" height="198" key="GridCell.Tab.0.right" timestamp="1581835158874">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.0.right/0.23.1440.813@0.23.1440.813" timestamp="1581654088072" />
+    <state width="1878" height="198" key="GridCell.Tab.0.right/0.23.1920.993@0.23.1920.993" timestamp="1581835158874" />
+    <state width="1878" height="198" key="GridCell.Tab.1.bottom" timestamp="1581835155029">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.1.bottom/0.23.1440.813@0.23.1440.813" timestamp="1581654088075" />
+    <state width="1878" height="198" key="GridCell.Tab.1.bottom/0.23.1920.993@0.23.1920.993" timestamp="1581835155029" />
+    <state width="1878" height="198" key="GridCell.Tab.1.center" timestamp="1581835155028">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.1.center/0.23.1440.813@0.23.1440.813" timestamp="1581654088074" />
+    <state width="1878" height="198" key="GridCell.Tab.1.center/0.23.1920.993@0.23.1920.993" timestamp="1581835155028" />
+    <state width="1878" height="198" key="GridCell.Tab.1.left" timestamp="1581835155028">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.1.left/0.23.1440.813@0.23.1440.813" timestamp="1581654088073" />
+    <state width="1878" height="198" key="GridCell.Tab.1.left/0.23.1920.993@0.23.1920.993" timestamp="1581835155028" />
+    <state width="1878" height="198" key="GridCell.Tab.1.right" timestamp="1581835155029">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="951" height="154" key="GridCell.Tab.1.right/0.23.1440.813@0.23.1440.813" timestamp="1581654088074" />
+    <state width="1878" height="198" key="GridCell.Tab.1.right/0.23.1920.993@0.23.1920.993" timestamp="1581835155029" />
+    <state x="769" y="158" key="SettingsEditor" timestamp="1581408407163">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="769" y="158" key="SettingsEditor/0.23.1920.993@0.23.1920.993" timestamp="1581408407163" />
+    <state width="659" height="496" key="XDebugger.FullValuePopup" timestamp="1581577648363">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state width="659" height="496" key="XDebugger.FullValuePopup/0.23.1920.993@0.23.1920.993" timestamp="1581577648363" />
+    <state x="639" y="352" key="com.intellij.ide.util.TipDialog" timestamp="1581829157950">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="479" y="292" key="com.intellij.ide.util.TipDialog/0.23.1440.813@0.23.1440.813" timestamp="1581654481978" />
+    <state x="639" y="352" key="com.intellij.ide.util.TipDialog/0.23.1920.993@0.23.1920.993" timestamp="1581829157950" />
+    <state x="925" y="242" width="670" height="676" key="search.everywhere.popup" timestamp="1581829885816">
+      <screen x="0" y="23" width="1920" height="993" />
+    </state>
+    <state x="694" y="202" width="670" height="554" key="search.everywhere.popup/0.23.1440.813@0.23.1440.813" timestamp="1581631289398" />
+    <state x="925" y="242" width="670" height="676" key="search.everywhere.popup/0.23.1920.993@0.23.1920.993" timestamp="1581829885816" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>306</line>
+          <option name="timeStamp" value="84" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/Compiler.cpp</url>
+          <line>302</line>
+          <option name="timeStamp" value="85" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/VM.cpp</url>
+          <line>170</line>
+          <option name="timeStamp" value="92" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

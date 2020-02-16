@@ -1,5 +1,6 @@
 #include <vector>
 #include <set>
+#include <sstream>
 #include "h/Analyser.h"
 #include "h/Enact.h"
 
@@ -7,6 +8,12 @@ void Analyser::analyse(std::vector<Stmt> program) {
     m_hadError = false;
 
     beginScope();
+
+    declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
+    declareVariable("print", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+    declareVariable("put", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+    declareVariable("dis", Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+
     for (auto &stmt : program) {
         analyse(stmt);
     }
@@ -91,12 +98,11 @@ void Analyser::visitForStmt(ForStmt &stmt) {
 }
 
 void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
-    Type type = getFunctionType(stmt);
-    auto functionType = type->as<FunctionType>();
+    stmt.type = getFunctionType(stmt);
 
-    declareVariable(stmt.name.lexeme, Variable{type, true});
+    declareVariable(stmt.name.lexeme, Variable{stmt.type, true});
 
-    if (m_scopes.size() > 1) {
+    if (m_scopes.size() == 1) {
         m_globalFunctions.push_back(stmt);
     } else {
         analyseFunctionBody(stmt);
@@ -147,13 +153,13 @@ void Analyser::visitIfStmt(IfStmt &stmt) {
 }
 
 void Analyser::visitReturnStmt(ReturnStmt &stmt) {
-    if (!m_currentFunction) {
+    if (m_currentFunctions.empty()) {
         throw errorAt(stmt.keyword, "Return is only allowed inside functions.");
     }
 
     analyse(stmt.value);
 
-    Type returnType = m_currentFunction->getReturnType();
+    Type returnType = m_currentFunctions.back().getReturnType();
     if (!returnType->looselyEquals(*stmt.value->getType())) {
         throw errorAt(stmt.keyword, "Cannot return from function with return type '" +
                                     returnType->toString() + "' with value of type '" +
@@ -473,6 +479,9 @@ void Analyser::visitBooleanExpr(BooleanExpr &expr) {
 
 void Analyser::visitCallExpr(CallExpr &expr) {
     analyse(expr.callee);
+    for (auto& argument : expr.arguments) {
+        analyse(argument);
+    }
 
     Type type = expr.callee->getType();
 
@@ -491,7 +500,6 @@ void Analyser::visitCallExpr(CallExpr &expr) {
 
         // Are the arguments we have the right type?
         for (int i = 0; i < expr.arguments.size(); ++i) {
-            analyse(expr.arguments[i]);
             if (!expr.arguments[i]->getType()->looselyEquals(*calleeType->getArgumentTypes()[i])) {
                 throw errorAt(expr.paren,
                               "Expected argument of type '" + calleeType->getArgumentTypes()[i]->toString() +
@@ -503,7 +511,7 @@ void Analyser::visitCallExpr(CallExpr &expr) {
         expr.setType(calleeType->getReturnType());
     } else if (type->isDynamic()) {
         // We'll have to check this one at runtime.
-        expr.setType(std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC));
+        expr.setType(DYNAMIC_TYPE);
     } else {
         throw errorAt(expr.paren, "Only functions can be called.");
     }
@@ -650,7 +658,7 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
     auto functionType = type->as<FunctionType>();
 
     beginScope();
-    m_currentFunction = *type->as<FunctionType>();
+    m_currentFunctions.push_back(*functionType);
 
     for (int i = 0; i < stmt.params.size(); ++i) {
         declareVariable(stmt.params[i].name.lexeme, Variable{functionType->getArgumentTypes()[i]});
@@ -660,12 +668,21 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
         analyse(statement);
     }
 
-    m_currentFunction = {};
+    m_currentFunctions.pop_back();
     endScope();
 }
 
 Type Analyser::getFunctionType(const FunctionStmt &stmt) {
-    Type returnType = lookUpType(stmt.returnTypeName, stmt.name);
+    Type returnType;
+    if (stmt.returnTypeName.empty()) {
+        returnType = NOTHING_TYPE;
+    } else {
+        returnType = lookUpType(stmt.returnTypeName, stmt.name);
+    }
+
+    if (stmt.params.size() > 255) {
+        throw errorAt(stmt.name, "Cannot have more than 255 arguments to a function.");
+    }
 
     std::vector<Type> parameterTypes;
     for (const NamedTypename &parameter : stmt.params) {
@@ -687,11 +704,63 @@ Type Analyser::lookUpType(const std::string &name, const Token &where) {
         }
     }
 
+    if (name.size() >= 4 &&
+            name[0] == 'f' &&
+            name[1] == 'u' &&
+            name[2] == 'n' &&
+            (name[3] == ' ' || name[3] == '(')) {
+        return lookUpFunctionType(name, where);
+    }
+
     if (m_types.count(name) > 0) {
         return m_types[name];
     }
 
     throw errorAt(where, "Undefined type '" + name + "'.");
+}
+
+Type Analyser::lookUpFunctionType(const std::string& name, const Token& where) {
+    int current = 3;
+
+    while (name[current] == ' ' || name[current] == '(') ++current;
+
+    int openBrackets = 1;
+    std::vector<Type> paramTypes;
+    while (openBrackets != 0) {
+        std::string paramTypeName;
+        do {
+            if (name[current] == ' ') {
+                ++current;
+                continue;
+            }
+            if (name[current] == ',') {
+                if (openBrackets > 1) {
+                    paramTypeName.push_back(name[current]);
+                    ++current;
+                    continue;
+                } else {
+                    ++current;
+                    break;
+                }
+            }
+            if (name[current] == '(') ++openBrackets;
+            if (name[current] == ')') --openBrackets;
+            if (openBrackets == 0) continue;
+            paramTypeName.push_back(name[current]);
+            ++current;
+        } while (openBrackets != 0);
+        paramTypes.push_back(lookUpType(paramTypeName, where));
+    }
+
+    std::string returnTypeName;
+    while (++current < name.size()) {
+        if (name[current] == ' ') continue;
+        returnTypeName.push_back(name[current]);
+    }
+    if (returnTypeName.empty()) returnTypeName = "nothing";
+    Type returnType = lookUpType(returnTypeName, where);
+
+    return std::make_shared<FunctionType>(returnType, paramTypes);
 }
 
 Analyser::Variable &Analyser::lookUpVariable(const Token &name) {

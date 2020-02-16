@@ -34,8 +34,9 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
     // Keep track of whether we can use break/continue
     bool m_insideLoop = false;
 
-    // Keep track of the current function type to see if return statements are valid
-    std::optional<FunctionType> m_currentFunction = {};
+    // Keep track of the current function type to see if return statements are valid. Acts like a stack for nested
+    // functions. If the stack is empty, then we are at the global scope.
+    std::vector<FunctionType> m_currentFunctions = {};
 
     // Keep track of functions that need to be analysed later
     std::vector<FunctionStmt> m_globalFunctions;
@@ -83,6 +84,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
 
     Type lookUpType(const Token& name);
     Type lookUpType(const std::string& name, const Token& where);
+    Type lookUpFunctionType(const std::string& name, const Token& where);
 
     Variable& lookUpVariable(const Token& name);
     void declareVariable(const std::string& name, const Variable& variable);

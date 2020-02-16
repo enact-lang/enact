@@ -1,0 +1,11 @@
+fun outer() any:
+    var x = "outside"
+    fun inner():
+        print(x)
+    end
+
+    return inner
+end
+
+var closure = outer()
+closure()

@@ -200,7 +200,7 @@ Stmt Parser::functionDeclaration(bool mustParseBody) {
     }
 
     // Get the return type
-    std::string typeName = consumeTypeName();
+    std::string typeName = consumeTypeName(true);
 
     std::vector<Stmt> body;
 
@@ -301,7 +301,7 @@ Stmt Parser::variableDeclaration(bool isConst) {
     expect(TokenType::IDENTIFIER, "Expected variable name.");
     Token name = m_previous;
 
-    std::string typeName { consumeTypeName() };
+    std::string typeName { consumeTypeName(true) };
 
     expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
 
@@ -595,11 +595,34 @@ void Parser::expectSeparator(const std::string &message) {
     throw errorAtCurrent(message);
 }
 
-std::string Parser::consumeTypeName() {
-    std::string typeName;
+std::string Parser::consumeTypeName(bool emptyAllowed) {
+    if (consume(TokenType::FUN)) {
+        std::string typeName;
+
+        expect(TokenType::LEFT_PAREN, "Expected '(' after 'fun' in function type.");
+        typeName += "fun (";
+
+        std::string separator = "";
+        if (!consume(TokenType::RIGHT_PAREN)) {
+            do {
+                typeName += separator;
+                typeName += consumeTypeName();
+                separator = ", ";
+            } while (consume(TokenType::COMMA));
+
+            expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
+        }
+        typeName += ")";
+
+        // Get the return type
+        typeName += consumeTypeName(true);
+        return typeName;
+    }
 
     // May be enclosed in square brackets to signify list type
     if (consume(TokenType::LEFT_SQUARE)) {
+        std::string typeName;
+
         typeName += "[";
 
         std::string elementType = consumeTypeName();
@@ -617,10 +640,14 @@ std::string Parser::consumeTypeName() {
     }
 
     if (consume(TokenType::IDENTIFIER)) {
-        typeName += m_previous.lexeme;
+        return m_previous.lexeme;
     }
 
-    return typeName;
+    if (!emptyAllowed) {
+        throw error("Expected a typename.");
+    }
+
+    return "";
 }
 
 void Parser::synchronise() {

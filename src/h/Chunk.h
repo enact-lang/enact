@@ -15,6 +15,9 @@ enum class OpCode : uint8_t {
 
     CHECK_NUMERIC,
     CHECK_BOOL,
+    CHECK_CALLABLE,
+    CHECK_TYPE,
+    CHECK_TYPE_LONG,
 
     NEGATE,
     NOT,
@@ -30,17 +33,30 @@ enum class OpCode : uint8_t {
 
     POP,
 
-    GET_VARIABLE,
-    GET_VARIABLE_LONG,
+    GET_LOCAL,
+    GET_LOCAL_LONG,
 
-    SET_VARIABLE,
-    SET_VARIABLE_LONG,
+    SET_LOCAL,
+    SET_LOCAL_LONG,
+
+    GET_UPVALUE,
+    GET_UPVALUE_LONG,
+
+    SET_UPVALUE,
+    SET_UPVALUE_LONG,
 
     JUMP,
     JUMP_IF_TRUE,
     JUMP_IF_FALSE,
   
     LOOP,
+
+    CALL,
+
+    CLOSURE,
+    CLOSURE_LONG,
+
+    CLOSE_UPVALUE,
   
     RETURN,
 };

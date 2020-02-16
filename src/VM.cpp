@@ -1,21 +1,26 @@
+#include <sstream>
 #include "h/VM.h"
 #include "h/Enact.h"
 
-VM::VM() : m_code{nullptr}, m_constants{nullptr}, m_stack{} {
+VM::VM() : m_stack{} {
 }
 
-InterpretResult VM::run(const Chunk& chunk) {
-    m_code = &chunk.getCode();
-    m_constants = &chunk.getConstants();
+InterpretResult VM::run(FunctionObject* function) {
+    push(Value{function});
 
-    auto ip = m_code->begin();
+    CallFrame* frame = &m_frames[m_frameCount++];
+    frame->closure = new ClosureObject{function};
+    pop();
+    push(Value{frame->closure});
+    frame->ip = function->getChunk().getCode().data();
+    frame->slotsBegin = 0;
 
-    for (size_t index = 0; ip != m_code->end(); ++index, ++ip) {
-        #define READ_BYTE() (++index, *++ip)
+    for (;;) {
+        #define READ_BYTE() (*frame->ip++)
         #define READ_SHORT() (static_cast<uint16_t>(READ_BYTE() | (READ_BYTE() << 8)))
         #define READ_LONG() (static_cast<uint32_t>(READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)))
-        #define READ_CONSTANT() ((*m_constants)[READ_BYTE()])
-        #define READ_CONSTANT_LONG() ((*m_constants)[READ_LONG()])
+        #define READ_CONSTANT() ((frame->closure->getFunction()->getChunk().getConstants())[READ_BYTE()])
+        #define READ_CONSTANT_LONG() ((frame->closure->getFunction()->getChunk().getConstants())[READ_LONG()])
         #define NUMERIC_OP(op) \
             do { \
                 Value b = pop(); \
@@ -38,10 +43,13 @@ InterpretResult VM::run(const Chunk& chunk) {
         }
         std::cout << "\n";
 
-        std::cout << chunk.disassembleInstruction(index).first;
+        std::cout << frame->closure->getFunction()->getChunk()
+                .disassembleInstruction(frame->ip - frame->closure->getFunction()->getChunk().getCode().data()).first;
         #endif
 
-        switch (static_cast<OpCode>(*ip)) {
+        Value* slots = &m_stack[frame->slotsBegin];
+
+        switch (static_cast<OpCode>(READ_BYTE())) {
             case OpCode::CONSTANT: {
                 Value constant = READ_CONSTANT();
                 push(constant);
@@ -61,8 +69,7 @@ InterpretResult VM::run(const Chunk& chunk) {
             case OpCode::CHECK_NUMERIC: {
                 Value value = peek(0);
                 if (!value.getType()->isNumeric()) {
-                    runtimeError(chunk.getLine(index),
-                            "Expected a value of type 'int' or 'float', but got a value of type '"
+                    runtimeError("Expected a value of type 'int' or 'float', but got a value of type '"
                             + value.getType()->toString() + "' instead.");
 
                     return InterpretResult::RUNTIME_ERROR;
@@ -72,10 +79,63 @@ InterpretResult VM::run(const Chunk& chunk) {
             case OpCode::CHECK_BOOL: {
                 Value value = peek(0);
                 if (!value.getType()->isBool()) {
-                    runtimeError(chunk.getLine(index),
-                                 "Expected a value of type 'bool', but got a value of type '"
-                                 + value.getType()->toString() + "' instead.");
+                    runtimeError("Expected a value of type 'bool', but got a value of type '"
+                            + value.getType()->toString() + "' instead.");
 
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+            case OpCode::CHECK_CALLABLE: {
+                uint8_t argCount = READ_BYTE();
+
+                Value functionValue = peek(argCount);
+                if (!functionValue.getType()->isFunction()) {
+                    runtimeError("Only functions can be called.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                const FunctionType* functionType = functionValue.getType()->as<FunctionType>();
+
+                uint8_t paramCount = functionType->getArgumentTypes().size();
+                if (argCount != paramCount) {
+                    std::stringstream s;
+                    s << "Expected " << static_cast<size_t>(paramCount) << " arguments to function, but got " <<
+                            static_cast<size_t>(argCount) << ".";
+                    runtimeError(s.str());
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                for (uint8_t i = 0; i < argCount; ++i) {
+                    Type shouldBe = functionType->getArgumentTypes()[i];
+                    Type argumentType = peek(i).getType();
+                    if (!argumentType->looselyEquals(*shouldBe)) {
+                        std::stringstream s;
+                        s << "Expected argument " << static_cast<size_t>(i) + 1 << " to be of type '" <<
+                            shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
+                            "' instead.";
+                        runtimeError(s.str());
+                        return InterpretResult::RUNTIME_ERROR;
+                    }
+                }
+                break;
+            }
+            case OpCode::CHECK_TYPE: {
+                Type shouldBe = READ_CONSTANT().asObject()->getType();
+                Value value = peek(0);
+                if (!shouldBe->looselyEquals(*value.getType())) {
+                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                            "' but got a value of type '" + value.getType()->toString() + "' instead.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+            case OpCode::CHECK_TYPE_LONG: {
+                Type shouldBe = READ_CONSTANT_LONG().asObject()->getType();
+                Value value = peek(0);
+                if (!shouldBe->looselyEquals(*value.getType())) {
+                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                                 "' but got a value of type '" + value.getType()->toString() + "' instead.");
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
@@ -108,44 +168,152 @@ InterpretResult VM::run(const Chunk& chunk) {
 
             case OpCode::POP: pop(); break;
 
-            case OpCode::GET_VARIABLE: push(m_stack[READ_BYTE()]); break;
-            case OpCode::GET_VARIABLE_LONG: push(m_stack[READ_LONG()]); break;
+            case OpCode::GET_LOCAL: push(slots[READ_BYTE()]); break;
+            case OpCode::GET_LOCAL_LONG: push(slots[READ_LONG()]); break;
 
-            case OpCode::SET_VARIABLE: m_stack[READ_BYTE()] = peek(0); break;
-            case OpCode::SET_VARIABLE_LONG: m_stack[READ_LONG()] = peek(0); break;
+            case OpCode::SET_LOCAL: slots[READ_BYTE()] = peek(0); break;
+            case OpCode::SET_LOCAL_LONG: slots[READ_LONG()] = peek(0); break;
+
+            case OpCode::GET_UPVALUE: {
+                uint8_t slot = READ_BYTE();
+                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                push(upvalue->isClosed() ?
+                        upvalue->getClosed() :
+                        m_stack[upvalue->getLocation()]);
+                break;
+            }
+            case OpCode::GET_UPVALUE_LONG: {
+                uint8_t slot = READ_BYTE();
+                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                push(upvalue->isClosed() ?
+                      upvalue->getClosed() :
+                      m_stack[upvalue->getLocation()]);
+                break;
+            }
+
+            case OpCode::SET_UPVALUE: {
+                uint8_t slot = READ_BYTE();
+                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                break;
+            }
+            case OpCode::SET_UPVALUE_LONG: {
+                uint32_t slot = READ_LONG();
+                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                break;
+            }
 
             case OpCode::JUMP: {
                 uint16_t jumpSize = READ_SHORT();
-                index += jumpSize;
-                ip += jumpSize;
+                frame->ip += jumpSize;
                 break;
             }
             case OpCode::JUMP_IF_TRUE: {
                 uint16_t jumpSize = READ_SHORT();
                 if (peek(0).asBool()) {
-                    index += jumpSize;
-                    ip += jumpSize;
+                    frame->ip += jumpSize;
                 }
                 break;
             }
             case OpCode::JUMP_IF_FALSE: {
                 uint16_t jumpSize = READ_SHORT();
                 if (!peek(0).asBool()) {
-                    index += jumpSize;
-                    ip += jumpSize;
+                    frame->ip += jumpSize;
                 }
                 break;
             }
 
             case OpCode::LOOP: {
                 uint16_t jumpSize = READ_SHORT();
-                index -= jumpSize;
-                ip -= jumpSize;
+                frame->ip -= jumpSize;
                 break;
             }
 
-            case OpCode::RETURN:
-                return InterpretResult::OK;
+            case OpCode::CALL: {
+                uint8_t argCount = READ_BYTE();
+                Object* callee = peek(argCount).asObject();
+
+                if (callee->is<ClosureObject>()) {
+                    call(callee->as<ClosureObject>());
+                    frame = &m_frames[m_frameCount - 1];
+                } else {
+                    NativeFn native = callee->as<NativeObject>()->getFunction();
+                    Value result = native(argCount, &m_stack.back() - argCount + 1);
+
+                    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
+
+                    push(result);
+                }
+                break;
+            }
+
+            case OpCode::CLOSURE: {
+                FunctionObject* function = READ_CONSTANT().asObject()->as<FunctionObject>();
+                ClosureObject* closure = new ClosureObject{function};
+                push(Value{closure});
+
+                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
+                    uint8_t isLocal = READ_BYTE();
+                    uint32_t index;
+                    if (i < UINT8_MAX) {
+                        index = READ_BYTE();
+                    } else {
+                        index = READ_LONG();
+                    }
+
+                    if (isLocal) {
+                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
+                    } else {
+                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
+                    }
+                }
+                break;
+            }
+
+            case OpCode::CLOSURE_LONG: {
+                FunctionObject* function = READ_CONSTANT_LONG().asObject()->as<FunctionObject>();
+                ClosureObject* closure = new ClosureObject{function};
+                push(Value{closure});
+
+                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
+                    uint8_t isLocal = READ_BYTE();
+                    uint32_t index;
+                    if (i < UINT8_MAX) {
+                        index = READ_BYTE();
+                    } else {
+                        index = READ_LONG();
+                    }
+
+                    if (isLocal) {
+                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
+                    } else {
+                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
+                    }
+                }
+                break;
+            }
+
+            case OpCode::CLOSE_UPVALUE:
+                closeUpvalues(m_stack.size() - 1);
+                pop();
+                break;
+
+            case OpCode::RETURN: {
+                Value result = pop();
+
+                closeUpvalues(frame->slotsBegin);
+
+                m_frameCount--;
+                if (m_frameCount == 0) {
+                    pop();
+                    return InterpretResult::OK;
+                }
+
+                m_stack.erase(m_stack.begin() + frame->slotsBegin, m_stack.end());
+                push(result);
+
+                frame = &m_frames[m_frameCount - 1];
+                break;
+            }
         }
 
         #undef READ_BYTE
@@ -156,17 +324,6 @@ InterpretResult VM::run(const Chunk& chunk) {
 
         #undef NUMERIC_OP
     }
-}
-
-void VM::runtimeError(line_t line, const std::string& msg) {
-    const std::string source = Enact::getSourceLine(line);
-
-    std::cerr << "[line " << line << "] Error on this line:\n    " << source << "\n    ";
-    for (int i = 0; i < source.size(); ++i) {
-        std::cerr << "^";
-    }
-    std::cerr << "\n" << msg << "\n\n";
-
 }
 
 void VM::push(Value value) {
@@ -182,4 +339,76 @@ Value VM::pop() {
 
 Value VM::peek(size_t depth) {
     return m_stack[m_stack.size() - 1 - depth];
+}
+
+void VM::call(ClosureObject* closure) {
+    if (m_frameCount == FRAMES_MAX) {
+        runtimeError("Stack overflow.");
+    }
+
+    CallFrame* frame = &m_frames[m_frameCount++];
+    frame->closure = closure;
+    frame->ip = closure->getFunction()->getChunk().getCode().data();
+
+    uint8_t paramCount = closure->getFunction()->getType()->as<FunctionType>()->getArgumentTypes().size();
+    frame->slotsBegin = m_stack.size() - paramCount - 1;
+}
+
+UpvalueObject* VM::captureUpvalue(uint32_t location) {
+    UpvalueObject* prevUpvalue = nullptr;
+    UpvalueObject* upvalue = m_openUpvalues;
+
+    while (upvalue != nullptr && upvalue->getLocation() == location) {
+        prevUpvalue = upvalue;
+        upvalue = upvalue->getNext();
+    }
+
+    if (upvalue != nullptr && upvalue->getLocation() == location) return upvalue;
+
+    UpvalueObject* createdUpvalue = new UpvalueObject{location};
+    createdUpvalue->setNext(upvalue);
+
+    if (prevUpvalue == nullptr) {
+        m_openUpvalues = createdUpvalue;
+    } else {
+        prevUpvalue->setNext(createdUpvalue);
+    }
+
+    return createdUpvalue;
+}
+
+void VM::closeUpvalues(uint32_t last) {
+    while (m_openUpvalues != nullptr && m_openUpvalues->getLocation() >= last) {
+        UpvalueObject* upvalue = m_openUpvalues;
+        upvalue->setClosed(m_stack[upvalue->getLocation()]);
+        m_openUpvalues = upvalue->getNext();
+    }
+}
+
+void VM::runtimeError(const std::string& msg) {
+    CallFrame* frame = &m_frames[m_frameCount - 1];
+    size_t instruction = frame->ip - frame->closure->getFunction()->getChunk().getCode().data();
+    line_t line = frame->closure->getFunction()->getChunk().getLine(instruction);
+
+    const std::string source = Enact::getSourceLine(line);
+
+    std::cerr << "[line " << line << "] Error on this line:\n    " << source << "\n    ";
+    for (int i = 0; i < source.size(); ++i) {
+        std::cerr << "^";
+    }
+    std::cerr << "\n" << msg << "\n";
+    for (int i = m_frameCount - 1; i >= 0; --i) {
+        CallFrame* frame = &m_frames[i];
+        FunctionObject* function = frame->closure->getFunction();
+
+        // -1 because the IP is sitting on the next instruction to be executed
+        size_t instruction = frame->ip - function->getChunk().getCode().data() - 1;
+        std::cerr << "[line " << function->getChunk().getLine(instruction) << "] in ";
+        if (function->getName().empty()) {
+            std::cerr << "script\n";
+        } else {
+            std::cerr << function->getName() << "()\n";
+        }
+    }
+
 }

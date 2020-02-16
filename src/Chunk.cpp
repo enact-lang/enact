@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <strings.h>
 #include "h/Chunk.h"
+#include "h/Object.h"
 
 void Chunk::write(uint8_t byte, line_t line) {
     m_code.push_back(byte);
@@ -97,6 +98,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::GREATER:
         case OpCode::EQUAL:
         case OpCode::POP:
+        case OpCode::CLOSE_UPVALUE:
         case OpCode::RETURN: {
             std::string str;
             std::tie(str, index) = disassembleSimple(index);
@@ -105,8 +107,12 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Byte instructions
-        case OpCode::GET_VARIABLE:
-        case OpCode::SET_VARIABLE: {
+        case OpCode::CHECK_CALLABLE:
+        case OpCode::GET_LOCAL:
+        case OpCode::SET_LOCAL:
+        case OpCode::GET_UPVALUE:
+        case OpCode::SET_UPVALUE:
+        case OpCode::CALL: {
             std::string str;
             std::tie(str, index) = disassembleByte(index);
             s << str;
@@ -125,8 +131,10 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Long instructions
-        case OpCode::GET_VARIABLE_LONG:
-        case OpCode::SET_VARIABLE_LONG: {
+        case OpCode::GET_LOCAL_LONG:
+        case OpCode::SET_LOCAL_LONG:
+        case OpCode::GET_UPVALUE_LONG:
+        case OpCode::SET_UPVALUE_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLong(index);
             s << str;
@@ -134,7 +142,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Constant instructions
-        case OpCode::CONSTANT: {
+        case OpCode::CONSTANT:
+        case OpCode::CHECK_TYPE: {
             std::string str;
             std::tie(str, index) = disassembleConstant(index);
             s << str;
@@ -142,10 +151,77 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Long constant instructions
-        case OpCode::CONSTANT_LONG: {
+        case OpCode::CONSTANT_LONG:
+        case OpCode::CHECK_TYPE_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLongConstant(index);
             s << str;
+            break;
+        }
+
+        // Closure instructions
+        case OpCode::CLOSURE: {
+            std::ios_base::fmtflags f( s.flags() );
+
+            s << std::left << std::setw(16) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
+            s.flags(f);
+
+            size_t constant = m_code[++index];
+
+            s << " " << constant << " (";
+            s << m_constants[constant] << ")\n";
+
+            FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
+            for (int j = 0; j < function->getUpvalueCount(); j++) {
+                uint8_t isLocal = m_code[++index];
+                uint32_t i;
+                if (j < UINT8_MAX) {
+                    i = m_code[++index];
+                } else {
+                    i = m_code[index + 1] |
+                        (m_code[index + 2] << 8) |
+                        (m_code[index + 3] << 16);
+                    index += 3;
+                }
+                s << std::setfill('0') << std::setw(4) << index - 2;
+                s.flags(f);
+                s << "      |                  " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
+            }
+            ++index;
+            break;
+        }
+        case OpCode::CLOSURE_LONG: {
+            std::ios_base::fmtflags f( s.flags() );
+
+            s << std::left << std::setw(16) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
+            s.flags(f);
+
+            size_t constant =  m_code[index + 1] |
+                               (m_code[index + 2] << 8) |
+                               (m_code[index + 3] << 16);
+
+            index += 3;
+
+            s << " " << constant << " (";
+            s << m_constants[constant] << ")\n";
+
+            FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
+            for (int j = 0; j < function->getUpvalueCount(); j++) {
+                uint8_t isLocal = m_code[++index];
+                uint32_t i;
+                if (j < UINT8_MAX) {
+                    i = m_code[++index];
+                } else {
+                    i = m_code[index + 1] |
+                        (m_code[index + 2] << 8) |
+                        (m_code[index + 3] << 16);
+                    index += 3;
+                }
+                s << std::setfill('0') << std::setw(4) << index - 2;
+                s.flags(f);
+                s << "      |                     " << (isLocal ? "local" : "upvalue") << " " << index << "\n";
+            }
+            ++index;
             break;
         }
     }
@@ -278,6 +354,9 @@ std::string opCodeToString(OpCode code) {
         case OpCode::NIL: return "NIL";
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
+        case OpCode::CHECK_CALLABLE: return "CHECK_CALLABLE";
+        case OpCode::CHECK_TYPE: return "CHECK_TYPE";
+        case OpCode::CHECK_TYPE_LONG: return "CHECK_TYPE_LONG";
         case OpCode::NEGATE: return "NEGATE";
         case OpCode::NOT: return "NOT";
         case OpCode::ADD: return "ADD";
@@ -288,14 +367,22 @@ std::string opCodeToString(OpCode code) {
         case OpCode::GREATER: return "GREATER";
         case OpCode::EQUAL: return "EQUAL";
         case OpCode::POP: return "POP";
-        case OpCode::GET_VARIABLE: return "GET_VARIABLE";
-        case OpCode::GET_VARIABLE_LONG: return "GET_VARIABLE_LONG";
-        case OpCode::SET_VARIABLE: return "SET_VARIABLE";
-        case OpCode::SET_VARIABLE_LONG: return "SET_VARIABLE_LONG";
+        case OpCode::GET_LOCAL: return "GET_LOCAL";
+        case OpCode::GET_LOCAL_LONG: return "GET_LOCAL_LONG";
+        case OpCode::SET_LOCAL: return "SET_LOCAL";
+        case OpCode::SET_LOCAL_LONG: return "SET_LOCAL_LONG";
+        case OpCode::GET_UPVALUE: return "GET_UPVALUE";
+        case OpCode::GET_UPVALUE_LONG: return "GET_UPVALUE_LONG";
+        case OpCode::SET_UPVALUE: return "SET_UPVALUE";
+        case OpCode::SET_UPVALUE_LONG: return "SET_UPVALUE_LONG";
         case OpCode::JUMP: return "JUMP";
         case OpCode::JUMP_IF_TRUE: return "JUMP_IF_TRUE";
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
         case OpCode::LOOP: return "LOOP";
+        case OpCode::CALL: return "CALL";
+        case OpCode::CLOSURE: return "CLOSURE";
+        case OpCode::CLOSURE_LONG: return "CLOSURE_LONG";
+        case OpCode::CLOSE_UPVALUE: return "CLOSE_UPVALUE";
         case OpCode::RETURN: return "RETURN";
         // Unreachable.
         default: return "";

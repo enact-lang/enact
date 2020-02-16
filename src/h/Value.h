@@ -2,7 +2,6 @@
 #define ENACT_VALUE_H
 
 #include <variant>
-#include "Object.h"
 #include "Type.h"
 
 class Object;

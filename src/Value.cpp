@@ -1,4 +1,5 @@
 #include "h/Value.h"
+#include "h/Object.h"
 
 #include <sstream>
 

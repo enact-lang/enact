@@ -7,8 +7,12 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef DEBUG
 #define DEBUG_ASSERTIONS_ENABLED
+#define DEBUG_PRINT_AST
+#define DEBUG_DISASSEMBLE_CHUNK
 #define DEBUG_TRACE_EXECUTION
+#endif
 
 #ifdef DEBUG_ASSERTIONS_ENABLED
 #define ENACT_ASSERT(expr, msg) \

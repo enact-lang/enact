@@ -1,24 +1,56 @@
 #include "h/Compiler.h"
+#include "h/Object.h"
 #include "h/Enact.h"
+#include "h/Natives.h"
 
-const Chunk& Compiler::compile(std::vector<Stmt> ast) {
+Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {}
+
+void Compiler::init(FunctionKind functionKind, Type functionType, const std::string& name) {
     m_hadError = false;
 
+    m_currentFunction = new FunctionObject{
+            functionType,
+            Chunk(),
+            name
+    };
+
+    m_functionType = functionKind;
+
+    m_scopeDepth = 0;
+
     beginScope();
+
+    addLocal(Token{TokenType::IDENTIFIER, "", 0, 0});
+
+    if (functionKind == FunctionKind::SCRIPT) {
+        defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                     &Natives::print);
+        defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                     &Natives::put);
+        defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                     &Natives::dis);
+    }
+}
+
+FunctionObject* Compiler::end() {
+    if (m_currentFunction->getType()->as<FunctionType>()->getReturnType()->isNothing()) {
+        emitByte(OpCode::NIL);
+        emitByte(OpCode::RETURN);
+    }
+    return m_currentFunction;
+}
+
+void Compiler::compile(std::vector<Stmt> ast) {
     for (auto& stmt : ast) {
         compile(stmt);
     }
-    endScope();
-
-    emitByte(OpCode::RETURN);
-
-    return m_chunk;
 }
 
 void Compiler::compile(Stmt stmt) {
     try {
         stmt->accept(this);
     } catch (CompileError& error) {
+        Enact::reportErrorAt(error.getToken(), error.getMessage());
         m_hadError = true;
     }
 }
@@ -56,7 +88,7 @@ void Compiler::visitForStmt(ForStmt &stmt) {
     beginScope();
     compile(stmt.initializer);
 
-    size_t loopStartIndex = m_chunk.getCount();
+    size_t loopStartIndex = currentChunk().getCount();
 
     compile(stmt.condition);
     if (stmt.condition->getType()->isDynamic()) {
@@ -87,7 +119,38 @@ void Compiler::visitForStmt(ForStmt &stmt) {
 }
 
 void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
-    throw errorAt(stmt.name, "Not implemented.");
+    addLocal(stmt.name);
+    m_locals.back().initialized = true;
+
+    Compiler compiler{this};
+    compiler.init(FunctionKind::FUNCTION, stmt.type, stmt.name.lexeme);
+
+    for (const NamedTypename& param : stmt.params) {
+        compiler.addLocal(param.name);
+        compiler.m_locals.back().initialized = true;
+    }
+
+    compiler.compile(stmt.body);
+    FunctionObject* function = compiler.end();
+
+    uint32_t constantIndex = currentChunk().addConstant(Value{function});
+    if (constantIndex < UINT8_MAX) {
+        emitByte(OpCode::CLOSURE);
+        emitByte(constantIndex);
+    } else {
+        emitByte(OpCode::CLOSURE_LONG);
+        emitLong(constantIndex);
+    }
+
+    for (int i = 0; i < function->getUpvalueCount(); i++) {
+        emitByte(compiler.m_upvalues[i].isLocal ? 1 : 0);
+
+        if (i < UINT8_MAX) {
+            emitByte(static_cast<uint8_t>(compiler.m_upvalues[i].index));
+        } else {
+            emitLong(compiler.m_upvalues[i].index);
+        }
+    }
 }
 
 void Compiler::visitGivenStmt(GivenStmt &stmt) {
@@ -165,7 +228,8 @@ void Compiler::visitIfStmt(IfStmt &stmt) {
 }
 
 void Compiler::visitReturnStmt(ReturnStmt &stmt) {
-    throw errorAt(stmt.keyword, "Not implemented.");
+    compile(stmt.value);
+    emitByte(OpCode::RETURN);
 }
 
 void Compiler::visitStructStmt(StructStmt &stmt) {
@@ -177,7 +241,7 @@ void Compiler::visitTraitStmt(TraitStmt &stmt) {
 }
 
 void Compiler::visitWhileStmt(WhileStmt &stmt) {
-    size_t loopStartIndex = m_chunk.getCount();
+    size_t loopStartIndex = currentChunk().getCount();
 
     compile(stmt.condition);
     if (stmt.condition->getType()->isDynamic()) {
@@ -202,13 +266,13 @@ void Compiler::visitWhileStmt(WhileStmt &stmt) {
 }
 
 void Compiler::visitVariableStmt(VariableStmt &stmt) {
-    addVariable(stmt.name);
+    addLocal(stmt.name);
     compile(stmt.initializer);
-    m_variables.back().initialized = true;
+    m_locals.back().initialized = true;
 }
 
 void Compiler::visitAnyExpr(AnyExpr &expr) {
-    throw CompileError{};
+    // TODO: Throw CompileError "Not implemented."
 }
 
 void Compiler::visitArrayExpr(ArrayExpr &expr) {
@@ -221,12 +285,12 @@ void Compiler::visitAssignExpr(AssignExpr &expr) {
     if (typeid(*expr.left) == typeid(VariableExpr)) {
         auto variableExpr = std::static_pointer_cast<VariableExpr>(expr.left);
 
-        uint32_t index = resolveVariable(variableExpr->name);
+        uint32_t index = resolveLocal(variableExpr->name);
         if (index <= UINT8_MAX) {
-            emitByte(OpCode::SET_VARIABLE);
+            emitByte(OpCode::SET_LOCAL);
             emitByte(static_cast<uint8_t>(index));
         } else {
-            emitByte(OpCode::SET_VARIABLE_LONG);
+            emitByte(OpCode::SET_LOCAL_LONG);
             emitLong(index);
         }
     } else {
@@ -237,7 +301,9 @@ void Compiler::visitAssignExpr(AssignExpr &expr) {
 void Compiler::visitBinaryExpr(BinaryExpr &expr) {
     compile(expr.left);
 
-    if (expr.left->getType()->isDynamic()) {
+    if (expr.oper.type != TokenType::EQUAL
+            && expr.oper.type != TokenType::BANG_EQUAL
+            && expr.left->getType()->isDynamic()) {
         emitByte(OpCode::CHECK_NUMERIC);
     }
 
@@ -280,7 +346,24 @@ void Compiler::visitBooleanExpr(BooleanExpr &expr) {
 }
 
 void Compiler::visitCallExpr(CallExpr &expr) {
-    throw errorAt(expr.paren, "Not implemented.");
+    compile(expr.callee);
+
+    bool needRuntimeCheck = expr.callee->getType()->isDynamic();
+
+    for (int i = 0; i < expr.arguments.size(); ++i) {
+        compile(expr.arguments[i]);
+        if (expr.arguments[i]->getType()->isDynamic()) {
+            needRuntimeCheck = true;
+        }
+    }
+
+    if (needRuntimeCheck) {
+        emitByte(OpCode::CHECK_CALLABLE);
+        emitByte(expr.arguments.size());
+    }
+
+    emitByte(OpCode::CALL);
+    emitByte(static_cast<uint8_t>(expr.arguments.size()));
 }
 
 void Compiler::visitFieldExpr(FieldExpr &expr) {
@@ -355,20 +438,30 @@ void Compiler::visitUnaryExpr(UnaryExpr &expr) {
 }
 
 void Compiler::visitVariableExpr(VariableExpr &expr) {
-    uint32_t index = resolveVariable(expr.name);
+    try {
+        uint32_t index = resolveLocal(expr.name);
+        if (index <= UINT8_MAX) {
+            emitByte(OpCode::GET_LOCAL);
+            emitByte(static_cast<uint8_t>(index));
+        } else {
+            emitByte(OpCode::GET_LOCAL_LONG);
+            emitLong(index);
+        }
+        return;
+    } catch (CompileError& error) {}
+
+    uint32_t index = resolveUpvalue(expr.name);
     if (index <= UINT8_MAX) {
-        emitByte(OpCode::GET_VARIABLE);
+        emitByte(OpCode::GET_UPVALUE);
         emitByte(static_cast<uint8_t>(index));
     } else {
-        emitByte(OpCode::GET_VARIABLE_LONG);
+        emitByte(OpCode::GET_UPVALUE_LONG);
         emitLong(index);
     }
 }
 
 Compiler::CompileError Compiler::errorAt(const Token &token, const std::string &message) {
-    Enact::reportErrorAt(token, message);
-    m_hadError = true;
-    return CompileError{};
+    return CompileError{token, message};
 }
 
 bool Compiler::hadError() {
@@ -382,27 +475,32 @@ void Compiler::beginScope() {
 void Compiler::endScope() {
     --m_scopeDepth;
 
-    while (!m_variables.empty() && m_variables.back().depth > m_scopeDepth) {
-        m_chunk.write(OpCode::POP, m_chunk.getCurrentLine());
-        m_variables.pop_back();
+    while (!m_locals.empty() && m_locals.back().depth > m_scopeDepth) {
+        if (m_locals.back().isCaptured) {
+            emitByte(OpCode::CLOSE_UPVALUE);
+        } else {
+            emitByte(OpCode::POP);
+        }
+        m_locals.pop_back();
     }
 }
 
-void Compiler::addVariable(const Token& name) {
-    m_variables.push_back(Variable{
+void Compiler::addLocal(const Token& name) {
+    m_locals.push_back(Local{
             name,
             m_scopeDepth,
+            false,
             false
     });
 }
 
-uint32_t Compiler::resolveVariable(const Token& name) {
-    for (int i = m_variables.size() - 1; i >= 0; --i) {
-        const Variable& variable = m_variables[i];
+uint32_t Compiler::resolveLocal(const Token& name) {
+    for (int i = m_locals.size() - 1; i >= 0; --i) {
+        const Local& local = m_locals[i];
 
-        if (variable.name.lexeme == name.lexeme) {
-            if (!variable.initialized) {
-                throw errorAt(variable.name, "Cannot reference a variable in its own initializer.");
+        if (local.name.lexeme == name.lexeme) {
+            if (!local.initialized) {
+                throw errorAt(local.name, "Cannot reference a variable in its own initializer.");
             }
             return i;
         }
@@ -411,52 +509,98 @@ uint32_t Compiler::resolveVariable(const Token& name) {
     throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
 }
 
+void Compiler::addUpvalue(uint32_t index, bool isLocal) {
+    m_upvalues.push_back(Upvalue{index, isLocal});
+    m_currentFunction->getUpvalueCount()++;
+}
+
+uint32_t Compiler::resolveUpvalue(const Token &name) {
+    if (m_enclosing == nullptr) {
+        throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
+    }
+
+    try {
+        uint32_t local = m_enclosing->resolveLocal(name);
+
+        for (int i = 0; i < m_upvalues.size(); ++i) {
+            Upvalue& upvalue = m_upvalues[i];
+            if (upvalue.index == local && upvalue.isLocal) {
+                return i;
+            }
+        }
+
+        m_enclosing->m_locals[local].isCaptured = true;
+        addUpvalue(local, true);
+        return m_upvalues.size() - 1;
+    } catch (CompileError& error) {}
+
+    try {
+        uint32_t upvalue = m_enclosing->resolveUpvalue(name);
+        addUpvalue(upvalue, false);
+        return m_upvalues.size() - 1;
+    } catch (CompileError& error) {}
+
+    throw errorAt(name, "Could not resolve variable with name " + name.lexeme + ".");
+}
+
+void Compiler::defineNative(std::string name, Type functionType, NativeFn function) {
+    NativeObject* native = new NativeObject{functionType, function};
+    emitConstant(Value{native});
+
+    addLocal(Token{TokenType::IDENTIFIER, name, 0, 0});
+    m_locals.back().initialized = true;
+}
+
 void Compiler::emitByte(uint8_t byte) {
-    m_chunk.write(byte, m_chunk.getCurrentLine());
+    currentChunk().write(byte, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitByte(OpCode byte) {
-    m_chunk.write(byte, m_chunk.getCurrentLine());
+    currentChunk().write(byte, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitShort(uint16_t value) {
-    m_chunk.writeShort(value, m_chunk.getCurrentLine());
+    currentChunk().writeShort(value, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitLong(uint32_t value) {
-    m_chunk.writeLong(value, m_chunk.getCurrentLine());
+    currentChunk().writeLong(value, currentChunk().getCurrentLine());
 }
 
 void Compiler::emitConstant(Value constant) {
-    m_chunk.writeConstant(constant, m_chunk.getCurrentLine());
+    currentChunk().writeConstant(constant, currentChunk().getCurrentLine());
 }
 
 size_t Compiler::emitJump(OpCode jump) {
     emitByte(jump);
     emitByte(0xff);
     emitByte(0xff);
-    return m_chunk.getCount() - 2;
+    return currentChunk().getCount() - 2;
 }
 
 void Compiler::patchJump(size_t index, Token where) {
-    size_t jumpSize = m_chunk.getCount() - index - 2;
+    size_t jumpSize = currentChunk().getCount() - index - 2;
 
     if (jumpSize > UINT16_MAX) {
         throw errorAt(where, "Too much code in control flow block.");
     }
 
-    m_chunk.rewrite(index, jumpSize & 0xff);
-    m_chunk.rewrite(index + 1, (jumpSize >> 8) & 0xff);
+    currentChunk().rewrite(index, jumpSize & 0xff);
+    currentChunk().rewrite(index + 1, (jumpSize >> 8) & 0xff);
 }
 
 void Compiler::emitLoop(size_t loopStartIndex, Token where) {
     emitByte(OpCode::LOOP);
 
-    size_t jumpSize = m_chunk.getCount() - loopStartIndex + 2;
+    size_t jumpSize = currentChunk().getCount() - loopStartIndex + 2;
     if (jumpSize > UINT16_MAX) {
         throw errorAt(where, "Too much code in loop body.");
     }
 
     emitByte(jumpSize & 0xff);
     emitByte((jumpSize >> 8) & 0xff);
+}
+
+Chunk& Compiler::currentChunk() {
+    return m_currentFunction->getChunk();
 }

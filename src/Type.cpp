@@ -100,7 +100,8 @@ std::string TypeBase::toString() const {
         case TypeKind::FUNCTION: {
             auto funType = this->as<FunctionType>();
 
-            std::stringstream ret{"fun ("};
+            std::stringstream ret{};
+            ret << "fun (";
             std::string separator = "";
             for (const Type& argType : funType->getArgumentTypes()) {
                 ret << separator << argType->toString();

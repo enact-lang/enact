@@ -1,0 +1,20 @@
+fun test(x int, y float) string:
+    return "test"
+end
+
+print(test(1, 2))
+
+fun test1(x fun (int, float) string) string:
+    return x(1, 2)
+end
+
+print(test1(test))
+
+fun test2(x fun (fun (int, float) string) string) string:
+    return x(test)
+end
+
+print(test2(test1))
+
+var test3 fun(   int,float)    string = test
+print(test3(2, 3))

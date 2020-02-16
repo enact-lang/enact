@@ -118,7 +118,6 @@ InterpretResult VM::run(FunctionObject* function) {
                         return InterpretResult::RUNTIME_ERROR;
                     }
                 }
-
                 break;
             }
             case OpCode::CHECK_TYPE: {
@@ -240,7 +239,7 @@ InterpretResult VM::run(FunctionObject* function) {
                     NativeFn native = callee->as<NativeObject>()->getFunction();
                     Value result = native(argCount, &m_stack.back() - argCount + 1);
 
-                    m_stack.erase(m_stack.begin() + frame->slotsBegin + argCount + 1, m_stack.end());
+                    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
 
                     push(result);
                 }

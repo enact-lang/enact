@@ -724,15 +724,31 @@ Type Analyser::lookUpFunctionType(const std::string& name, const Token& where) {
 
     while (name[current] == ' ' || name[current] == '(') ++current;
 
+    int openBrackets = 1;
     std::vector<Type> paramTypes;
-    while (name[current] != ')') {
+    while (openBrackets != 0) {
         std::string paramTypeName;
         do {
-            if (name[current] == ' ') continue;
+            if (name[current] == ' ') {
+                ++current;
+                continue;
+            }
+            if (name[current] == ',') {
+                if (openBrackets > 1) {
+                    paramTypeName.push_back(name[current]);
+                    ++current;
+                    continue;
+                } else {
+                    ++current;
+                    break;
+                }
+            }
+            if (name[current] == '(') ++openBrackets;
+            if (name[current] == ')') --openBrackets;
+            if (openBrackets == 0) continue;
             paramTypeName.push_back(name[current]);
             ++current;
-        } while (name[current] != ',' && name[current] != ')');
-
+        } while (openBrackets != 0);
         paramTypes.push_back(lookUpType(paramTypeName, where));
     }
 
@@ -741,6 +757,7 @@ Type Analyser::lookUpFunctionType(const std::string& name, const Token& where) {
         if (name[current] == ' ') continue;
         returnTypeName.push_back(name[current]);
     }
+    if (returnTypeName.empty()) returnTypeName = "nothing";
     Type returnType = lookUpType(returnTypeName, where);
 
     return std::make_shared<FunctionType>(returnType, paramTypes);

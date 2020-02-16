@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/enact1.iml" filepath="$PROJECT_DIR$/.idea/enact1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/enact.iml" filepath="$PROJECT_DIR$/.idea/enact.iml" />
     </modules>
   </component>
 </project>

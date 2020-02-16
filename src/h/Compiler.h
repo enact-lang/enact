@@ -112,7 +112,7 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
 public:
     Compiler(Compiler* enclosing = nullptr);
 
-    void init(FunctionKind functionKind, Type functionType = NOTHING_TYPE, const std::string& name = "");
+    void init(FunctionKind functionKind, Type functionType, const std::string& name);
     FunctionObject* end();
 
     void compile(std::vector<Stmt> ast);

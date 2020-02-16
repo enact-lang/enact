@@ -42,7 +42,7 @@ InterpretResult Enact::run(const std::string& source) {
         #endif
 
         Compiler compiler{};
-        compiler.init(FunctionKind::SCRIPT);
+        compiler.init(FunctionKind::SCRIPT, std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), "");
         compiler.compile(statements);
         script = compiler.end();
         if (compiler.hadError()) return InterpretResult::COMPILE_ERROR;

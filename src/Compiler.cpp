@@ -33,8 +33,10 @@ void Compiler::init(FunctionKind functionKind, Type functionType, const std::str
 }
 
 FunctionObject* Compiler::end() {
-    emitByte(OpCode::NIL);
-    emitByte(OpCode::RETURN);
+    if (m_currentFunction->getType()->as<FunctionType>()->getReturnType()->isNothing()) {
+        emitByte(OpCode::NIL);
+        emitByte(OpCode::RETURN);
+    }
     return m_currentFunction;
 }
 

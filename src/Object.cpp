@@ -93,7 +93,6 @@ Type ArrayObject::getType() const {
 }
 
 UpvalueObject::UpvalueObject(uint32_t location) : Object{ObjectType::UPVALUE}, m_location{location} {
-
 }
 
 uint32_t UpvalueObject::getLocation() {
@@ -198,7 +197,6 @@ Type NativeObject::getType() const {
 }
 
 TypeObject::TypeObject(Type containedType) : Object{ObjectType::TYPE}, m_containedType{containedType} {
-
 }
 
 Type TypeObject::getContainedType() {

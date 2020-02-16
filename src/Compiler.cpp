@@ -458,7 +458,6 @@ void Compiler::visitVariableExpr(VariableExpr &expr) {
         emitByte(OpCode::GET_UPVALUE_LONG);
         emitLong(index);
     }
-
 }
 
 Compiler::CompileError Compiler::errorAt(const Token &token, const std::string &message) {

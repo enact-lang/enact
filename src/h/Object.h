@@ -23,14 +23,20 @@ class FunctionObject;
 class NativeObject;
 class TypeObject;
 
+class VM;
+
 class Object {
     static Object* m_objects;
 
     ObjectType m_type;
     Object* m_next = nullptr;
 
+    bool m_marked{false};
 public:
+    static VM* currentVM;
+
     static void collectGarbage();
+    static void markRoots();
     static void freeAll();
 
     explicit Object(ObjectType type);
@@ -46,6 +52,8 @@ public:
     inline const T* as() const;
 
     bool operator==(const Object& object) const;
+
+    virtual void mark();
 
     virtual std::string toString() const = 0;
     virtual Type getType() const = 0;

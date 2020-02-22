@@ -2,6 +2,7 @@
 #include "h/Object.h"
 #include "h/Value.h"
 #include "h/Chunk.h"
+#include "h/VM.h"
 
 #ifdef DEBUG_LOG_GC
 #include <iostream>
@@ -9,17 +10,24 @@
 #endif
 
 Object* Object::m_objects = nullptr;
+VM* Object::currentVM = nullptr;
 
 void Object::collectGarbage() {
     #ifdef DEBUG_LOG_GC
     std::cout << "-- GC BEGIN --\n";
     #endif
 
-
+    markRoots();
 
     #ifdef DEBUG_LOG_GC
     std::cout << "-- GC END --\n";
     #endif
+}
+
+void Object::markRoots() {
+    for (Value& value : currentVM->m_stack) {
+        if (value.isObject()) value.asObject()->mark();
+    }
 }
 
 void Object::freeAll() {
@@ -72,6 +80,13 @@ bool Object::operator==(const Object &object) const {
         case ObjectType::ARRAY:
             return this->as<ArrayObject>()->asVector() == object.as<ArrayObject>()->asVector();
     }
+}
+
+void Object::mark() {
+    #ifdef DEBUG_LOG_GC
+    std::cout << "Marked object \"" << *this << "\" at " << reinterpret_cast<void*>(this) << ".\n";
+    #endif
+    m_marked = true;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Object& object) {

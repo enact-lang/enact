@@ -3,6 +3,7 @@
 #include "h/Enact.h"
 
 VM::VM() : m_stack{} {
+    Object::currentVM = this;
 }
 
 InterpretResult VM::run(FunctionObject* function) {

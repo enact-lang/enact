@@ -32,6 +32,7 @@ class VM {
 
     UpvalueObject* m_openUpvalues = nullptr;
 
+    friend void Object::markRoots();
 public:
     VM();
 

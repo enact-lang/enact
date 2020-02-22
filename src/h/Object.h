@@ -26,19 +26,11 @@ class TypeObject;
 class VM;
 
 class Object {
-    static Object* m_objects;
+    friend class GC;
 
     ObjectType m_type;
-    Object* m_next = nullptr;
-
     bool m_marked{false};
 public:
-    static VM* currentVM;
-
-    static void collectGarbage();
-    static void markRoots();
-    static void freeAll();
-
     explicit Object(ObjectType type);
     virtual ~Object();
 
@@ -63,8 +55,8 @@ std::ostream& operator<<(std::ostream& stream, const Object& object);
 
 template<typename T>
 inline bool Object::is() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
-                  "Object::is<T>: T must inherit Object.");
+    static_assert(std::is_base_of_v<Object, T>,
+                  "Object::is<T>: T must derive from Object.");
 
     if (std::is_same_v<T, StringObject>) {
         return m_type == ObjectType::STRING;
@@ -87,16 +79,16 @@ inline bool Object::is() const {
 
 template<typename T>
 inline T* Object::as() {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
-                  "Object::as<T>: T must inherit Object.");
+    static_assert(std::is_base_of_v<Object, T>,
+                  "Object::as<T>: T must derive from Object.");
 
     return static_cast<T*>(this);
 }
 
 template<typename T>
 inline const T* Object::as() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
-                  "Object::as<T>: T must inherit Object.");
+    static_assert(std::is_base_of_v<Object, T>,
+                  "Object::as<T>: T must derive from Object.");
     return static_cast<const T*>(this);
 }
 

@@ -9,64 +9,10 @@
 #include "h/Chunk.h"
 #endif
 
-Object* Object::m_objects = nullptr;
-VM* Object::currentVM = nullptr;
-
-void Object::collectGarbage() {
-    #ifdef DEBUG_LOG_GC
-    std::cout << "-- GC BEGIN --\n";
-    #endif
-
-    markRoots();
-
-    #ifdef DEBUG_LOG_GC
-    std::cout << "-- GC END --\n";
-    #endif
-}
-
-void Object::markRoots() {
-    for (Value& value : currentVM->m_stack) {
-        if (value.isObject()) value.asObject()->mark();
-    }
-}
-
-void Object::freeAll() {
-    Object* object = m_objects;
-    while (object != nullptr) {
-        Object* next = object->m_next;
-        delete object;
-        object = next;
-    }
-}
-
 Object::Object(ObjectType type) : m_type{type} {
-    #ifdef DEBUG_STRESS_GC
-    collectGarbage();
-    #endif
-
-    m_next = m_objects;
-    m_objects = this;
-
-    #ifdef DEBUG_LOG_GC
-    size_t size;
-    switch (m_type) {
-        case ObjectType::STRING: size = sizeof(StringObject); break;
-        case ObjectType::ARRAY: size = sizeof(ArrayObject); break;
-        case ObjectType::UPVALUE: size = sizeof(UpvalueObject); break;
-        case ObjectType::CLOSURE: size = sizeof(ClosureObject); break;
-        case ObjectType::FUNCTION: size = sizeof(FunctionObject); break;
-        case ObjectType::NATIVE: size = sizeof(NativeObject); break;
-        case ObjectType::TYPE: size = sizeof(TypeObject); break;
-    }
-    std::cout << "Allocated object at " << reinterpret_cast<void*>(this) << " of size " << size << " and of type " <<
-            static_cast<int>(m_type) << ".\n";
-    #endif
 }
 
 Object::~Object() {
-    #ifdef DEBUG_LOG_GC
-    std::cout << "Freed object at " <<reinterpret_cast<void*>(this) << " of type " << static_cast<int>(m_type) << ".\n";
-    #endif
 }
 
 bool Object::operator==(const Object &object) const {
@@ -83,9 +29,6 @@ bool Object::operator==(const Object &object) const {
 }
 
 void Object::mark() {
-    #ifdef DEBUG_LOG_GC
-    std::cout << "Marked object \"" << *this << "\" at " << reinterpret_cast<void*>(this) << ".\n";
-    #endif
     m_marked = true;
 }
 

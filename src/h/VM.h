@@ -25,14 +25,14 @@ struct CallFrame {
 };
 
 class VM {
+    friend class GC;
+
     std::vector<Value> m_stack;
 
     std::array<CallFrame, FRAMES_MAX> m_frames{CallFrame{nullptr, nullptr, 0}};
     size_t m_frameCount = 0;
 
     UpvalueObject* m_openUpvalues = nullptr;
-
-    friend void Object::markRoots();
 public:
     VM();
 

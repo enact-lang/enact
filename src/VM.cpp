@@ -1,16 +1,17 @@
 #include <sstream>
 #include "h/VM.h"
 #include "h/Enact.h"
+#include "h/GC.h"
 
 VM::VM() : m_stack{} {
-    Object::currentVM = this;
+    GC::setVM(this);
 }
 
 InterpretResult VM::run(FunctionObject* function) {
     push(Value{function});
 
     CallFrame* frame = &m_frames[m_frameCount++];
-    frame->closure = new ClosureObject{function};
+    frame->closure = GC::allocateObject<ClosureObject>(function);
     pop();
     push(Value{frame->closure});
     frame->ip = function->getChunk().getCode().data();
@@ -249,7 +250,7 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::CLOSURE: {
                 FunctionObject* function = READ_CONSTANT().asObject()->as<FunctionObject>();
-                ClosureObject* closure = new ClosureObject{function};
+                ClosureObject* closure = GC::allocateObject<ClosureObject>(function);
                 push(Value{closure});
 
                 for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
@@ -272,7 +273,7 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::CLOSURE_LONG: {
                 FunctionObject* function = READ_CONSTANT_LONG().asObject()->as<FunctionObject>();
-                ClosureObject* closure = new ClosureObject{function};
+                ClosureObject* closure = GC::allocateObject<ClosureObject>(function);
                 push(Value{closure});
 
                 for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
@@ -366,7 +367,7 @@ UpvalueObject* VM::captureUpvalue(uint32_t location) {
 
     if (upvalue != nullptr && upvalue->getLocation() == location) return upvalue;
 
-    UpvalueObject* createdUpvalue = new UpvalueObject{location};
+    UpvalueObject* createdUpvalue = GC::allocateObject<UpvalueObject>(location);
     createdUpvalue->setNext(upvalue);
 
     if (prevUpvalue == nullptr) {

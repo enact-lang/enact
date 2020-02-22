@@ -30,10 +30,11 @@ class Object {
     Object* m_next = nullptr;
 
 public:
-    explicit Object(ObjectType type);
-    virtual ~Object() = default;
-
+    static void collectGarbage();
     static void freeAll();
+
+    explicit Object(ObjectType type);
+    virtual ~Object();
 
     template <typename T>
     inline bool is() const;

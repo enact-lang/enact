@@ -53,7 +53,10 @@ InterpretResult Enact::run(const std::string& source) {
     #endif
 
     VM vm = VM{};
-    return vm.run(script);
+    InterpretResult result = vm.run(script);
+
+    Object::freeAll();
+    return result;
 }
 
 void Enact::runFile(const std::string &path) {
@@ -134,8 +137,6 @@ void Enact::start(int argc, char *argv[]) {
         // No arguments, initialize REPL.
         runPrompt();
     }
-
-    Object::freeAll();
 }
 
 int main(int argc, char *argv[]) {

@@ -3,11 +3,23 @@
 #include "h/Value.h"
 #include "h/Chunk.h"
 
+#ifdef DEBUG_LOG_GC
+#include <iostream>
+#include "h/Chunk.h"
+#endif
+
 Object* Object::m_objects = nullptr;
 
-Object::Object(ObjectType type) : m_type{type} {
-    m_next = m_objects;
-    m_objects = this;
+void Object::collectGarbage() {
+    #ifdef DEBUG_LOG_GC
+    std::cout << "-- GC BEGIN --\n";
+    #endif
+
+
+
+    #ifdef DEBUG_LOG_GC
+    std::cout << "-- GC END --\n";
+    #endif
 }
 
 void Object::freeAll() {
@@ -17,6 +29,36 @@ void Object::freeAll() {
         delete object;
         object = next;
     }
+}
+
+Object::Object(ObjectType type) : m_type{type} {
+    #ifdef DEBUG_STRESS_GC
+    collectGarbage();
+    #endif
+
+    m_next = m_objects;
+    m_objects = this;
+
+    #ifdef DEBUG_LOG_GC
+    size_t size;
+    switch (m_type) {
+        case ObjectType::STRING: size = sizeof(StringObject); break;
+        case ObjectType::ARRAY: size = sizeof(ArrayObject); break;
+        case ObjectType::UPVALUE: size = sizeof(UpvalueObject); break;
+        case ObjectType::CLOSURE: size = sizeof(ClosureObject); break;
+        case ObjectType::FUNCTION: size = sizeof(FunctionObject); break;
+        case ObjectType::NATIVE: size = sizeof(NativeObject); break;
+        case ObjectType::TYPE: size = sizeof(TypeObject); break;
+    }
+    std::cout << "Allocated object at " << reinterpret_cast<void*>(this) << " of size " << size << " and of type " <<
+            static_cast<int>(m_type) << ".\n";
+    #endif
+}
+
+Object::~Object() {
+    #ifdef DEBUG_LOG_GC
+    std::cout << "Freed object at " <<reinterpret_cast<void*>(this) << " of type " << static_cast<int>(m_type) << ".\n";
+    #endif
 }
 
 bool Object::operator==(const Object &object) const {
@@ -127,7 +169,6 @@ std::string UpvalueObject::toString() const {
 Type UpvalueObject::getType() const {
     return NOTHING_TYPE;
 }
-
 
 ClosureObject::ClosureObject(FunctionObject *function) : Object{ObjectType::CLOSURE}, m_function{function}, m_upvalues{function->getUpvalueCount()} {
 }

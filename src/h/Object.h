@@ -23,17 +23,17 @@ class FunctionObject;
 class NativeObject;
 class TypeObject;
 
+class VM;
+
 class Object {
-    static Object* m_objects;
+    friend class GC;
 
     ObjectType m_type;
-    Object* m_next = nullptr;
+    bool m_isMarked{false};
 
 public:
     explicit Object(ObjectType type);
-    virtual ~Object() = default;
-
-    static void freeAll();
+    virtual ~Object();
 
     template <typename T>
     inline bool is() const;
@@ -46,6 +46,10 @@ public:
 
     bool operator==(const Object& object) const;
 
+    virtual void mark();
+    virtual void unmark();
+    virtual bool isMarked();
+
     virtual std::string toString() const = 0;
     virtual Type getType() const = 0;
 };
@@ -54,8 +58,8 @@ std::ostream& operator<<(std::ostream& stream, const Object& object);
 
 template<typename T>
 inline bool Object::is() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
-                  "Object::is<T>: T must inherit Object.");
+    static_assert(std::is_base_of_v<Object, T>,
+                  "Object::is<T>: T must derive from Object.");
 
     if (std::is_same_v<T, StringObject>) {
         return m_type == ObjectType::STRING;
@@ -78,16 +82,16 @@ inline bool Object::is() const {
 
 template<typename T>
 inline T* Object::as() {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
-                  "Object::as<T>: T must inherit Object.");
+    static_assert(std::is_base_of_v<Object, T>,
+                  "Object::as<T>: T must derive from Object.");
 
     return static_cast<T*>(this);
 }
 
 template<typename T>
 inline const T* Object::as() const {
-    static_assert(IsAny<T, StringObject, ArrayObject, UpvalueObject, ClosureObject, FunctionObject, NativeObject, TypeObject>::value,
-                  "Object::as<T>: T must inherit Object.");
+    static_assert(std::is_base_of_v<Object, T>,
+                  "Object::as<T>: T must derive from Object.");
     return static_cast<const T*>(this);
 }
 
@@ -148,8 +152,8 @@ public:
 };
 
 class ClosureObject : public Object {
-    FunctionObject* m_function;
-    std::vector<UpvalueObject*> m_upvalues;
+    FunctionObject* m_function{nullptr};
+    std::vector<UpvalueObject*> m_upvalues{};
 
 public:
     explicit ClosureObject(FunctionObject* function);
@@ -165,9 +169,9 @@ public:
 #include "Chunk.h"
 
 class FunctionObject : public Object {
-    Type m_type;
-    Chunk m_chunk;
-    std::string m_name;
+    Type m_type{nullptr};
+    Chunk m_chunk{};
+    std::string m_name{};
     uint32_t m_upvalueCount = 0;
 
 public:
@@ -185,8 +189,8 @@ public:
 typedef Value (*NativeFn)(uint8_t argCount, Value* args);
 
 class NativeObject : public Object {
-    Type m_type;
-    NativeFn m_function;
+    Type m_type{nullptr};
+    NativeFn m_function{nullptr};
 
 public:
     explicit NativeObject(Type type, NativeFn function);
@@ -199,7 +203,7 @@ public:
 };
 
 class TypeObject : public Object {
-    Type m_containedType;
+    Type m_containedType{nullptr};
 
 public:
     explicit TypeObject(Type containedType);

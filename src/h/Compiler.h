@@ -23,9 +23,11 @@ enum class FunctionKind {
 };
 
 class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
+    friend class GC;
+
     Compiler* m_enclosing;
 
-    FunctionObject* m_currentFunction;
+    FunctionObject* m_currentFunction{nullptr};
     FunctionKind m_functionType;
 
     std::vector<Local> m_locals;
@@ -110,7 +112,7 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     CompileError errorAt(const Token &token, const std::string &message);
 
 public:
-    Compiler(Compiler* enclosing = nullptr);
+    explicit Compiler(Compiler* enclosing = nullptr);
 
     void init(FunctionKind functionKind, Type functionType, const std::string& name);
     FunctionObject* end();

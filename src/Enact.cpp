@@ -16,6 +16,7 @@
 #include "h/Value.h"
 #include "h/Object.h"
 #include "h/Compiler.h"
+#include "h/GC.h"
 
 std::string Enact::m_source = "";
 
@@ -53,7 +54,10 @@ InterpretResult Enact::run(const std::string& source) {
     #endif
 
     VM vm = VM{};
-    return vm.run(script);
+    InterpretResult result = vm.run(script);
+
+    GC::freeObjects();
+    return result;
 }
 
 void Enact::runFile(const std::string &path) {
@@ -134,8 +138,6 @@ void Enact::start(int argc, char *argv[]) {
         // No arguments, initialize REPL.
         runPrompt();
     }
-
-    Object::freeAll();
 }
 
 int main(int argc, char *argv[]) {

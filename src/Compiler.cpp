@@ -2,17 +2,20 @@
 #include "h/Object.h"
 #include "h/Enact.h"
 #include "h/Natives.h"
+#include "h/GC.h"
 
-Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {}
+Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {
+    GC::setCompiler(this);
+}
 
 void Compiler::init(FunctionKind functionKind, Type functionType, const std::string& name) {
     m_hadError = false;
 
-    m_currentFunction = new FunctionObject{
+    m_currentFunction = GC::allocateObject<FunctionObject>(
             functionType,
             Chunk(),
             name
-    };
+    );
 
     m_functionType = functionKind;
 
@@ -37,6 +40,7 @@ FunctionObject* Compiler::end() {
         emitByte(OpCode::NIL);
         emitByte(OpCode::RETURN);
     }
+    GC::setCompiler(nullptr);
     return m_currentFunction;
 }
 
@@ -402,7 +406,7 @@ void Compiler::visitNilExpr(NilExpr &expr) {
 }
 
 void Compiler::visitStringExpr(StringExpr &expr) {
-    Object* string = new StringObject{expr.value};
+    Object* string = GC::allocateObject<StringObject>(expr.value);
     emitConstant(Value{string});
 }
 
@@ -544,7 +548,7 @@ uint32_t Compiler::resolveUpvalue(const Token &name) {
 }
 
 void Compiler::defineNative(std::string name, Type functionType, NativeFn function) {
-    NativeObject* native = new NativeObject{functionType, function};
+    Object* native = GC::allocateObject<NativeObject>(functionType, function);
     emitConstant(Value{native});
 
     addLocal(Token{TokenType::IDENTIFIER, name, 0, 0});

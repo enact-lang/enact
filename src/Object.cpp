@@ -2,21 +2,17 @@
 #include "h/Object.h"
 #include "h/Value.h"
 #include "h/Chunk.h"
+#include "h/VM.h"
 
-Object* Object::m_objects = nullptr;
+#ifdef DEBUG_LOG_GC
+#include <iostream>
+#include "h/Chunk.h"
+#endif
 
 Object::Object(ObjectType type) : m_type{type} {
-    m_next = m_objects;
-    m_objects = this;
 }
 
-void Object::freeAll() {
-    Object* object = m_objects;
-    while (object != nullptr) {
-        Object* next = object->m_next;
-        delete object;
-        object = next;
-    }
+Object::~Object() {
 }
 
 bool Object::operator==(const Object &object) const {
@@ -30,6 +26,18 @@ bool Object::operator==(const Object &object) const {
         case ObjectType::ARRAY:
             return this->as<ArrayObject>()->asVector() == object.as<ArrayObject>()->asVector();
     }
+}
+
+void Object::mark() {
+    m_isMarked = true;
+}
+
+void Object::unmark() {
+    m_isMarked = false;
+}
+
+bool Object::isMarked() {
+    return m_isMarked;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Object& object) {
@@ -127,7 +135,6 @@ std::string UpvalueObject::toString() const {
 Type UpvalueObject::getType() const {
     return NOTHING_TYPE;
 }
-
 
 ClosureObject::ClosureObject(FunctionObject *function) : Object{ObjectType::CLOSURE}, m_function{function}, m_upvalues{function->getUpvalueCount()} {
 }

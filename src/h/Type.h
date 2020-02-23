@@ -98,6 +98,8 @@ public:
 
     template<typename T>
     inline const T* as() const {
+        static_assert(std::is_base_of_v<TypeBase, T>,
+                "TypeBase::as<T>: T must derive from TypeBase.");
         return static_cast<const T*>(this);
     }
 };

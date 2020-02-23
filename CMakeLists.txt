@@ -30,4 +30,4 @@ add_executable( enact
         src/h/AstPrinter.h
         src/Analyser.cpp
         src/h/Analyser.h
-        src/h/Compiler.h src/Compiler.cpp src/h/Natives.h src/Natives.cpp)
+        src/h/Compiler.h src/Compiler.cpp src/h/Natives.h src/Natives.cpp src/h/GC.h src/GC.cpp)

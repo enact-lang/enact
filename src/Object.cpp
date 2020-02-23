@@ -29,7 +29,15 @@ bool Object::operator==(const Object &object) const {
 }
 
 void Object::mark() {
-    m_marked = true;
+    m_isMarked = true;
+}
+
+void Object::unmark() {
+    m_isMarked = false;
+}
+
+bool Object::isMarked() {
+    return m_isMarked;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Object& object) {

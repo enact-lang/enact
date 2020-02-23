@@ -13,30 +13,40 @@ class GC {
     static Compiler* m_currentCompiler;
     static VM* m_currentVM;
 
+    static std::vector<Object*> m_greyStack;
+
+    static void markRoots();
+    static void traceReferences();
+    static void sweep();
+    static void markCompilerRoots();
+    static void markVMRoots();
+    static void markObject(Object* object);
+    static void markValue(Value value);
+    static void markValues(const std::vector<Value>& values);
+    static void blackenObject(Object* object);
 public:
     template <typename T, typename... Args>
     inline static T* allocateObject(Args&&... args) {
         static_assert(std::is_base_of_v<Object, T>,
                       "GC::allocateObject<T>: T must derive from Object.");
 
-        T* object = new T{args...};
-
         #ifdef DEBUG_STRESS_GC
         collectGarbage();
         #endif
 
+        T* object = new T{args...};
+
         m_objects.push_back(object);
 
         #ifdef DEBUG_LOG_GC
-        std::cout << "Allocated object at " << reinterpret_cast<void*>(object) << " of size " << sizeof(T) << " and of type " <<
-              static_cast<int>(reinterpret_cast<Object*>(object)->m_type) << ".\n";
+        std::cout << static_cast<void*>(object) << ": allocated object of size " << sizeof(T) << " and type " <<
+              static_cast<int>(static_cast<Object*>(object)->m_type) << ".\n";
         #endif
 
         return object;
     }
 
     static void collectGarbage();
-    static void markRoots();
 
     static void freeObject(Object* object);
     static void freeObjects();

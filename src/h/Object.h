@@ -29,7 +29,7 @@ class Object {
     friend class GC;
 
     ObjectType m_type;
-    bool m_marked{false};
+    bool m_isMarked{false};
 public:
     explicit Object(ObjectType type);
     virtual ~Object();
@@ -46,6 +46,8 @@ public:
     bool operator==(const Object& object) const;
 
     virtual void mark();
+    virtual void unmark();
+    virtual bool isMarked();
 
     virtual std::string toString() const = 0;
     virtual Type getType() const = 0;
@@ -149,8 +151,8 @@ public:
 };
 
 class ClosureObject : public Object {
-    FunctionObject* m_function;
-    std::vector<UpvalueObject*> m_upvalues;
+    FunctionObject* m_function{nullptr};
+    std::vector<UpvalueObject*> m_upvalues{};
 
 public:
     explicit ClosureObject(FunctionObject* function);
@@ -166,9 +168,9 @@ public:
 #include "Chunk.h"
 
 class FunctionObject : public Object {
-    Type m_type;
-    Chunk m_chunk;
-    std::string m_name;
+    Type m_type{nullptr};
+    Chunk m_chunk{};
+    std::string m_name{};
     uint32_t m_upvalueCount = 0;
 
 public:
@@ -186,8 +188,8 @@ public:
 typedef Value (*NativeFn)(uint8_t argCount, Value* args);
 
 class NativeObject : public Object {
-    Type m_type;
-    NativeFn m_function;
+    Type m_type{nullptr};
+    NativeFn m_function{nullptr};
 
 public:
     explicit NativeObject(Type type, NativeFn function);
@@ -200,7 +202,7 @@ public:
 };
 
 class TypeObject : public Object {
-    Type m_containedType;
+    Type m_containedType{nullptr};
 
 public:
     explicit TypeObject(Type containedType);

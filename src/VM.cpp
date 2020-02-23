@@ -250,7 +250,9 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::CLOSURE: {
                 FunctionObject* function = READ_CONSTANT().asObject()->as<FunctionObject>();
+                push(Value{function});
                 ClosureObject* closure = GC::allocateObject<ClosureObject>(function);
+                pop();
                 push(Value{closure});
 
                 for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
@@ -273,7 +275,9 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::CLOSURE_LONG: {
                 FunctionObject* function = READ_CONSTANT_LONG().asObject()->as<FunctionObject>();
+                push(Value{function});
                 ClosureObject* closure = GC::allocateObject<ClosureObject>(function);
+                pop();
                 push(Value{closure});
 
                 for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {

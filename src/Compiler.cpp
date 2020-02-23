@@ -4,7 +4,9 @@
 #include "h/Natives.h"
 #include "h/GC.h"
 
-Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {}
+Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {
+    GC::setCompiler(this);
+}
 
 void Compiler::init(FunctionKind functionKind, Type functionType, const std::string& name) {
     m_hadError = false;
@@ -38,6 +40,7 @@ FunctionObject* Compiler::end() {
         emitByte(OpCode::NIL);
         emitByte(OpCode::RETURN);
     }
+    GC::setCompiler(nullptr);
     return m_currentFunction;
 }
 

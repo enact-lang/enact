@@ -18,7 +18,21 @@
 #include "h/Compiler.h"
 #include "h/GC.h"
 
-std::string Enact::m_source = "";
+std::string Enact::m_source{};
+
+Flags Enact::m_flags{};
+std::string Enact::m_filename{};
+std::vector<std::string> Enact::m_programArgs{};
+
+void Enact::start(int argc, char *argv[]) {
+    parseArgv(argc, argv);
+
+    if (m_filename.empty()) {
+        runPrompt();
+    } else {
+        runFile(m_filename);
+    }
+}
 
 InterpretResult Enact::run(const std::string& source) {
     m_source = source;
@@ -34,13 +48,13 @@ InterpretResult Enact::run(const std::string& source) {
         if (parser.hadError()) return InterpretResult::PARSE_ERROR;
         if (analyser.hadError()) return InterpretResult::ANALYSIS_ERROR;
 
-        #ifdef DEBUG_PRINT_AST
-        AstPrinter astPrinter;
-        for (const Stmt &stmt : statements) {
-            astPrinter.print(stmt);
-            std::cout << "\n";
+        if (getFlags().flagEnabled(Flag::DEBUG_PRINT_AST)) {
+            AstPrinter astPrinter;
+            for (const Stmt &stmt : statements) {
+                astPrinter.print(stmt);
+                std::cout << "\n";
+            }
         }
-        #endif
 
         Compiler compiler{};
         compiler.init(FunctionKind::SCRIPT, std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), "");
@@ -49,9 +63,9 @@ InterpretResult Enact::run(const std::string& source) {
         if (compiler.hadError()) return InterpretResult::COMPILE_ERROR;
     }
 
-    #ifdef DEBUG_DISASSEMBLE_CHUNK
-    std::cout << script->getChunk().disassemble();
-    #endif
+    if (getFlags().flagEnabled(Flag::DEBUG_DISASSEMBLE_CHUNK)) {
+        std::cout << script->getChunk().disassemble();
+    }
 
     VM vm = VM{};
     InterpretResult result = vm.run(script);
@@ -66,7 +80,7 @@ void Enact::runFile(const std::string &path) {
 
     // Check that the file opened successfully
     if (!file.is_open()) {
-        std::cerr << "Error: Unable to read file '" + path + "'.";
+        std::cerr << "[enact] Error: Unable to read file '" + path + "'.";
         std::exit((int) ExitCode::FILE_ERROR);
     }
 
@@ -127,17 +141,47 @@ void Enact::reportErrorAt(const Token &token, const std::string &message) {
     }
 }
 
-void Enact::start(int argc, char *argv[]) {
-    if (argc > 2) {
-        std::cerr << "Usage: enact [file]\n";
-        std::exit(static_cast<int>(ExitCode::INVALID_ARGUMENTS));
-    } else if (argc == 2) {
-        // Run the provided file.
-        runFile(argv[1]);
-    } else {
-        // No arguments, initialize REPL.
-        runPrompt();
+void Enact::parseArgv(int argc, char **argv) {
+    if (argc == 0) return;
+    std::vector<std::string> args{argv + 1, argv + argc};
+
+    size_t current = 0;
+    for (; current < args.size(); ++current) {
+        std::string arg = args[current];
+
+        if (arg.size() >= 2 && arg[0] == '-' && arg[1] == '-') {
+            m_flags.parseString(arg);
+        } else if (arg.size() >= 1 && arg[0] == '-') {
+            for (char c : arg.substr(1)) {
+                m_flags.parseString(std::string{"-"} + c);
+            }
+        } else {
+            break;
+        }
     }
+
+    if (m_flags.hadError()) {
+        exit((int)ExitCode::INVALID_ARGUMENTS);
+    }
+
+    if (current >= args.size()) {
+        // There are no more arguments for us to parse.
+        return;
+    }
+
+    m_filename = args[current++];
+
+    while (current < args.size()) {
+        m_programArgs.push_back(args[current++]);
+    }
+}
+
+const Flags& Enact::getFlags() {
+    return m_flags;
+}
+
+const std::vector<std::string>& Enact::getProgramArgs() {
+    return m_programArgs;
 }
 
 int main(int argc, char *argv[]) {

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "Object.h"
+#include "Enact.h"
 
 constexpr size_t GC_HEAP_GROW_FACTOR = 2;
 
@@ -37,22 +38,18 @@ public:
                       "GC::allocateObject<T>: T must derive from Object.");
 
         m_bytesAllocated += sizeof(T);
-        #ifdef DEBUG_STRESS_GC
-        collectGarbage();
-        #else
-        if (m_bytesAllocated > m_nextRun) {
-            collectGarbage();
+        if (m_bytesAllocated > m_nextRun || Enact::getFlags().flagEnabled(Flag::DEBUG_STRESS_GC)) {
+                collectGarbage();
         }
-        #endif
 
         T* object = new T{args...};
 
         m_objects.push_back(object);
 
-        #ifdef DEBUG_LOG_GC
-        std::cout << static_cast<void*>(object) << ": allocated object of size " << sizeof(T) << " and type " <<
-              static_cast<int>(static_cast<Object*>(object)->m_type) << ".\n";
-        #endif
+        if (Enact::getFlags().flagEnabled(Flag::DEBUG_LOG_GC)) {
+            std::cout << static_cast<void *>(object) << ": allocated object of size " << sizeof(T) << " and type " <<
+                      static_cast<int>(static_cast<Object *>(object)->m_type) << ".\n";
+        }
 
         return object;
     }

@@ -4,10 +4,15 @@
 #include <vector>
 #include "Object.h"
 
+constexpr size_t GC_HEAP_GROW_FACTOR = 2;
+
 class VM;
 class Compiler;
 
 class GC {
+    static size_t m_bytesAllocated;
+    static size_t m_nextRun;
+
     static std::vector<Object*> m_objects;
 
     static Compiler* m_currentCompiler;
@@ -30,8 +35,13 @@ public:
         static_assert(std::is_base_of_v<Object, T>,
                       "GC::allocateObject<T>: T must derive from Object.");
 
+        m_bytesAllocated += sizeof(T);
         #ifdef DEBUG_STRESS_GC
         collectGarbage();
+        #else
+        if (m_bytesAllocated > m_nextRun) {
+            collectGarbage();
+        }
         #endif
 
         T* object = new T{args...};

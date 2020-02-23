@@ -2,6 +2,9 @@
 #include "h/VM.h"
 #include "h/Compiler.h"
 
+size_t GC::m_bytesAllocated{0};
+size_t GC::m_nextRun{1024 * 1024};
+
 std::vector<Object*> GC::m_objects{};
 
 Compiler* GC::m_currentCompiler{nullptr};
@@ -11,15 +14,19 @@ std::vector<Object*> GC::m_greyStack{};
 
 void GC::collectGarbage() {
     #ifdef DEBUG_LOG_GC
-    std::cout << "-- GC BEGIN --\n";
+    std::cout << "-- GC BEGIN\n";
+    size_t before = m_bytesAllocated;
     #endif
 
     markRoots();
     traceReferences();
     sweep();
 
+    m_nextRun = m_bytesAllocated * GC_HEAP_GROW_FACTOR;
+
     #ifdef DEBUG_LOG_GC
-    std::cout << "-- GC END --\n";
+    std::cout << "-- GC END: collected " << before - m_bytesAllocated << " bytes (from " << before << " to " <<
+            m_bytesAllocated << "), next GC at " << m_nextRun << ".\n";
     #endif
 }
 

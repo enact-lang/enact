@@ -30,6 +30,7 @@ class Object {
 
     ObjectType m_type;
     bool m_isMarked{false};
+
 public:
     explicit Object(ObjectType type);
     virtual ~Object();

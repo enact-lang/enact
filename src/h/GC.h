@@ -29,6 +29,7 @@ class GC {
     static void markValue(Value value);
     static void markValues(const std::vector<Value>& values);
     static void blackenObject(Object* object);
+    
 public:
     template <typename T, typename... Args>
     inline static T* allocateObject(Args&&... args) {

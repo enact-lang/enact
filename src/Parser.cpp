@@ -71,6 +71,8 @@ Expr Parser::string() {
 Expr Parser::array() {
     Token square = m_previous;
 
+    std::string typeName{};
+
     std::vector<Expr> elements;
     if (!consume(TokenType::RIGHT_SQUARE)) {
         do {
@@ -78,10 +80,10 @@ Expr Parser::array() {
         } while (consume(TokenType::COMMA));
 
         expect(TokenType::RIGHT_SQUARE, "Expected end of array.");
+    } else {
+        // Empty literal must have a typename
+        typeName = consumeTypeName();
     }
-
-    // Optional type name for empty array literals like []int
-    std::string typeName = consumeTypeName();
 
     return std::make_shared<ArrayExpr>(elements, square, typeName);
 }

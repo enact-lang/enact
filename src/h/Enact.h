@@ -4,6 +4,7 @@
 #include <string>
 #include "Analyser.h"
 #include "VM.h"
+#include "Flags.h"
 
 enum class ExitCode {
     INVALID_ARGUMENTS = 65,
@@ -15,7 +16,13 @@ enum class ExitCode {
 
 class Enact {
     static std::string m_source;
+    static Flags m_flags;
+    static std::string m_filename;
+    static std::vector<std::string> m_programArgs;
+
 public:
+    static void start(int argc, char *argv[]);
+
     static InterpretResult run(const std::string &source);
     static void runFile(const std::string &path);
     static void runPrompt();
@@ -24,7 +31,10 @@ public:
 
     static void reportErrorAt(const Token &token, const std::string &message);
 
-    static void start(int argc, char *argv[]);
+    static void parseArgv(int argc, char *argv[]);
+
+    static const Flags& getFlags();
+    static const std::vector<std::string>& getProgramArgs();
 };
 
 int main(int argc, char *argv[]);

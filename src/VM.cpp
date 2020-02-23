@@ -38,16 +38,17 @@ InterpretResult VM::run(FunctionObject* function) {
                 } \
             } while (false)
 
-        #ifdef DEBUG_TRACE_EXECUTION
-        std::cout << "    ";
-        for (Value value : m_stack) {
-            std::cout << "[ " << value << " ] ";
-        }
-        std::cout << "\n";
+        if (Enact::getFlags().flagEnabled(Flag::DEBUG_TRACE_EXECUTION)) {
+            std::cout << "    ";
+            for (Value value : m_stack) {
+                std::cout << "[ " << value << " ] ";
+            }
+            std::cout << "\n";
 
-        std::cout << frame->closure->getFunction()->getChunk()
-                .disassembleInstruction(frame->ip - frame->closure->getFunction()->getChunk().getCode().data()).first;
-        #endif
+            std::cout << frame->closure->getFunction()->getChunk()
+                    .disassembleInstruction(
+                            frame->ip - frame->closure->getFunction()->getChunk().getCode().data()).first;
+        }
 
         Value* slots = &m_stack[frame->slotsBegin];
 

@@ -13,10 +13,11 @@ VM* GC::m_currentVM{nullptr};
 std::vector<Object*> GC::m_greyStack{};
 
 void GC::collectGarbage() {
-    #ifdef DEBUG_LOG_GC
-    std::cout << "-- GC BEGIN\n";
+    if (Enact::getFlags().flagEnabled(Flag::DEBUG_LOG_GC)) {
+        std::cout << "-- GC BEGIN\n";
+    }
+
     size_t before = m_bytesAllocated;
-    #endif
 
     markRoots();
     traceReferences();
@@ -24,10 +25,10 @@ void GC::collectGarbage() {
 
     m_nextRun = m_bytesAllocated * GC_HEAP_GROW_FACTOR;
 
-    #ifdef DEBUG_LOG_GC
-    std::cout << "-- GC END: collected " << before - m_bytesAllocated << " bytes (from " << before << " to " <<
-            m_bytesAllocated << "), next GC at " << m_nextRun << ".\n";
-    #endif
+    if (Enact::getFlags().flagEnabled(Flag::DEBUG_LOG_GC)) {
+        std::cout << "-- GC END: collected " << before - m_bytesAllocated << " bytes (from " << before << " to " <<
+                  m_bytesAllocated << "), next GC at " << m_nextRun << ".\n";
+    }
 }
 
 void GC::markRoots() {
@@ -84,9 +85,9 @@ void GC::markObject(Object *object) {
 
     m_greyStack.push_back(object);
 
-    #ifdef DEBUG_LOG_GC
-    std::cout << static_cast<void*>(object) << ": marked object [ " << *object << " ].\n";
-    #endif
+    if (Enact::getFlags().flagEnabled(Flag::DEBUG_LOG_GC)) {
+        std::cout << static_cast<void *>(object) << ": marked object [ " << *object << " ].\n";
+    }
 }
 
 void GC::markValue(Value value) {
@@ -102,9 +103,9 @@ void GC::markValues(const std::vector<Value>& values) {
 }
 
 void GC::blackenObject(Object *object) {
-    #ifdef DEBUG_LOG_GC
-    std::cout << static_cast<void*>(object) << ": blackened object [ " << *object << " ].\n";
-    #endif
+    if (Enact::getFlags().flagEnabled(Flag::DEBUG_LOG_GC)) {
+        std::cout << static_cast<void *>(object) << ": blackened object [ " << *object << " ].\n";
+    }
 
     switch (object->m_type) {
         case ObjectType::CLOSURE: {
@@ -132,10 +133,10 @@ void GC::blackenObject(Object *object) {
 }
 
 void GC::freeObject(Object* object) {
-    #ifdef DEBUG_LOG_GC
-    std::cout << static_cast<void*>(object) << ": freed object of type " <<
-    static_cast<int>(object->m_type) << ".\n";
-    #endif
+    if (Enact::getFlags().flagEnabled(Flag::DEBUG_LOG_GC)) {
+        std::cout << static_cast<void *>(object) << ": freed object of type " <<
+                  static_cast<int>(object->m_type) << ".\n";
+    }
 
     delete object;
 }

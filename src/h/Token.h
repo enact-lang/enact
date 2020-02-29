@@ -9,9 +9,9 @@ enum class TokenType {
     // Single character tokens.
     LEFT_PAREN, RIGHT_PAREN,
     LEFT_SQUARE, RIGHT_SQUARE,
-    COLON, COMMA, DOT, MINUS,
-    NEWLINE, PLUS, QUESTION,
-    SEMICOLON, SLASH, STAR,
+    AMPERSAND, COLON, COMMA,
+    DOT, MINUS, NEWLINE, PLUS,
+    QUESTION, SEMICOLON, SLASH, STAR,
 
     // 1 or 2 character tokens.
     BANG, BANG_EQUAL,

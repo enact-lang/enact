@@ -322,7 +322,7 @@ std::optional<Type> StructType::getMethod(const std::string &name) const {
 }
 
 std::optional<Type> StructType::getFieldOrMethod(const std::string &name) const {
-    if (std::optional<Type> type; type = getField(name)) {
+    if (std::optional<Type> type; (type = getField(name))) {
         return type;
     }
     return getMethod(name);

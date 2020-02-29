@@ -588,6 +588,10 @@ void Analyser::visitNilExpr(NilExpr &expr) {
     expr.setType(m_types["nothing"]);
 }
 
+void Analyser::visitReferenceExpr(ReferenceExpr &expr) {
+    throw errorAt(expr.oper, "Not implemented!");
+}
+
 void Analyser::visitStringExpr(StringExpr &expr) {
     expr.setType(m_types["string"]);
 }

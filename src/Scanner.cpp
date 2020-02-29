@@ -22,6 +22,7 @@ Token Scanner::scanToken() {
         case ')': --m_openParen; return makeToken(TokenType::RIGHT_PAREN);
         case '[': ++m_openSquare; return makeToken(TokenType::LEFT_SQUARE);
         case ']': --m_openSquare; return makeToken(TokenType::RIGHT_SQUARE);
+        case '&': return makeToken(TokenType::AMPERSAND);
         case ':': return makeToken(TokenType::COLON);
         case ',': return makeToken(TokenType::COMMA);
         case '.': return makeToken(TokenType::DOT);

@@ -226,6 +226,16 @@ std::string AstPrinter::visitNilExpr(NilExpr& expr) {
     return "nil";
 }
 
+std::string AstPrinter::visitReferenceExpr(ReferenceExpr &expr) {
+    std::stringstream s;
+    s << "&";
+    if (expr.isVar) {
+        s << "var";
+    }
+    s << " " << evaluate(expr.object);
+    return s.str();
+}
+
 std::string AstPrinter::visitStringExpr(StringExpr& expr) {
     std::stringstream s;
     s << "\"" << expr.value << "\"";

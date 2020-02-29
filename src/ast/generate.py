@@ -1,6 +1,5 @@
 # This script generates the AST classes found in Expr.h/cpp and Stmt.h/cpp.
 
-
 def uncapitalize(s):
     s[:1].lower() + s[1:] if s else ''
 
@@ -71,11 +70,11 @@ def generate_includes(includes):
 
 def generate_ast_class(name, type_fields, visitor_types, includes):
     type_field = ""
-    type_getter = ""
+    methods = ""
 
     if name == "Expr":
         type_field = "    Type m_type = nullptr;\n"
-        type_getter = "    virtual void setType(Type t) { m_type = t; }\n    virtual const Type& getType() {\n        ENACT_ASSERT(m_type != nullptr, \"Expr::getType(): Tried to get uninitialized type.\");\n        return m_type;\n    }\n"
+        methods = "    virtual void setType(Type t) { m_type = t; }\n    virtual const Type& getType() {\n        ENACT_ASSERT(m_type != nullptr, \"Expr::getType(): Tried to get uninitialized type.\");\n        return m_type;\n    }\n"
 
     ret = ("// This file was automatically generated.\n"
            "// \"See generate.py\" for details.\n\n"
@@ -92,7 +91,7 @@ def generate_ast_class(name, type_fields, visitor_types, includes):
            
            "public:\n"
            
-           f"{type_getter}"
+           f"{methods}"
 
            f"{generate_ast_class_body(name, type_fields, visitor_types)}"
            

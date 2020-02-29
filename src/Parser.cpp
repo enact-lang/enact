@@ -96,6 +96,15 @@ Expr Parser::unary() {
     return std::make_shared<UnaryExpr>(expr, oper);
 }
 
+Expr Parser::reference() {
+    Token oper = m_previous;
+    bool isVar = consume(TokenType::VAR);
+
+    Expr object = parsePrecedence(Precedence::UNARY);
+
+    return std::make_shared<ReferenceExpr>(object, oper, isVar);
+}
+
 Expr Parser::call(Expr callee) {
     Token leftParen = m_previous;
     std::vector<Expr> arguments;
@@ -142,13 +151,7 @@ Expr Parser::assignment(Expr left) {
 
     Expr right = parsePrecedence(Precedence::ASSIGNMENT);
 
-    if (typeid(*left) == typeid(VariableExpr) ||
-            typeid(*left) == typeid(FieldExpr) ||
-            typeid(*left) == typeid(SubscriptExpr)) {
-        return std::make_shared<AssignExpr>(left, right, oper);
-    }
-
-    throw errorAt(oper, "Invalid assignment target.");
+    return std::make_shared<AssignExpr>(left, right, oper);
 }
 
 Expr Parser::field(Expr object) {

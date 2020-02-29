@@ -72,6 +72,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
     void visitIntegerExpr(IntegerExpr& expr) override;
     void visitLogicalExpr(LogicalExpr& expr) override;
     void visitNilExpr(NilExpr& expr) override;
+    void visitReferenceExpr(ReferenceExpr& expr) override;
     void visitStringExpr(StringExpr& expr) override;
     void visitSubscriptExpr(SubscriptExpr& expr) override;
     void visitTernaryExpr(TernaryExpr& expr) override;

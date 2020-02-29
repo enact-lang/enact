@@ -405,6 +405,10 @@ void Compiler::visitNilExpr(NilExpr &expr) {
     emitByte(OpCode::NIL);
 }
 
+void Compiler::visitReferenceExpr(ReferenceExpr &expr) {
+    throw errorAt(expr.oper, "Not implemented.");
+}
+
 void Compiler::visitStringExpr(StringExpr &expr) {
     Object* string = GC::allocateObject<StringObject>(expr.value);
     emitConstant(Value{string});

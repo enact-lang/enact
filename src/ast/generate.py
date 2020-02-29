@@ -116,6 +116,7 @@ def generate_tree(name, type_fields, visitor_types, includes):
 generate_tree(
     "Expr",
     {
+        "Any":      [],
         "Array":    ["std::vector<Expr> value", "Token square", "std::string typeName"],
         "Assign":   ["Expr left", "Expr right", "Token oper"],
         "Binary":   ["Expr left", "Expr right", "Token oper"],
@@ -130,7 +131,6 @@ generate_tree(
         "Subscript":["Expr object", "Expr index", "Token square"],
         "Ternary":  ["Expr condition", "Expr thenExpr", "Expr elseExpr", "Token oper"],
         "Unary":    ["Expr operand", "Token oper"],
-        "Any":      [],
         "Variable": ["Token name"]
     },
     ["std::string", "void"],

@@ -207,7 +207,7 @@ Stmt Parser::functionDeclaration(bool mustParseBody) {
     std::vector<Stmt> body;
 
     if (!mustParseBody && consumeSeparator()) {
-        return std::make_shared<FunctionStmt>(name, typeName, params, body);
+        return std::make_shared<FunctionStmt>(name, typeName, params, body, nullptr);
     }
 
     expect(TokenType::COLON, "Expected ':' before function body.");
@@ -221,7 +221,7 @@ Stmt Parser::functionDeclaration(bool mustParseBody) {
 
     expectSeparator("Expected newline or ';' after function declaration.");
 
-    return std::make_shared<FunctionStmt>(name, typeName, params, body);
+    return std::make_shared<FunctionStmt>(name, typeName, params, body, nullptr);
 }
 
 Stmt Parser::structDeclaration() {

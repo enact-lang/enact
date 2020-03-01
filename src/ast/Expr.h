@@ -14,12 +14,18 @@ class ExprVisitor;
 
 class ExprBase {
     Type m_type = nullptr;
+    bool m_isVar = false;
+    bool m_isLvalue = false;
 public:
     virtual void setType(Type t) { m_type = t; }
     virtual const Type& getType() {
         ENACT_ASSERT(m_type != nullptr, "Expr::getType(): Tried to get uninitialized type.");
         return m_type;
     }
+    virtual void markVar() { m_isVar = true; }
+    virtual void isVar() const { return m_isVar; }
+    virtual void markLvalue() { m_isLvalue = true; }
+    virtual void isLvalue() const { return m_isLvalue; }
     virtual ~ExprBase() = default;
 
     virtual std::string accept(ExprVisitor<std::string> *visitor) = 0;

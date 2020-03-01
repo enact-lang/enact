@@ -337,9 +337,13 @@ void Analyser::visitVariableStmt(VariableStmt &stmt) {
         typeName = stmt.initializer->getType()->toString();
     }
 
-    if (!stmt.initializer->getType()->looselyEquals(*lookUpType(typeName, stmt.name))) {
+    if (!lookUpType(typeName, stmt.name)->looselyEquals(*stmt.initializer->getType())) {
         throw errorAt(stmt.name, "Cannot initialize variable of type '" + typeName +
                                  "' with value of type '" + stmt.initializer->getType()->toString() + "'.");
+    }
+
+    if (stmt.isVar && stmt.initializer->getType()->isConstReference()) {
+        throw errorAt(stmt.name, "Cannot assign a constant reference to a variable.");
     }
 
     declareVariable(stmt.name.lexeme, Variable{lookUpType(typeName, stmt.name), stmt.isVar});
@@ -387,17 +391,28 @@ void Analyser::visitAssignExpr(AssignExpr &expr) {
     analyse(expr.left);
     analyse(expr.right);
 
-    if (!expr.left->getType()->looselyEquals(*expr.right->getType())) {
+    auto leftType = expr.left->getType();
+
+    while (leftType->isReference()) {
+        leftType = leftType->as<ReferenceType>()->getUnderlying();
+    }
+
+    if (!leftType->looselyEquals(*expr.right->getType())) {
         throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.left->getType()->toString() +
                                  "' with value of type '" + expr.right->getType()->toString() + "'.");
     }
 
-    if (typeid(*expr.left) == typeid(VariableExpr)) {
-        auto name = std::static_pointer_cast<VariableExpr>(expr.left)->name;
-        if (!lookUpVariable(name).isVar) {
-            throw errorAt(name, "Cannot assign to a constant.");
-        }
+    if (!expr.left->isLvalue()) {
+        throw errorAt(expr.oper, "Invalid assignment target.");
     }
+
+    if (expr.left->isLvalue() && !expr.left->isVar()) {
+        throw errorAt(expr.oper, "Cannot assign to a constant value.");
+    }
+
+    expr.setType(expr.left->getType());
+    expr.markLvalue();
+    expr.markVar();
 }
 
 void Analyser::visitBinaryExpr(BinaryExpr &expr) {
@@ -508,7 +523,14 @@ void Analyser::visitCallExpr(CallExpr &expr) {
         }
 
         // The call expression's type is the return type of the callee.
-        expr.setType(calleeType->getReturnType());
+        Type returnType = calleeType->getReturnType();
+        expr.setType(returnType);
+        if (returnType->isReference()) {
+            expr.markLvalue();
+            if (returnType->isVarReference()) {
+                expr.markVar();
+            }
+        }
     } else if (type->isDynamic()) {
         // We'll have to check this one at runtime.
         expr.setType(DYNAMIC_TYPE);
@@ -526,7 +548,9 @@ void Analyser::visitFieldExpr(FieldExpr &expr) {
         auto type = objectType->as<StructType>();
 
         if (auto t = type->getFieldOrMethod(expr.name.lexeme)) {
-            expr.setType(*t);
+            expr.setType(std::make_shared<ReferenceType>(*t, expr.object->isVar()));
+            if (expr.object->isLvalue()) expr.markLvalue();
+            if (expr.object->isVar()) expr.markVar();
             return;
         }
 
@@ -536,7 +560,9 @@ void Analyser::visitFieldExpr(FieldExpr &expr) {
         auto type = objectType->as<TraitType>();
 
         if (auto t = type->getMethod(expr.name.lexeme)) {
-            expr.setType(*t);
+            expr.setType(std::make_shared<ReferenceType>(*t, expr.object->isVar()));
+            if (expr.object->isLvalue()) expr.markLvalue();
+            if (expr.object->isVar()) expr.markVar();
             return;
         }
 
@@ -547,7 +573,8 @@ void Analyser::visitFieldExpr(FieldExpr &expr) {
         auto type = objectType->as<ConstructorType>()->getStructType();
 
         if (auto t = type.getAssocFunction(expr.name.lexeme)) {
-            expr.setType(*t);
+            expr.setType(std::make_shared<ReferenceType>(*t, false));
+            if (expr.object->isLvalue()) expr.markLvalue();
             return;
         }
 
@@ -589,7 +616,30 @@ void Analyser::visitNilExpr(NilExpr &expr) {
 }
 
 void Analyser::visitReferenceExpr(ReferenceExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented!");
+    analyse(expr.object);
+
+    if (!expr.object->isLvalue()) {
+        throw errorAt(expr.oper, "Only lvalues can be referenced.");
+    }
+
+    if (expr.isVar && !expr.object->isVar()) {
+        throw errorAt(expr.oper, "Cannot create a variable reference to a constant value.");
+    }
+
+    if (typeid(*expr.object) == typeid(ReferenceExpr)) {
+        throw errorAt(expr.oper, "Cannot reference another reference directly.");
+    }
+
+    Type underlying = expr.object->getType();
+
+    while (underlying->isReference()) {
+        underlying = underlying->as<ReferenceType>()->getUnderlying();
+    }
+
+    Type refType = std::make_shared<ReferenceType>(underlying, expr.isVar);
+    expr.setType(refType);
+    expr.markLvalue();
+    if (expr.isVar) expr.markVar();
 }
 
 void Analyser::visitStringExpr(StringExpr &expr) {
@@ -613,7 +663,10 @@ void Analyser::visitSubscriptExpr(SubscriptExpr &expr) {
         return;
     }
 
-    expr.setType(expr.object->getType()->as<ArrayType>()->getElementType());
+    Type elementType = expr.object->getType()->as<ArrayType>()->getElementType();
+    expr.setType(std::make_shared<ReferenceType>(elementType, expr.object->isVar()));
+    if (expr.object->isLvalue()) expr.markLvalue();
+    if (expr.object->isVar()) expr.markVar();
 }
 
 void Analyser::visitTernaryExpr(TernaryExpr &expr) {
@@ -629,6 +682,10 @@ void Analyser::visitTernaryExpr(TernaryExpr &expr) {
         throw errorAt(expr.oper, "Mismatched types in conditional operation: '" + expr.thenExpr->getType()->toString()
                                  + "' and '" + expr.elseExpr->getType()->toString() + "'.");
     }
+
+    expr.setType(expr.thenExpr->getType());
+    if (expr.thenExpr->isLvalue()) expr.markLvalue();
+    if (expr.thenExpr->isVar()) expr.markVar();
 }
 
 void Analyser::visitUnaryExpr(UnaryExpr &expr) {
@@ -654,7 +711,10 @@ void Analyser::visitUnaryExpr(UnaryExpr &expr) {
 }
 
 void Analyser::visitVariableExpr(VariableExpr &expr) {
-    expr.setType(lookUpVariable(expr.name).type);
+    Variable variable = lookUpVariable(expr.name);
+    expr.setType(variable.type);
+    expr.markLvalue();
+    if (variable.isVar) expr.markVar();
 }
 
 void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
@@ -705,6 +765,11 @@ Type Analyser::lookUpType(const std::string &name, const Token &where) {
         if (name[0] == '[' && name[name.size() - 1] == ']') {
             std::string elementTypeName = name.substr(1, name.size() - 2);
             return std::make_shared<ArrayType>(lookUpType(elementTypeName, where));
+        }
+        if (name[0] == '&') {
+            bool isVar = (name.size() >= 5 && name[1] == 'v' && name[2] == 'a' && name[3] == 'r' && name[4] == ' ');
+            Type underlying = lookUpType(name.substr((isVar ? 5 : 1)), where);
+            return std::make_shared<ReferenceType>(underlying, isVar);
         }
     }
 

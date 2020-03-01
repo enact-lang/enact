@@ -107,7 +107,7 @@ std::string TypeBase::toString() const {
         }
         case TypeKind::REFERENCE: {
             auto refType = this->as<ReferenceType>();
-            return (refType->isVar() ? "&var " : "") + refType->getUnderlying()->toString();
+            return std::string{refType->isVar() ? "&var " : "&"} + refType->getUnderlying()->toString();
         }
         case TypeKind::ARRAY: {
             auto arrType = this->as<ArrayType>();

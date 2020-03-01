@@ -601,6 +601,15 @@ void Parser::expectSeparator(const std::string &message) {
 }
 
 std::string Parser::consumeTypeName(bool emptyAllowed) {
+    if (consume(TokenType::AMPERSAND)) {
+        std::string typeName{"&"};
+        if (consume(TokenType::VAR)) typeName += "var ";
+
+        typeName += consumeTypeName(false);
+
+        return typeName;
+    }
+
     if (consume(TokenType::FUN)) {
         std::string typeName;
 

@@ -342,7 +342,7 @@ void Analyser::visitVariableStmt(VariableStmt &stmt) {
                                  "' with value of type '" + stmt.initializer->getType()->toString() + "'.");
     }
 
-    declareVariable(stmt.name.lexeme, Variable{lookUpType(typeName, stmt.name), stmt.isConst});
+    declareVariable(stmt.name.lexeme, Variable{lookUpType(typeName, stmt.name), stmt.isVar});
 }
 
 void Analyser::visitAnyExpr(AnyExpr &expr) {
@@ -394,8 +394,8 @@ void Analyser::visitAssignExpr(AssignExpr &expr) {
 
     if (typeid(*expr.left) == typeid(VariableExpr)) {
         auto name = std::static_pointer_cast<VariableExpr>(expr.left)->name;
-        if (lookUpVariable(name).isConst) {
-            throw errorAt(name, "Cannot assign to constant variable.");
+        if (!lookUpVariable(name).isVar) {
+            throw errorAt(name, "Cannot assign to a constant.");
         }
     }
 }

@@ -75,8 +75,8 @@ def generate_ast_class(name, type_fields, visitor_types, includes):
     if name == "Expr":
         type_field = "    Type m_type = nullptr;\n    bool m_isVar = false;\n    bool m_isLvalue = false;\n"
         methods = "    virtual void setType(Type t) { m_type = t; }\n    virtual const Type& getType() {\n        ENACT_ASSERT(m_type != nullptr, \"Expr::getType(): Tried to get uninitialized type.\");\n        return m_type;\n    }\n"
-        methods += "    virtual void markVar() { m_isVar = true; }\n    virtual void isVar() const { return m_isVar; }\n"
-        methods += "    virtual void markLvalue() { m_isLvalue = true; }\n    virtual void isLvalue() const { return m_isLvalue; }\n"
+        methods += "    virtual void markVar() { m_isVar = true; }\n    virtual bool isVar() const { return m_isVar; }\n"
+        methods += "    virtual void markLvalue() { m_isLvalue = true; }\n    virtual bool isLvalue() const { return m_isLvalue; }\n"
 
     ret = ("// This file was automatically generated.\n"
            "// \"See generate.py\" for details.\n\n"
@@ -155,7 +155,7 @@ generate_tree(
         "Struct":       ["Token name", "std::vector<Token> traits", "std::vector<NamedTypename> fields", "std::vector<std::shared_ptr<FunctionStmt>> methods", "std::vector<std::shared_ptr<FunctionStmt>> assocFunctions"],
         "Trait":        ["Token name", "std::vector<std::shared_ptr<FunctionStmt>> methods"],
         "While":        ["Expr condition", "std::vector<Stmt> body", "Token keyword"],
-        "Variable":     ["Token name", "std::string typeName", "Expr initializer", "bool isConst"],
+        "Variable":     ["Token name", "std::string typeName", "Expr initializer", "bool isVar"],
     },
     ["std::string", "void"],
     ['"Expr.h"', '"../h/trivialStructs.h"']

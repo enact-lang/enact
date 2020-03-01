@@ -302,10 +302,10 @@ public:
     Token name;
     std::string typeName;
     Expr initializer;
-    bool isConst;
+    bool isVar;
 
-    VariableStmt(Token name,std::string typeName,Expr initializer,bool isConst) : 
-        name{name},typeName{typeName},initializer{initializer},isConst{isConst} {}
+    VariableStmt(Token name,std::string typeName,Expr initializer,bool isVar) : 
+        name{name},typeName{typeName},initializer{initializer},isVar{isVar} {}
     ~VariableStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {

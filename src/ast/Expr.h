@@ -23,9 +23,9 @@ public:
         return m_type;
     }
     virtual void markVar() { m_isVar = true; }
-    virtual void isVar() const { return m_isVar; }
+    virtual bool isVar() const { return m_isVar; }
     virtual void markLvalue() { m_isLvalue = true; }
-    virtual void isLvalue() const { return m_isLvalue; }
+    virtual bool isLvalue() const { return m_isLvalue; }
     virtual ~ExprBase() = default;
 
     virtual std::string accept(ExprVisitor<std::string> *visitor) = 0;

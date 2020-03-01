@@ -16,7 +16,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
 
     struct Variable {
         Type type = nullptr;
-        bool isConst = false;
+        bool isVar = false;
     };
 
     std::unordered_map<std::string, Type> m_types{

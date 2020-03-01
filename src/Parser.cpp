@@ -179,8 +179,8 @@ Stmt Parser::declaration() {
         if (consume(TokenType::FUN)) return functionDeclaration();
         if (consume(TokenType::STRUCT)) return structDeclaration();
         if (consume(TokenType::TRAIT)) return traitDeclaration();
-        if (consume(TokenType::VAR)) return variableDeclaration(false);
-        if (consume(TokenType::CONST)) return variableDeclaration(true);
+        if (consume(TokenType::CONST)) return variableDeclaration(false);
+        if (consume(TokenType::VAR)) return variableDeclaration(true);
         return statement();
     } catch (ParseError &error) {
         synchronise();
@@ -302,7 +302,7 @@ Stmt Parser::traitDeclaration() {
     return std::make_shared<TraitStmt>(name, methods);
 }
 
-Stmt Parser::variableDeclaration(bool isConst) {
+Stmt Parser::variableDeclaration(bool isVar) {
     expect(TokenType::IDENTIFIER, "Expected variable name.");
     Token name = m_previous;
 
@@ -314,7 +314,7 @@ Stmt Parser::variableDeclaration(bool isConst) {
 
     expectSeparator("Expected newline or ';' after variable declaration.");
 
-    return std::make_shared<VariableStmt>(name, typeName, initializer, isConst);
+    return std::make_shared<VariableStmt>(name, typeName, initializer, isVar);
 }
 
 Stmt Parser::statement() {

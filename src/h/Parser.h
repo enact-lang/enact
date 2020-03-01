@@ -153,7 +153,7 @@ private:
     Stmt functionDeclaration(bool mustParseBody = true);
     Stmt structDeclaration();
     Stmt traitDeclaration();
-    Stmt variableDeclaration(bool isConst);
+    Stmt variableDeclaration(bool isVar);
 
     // Statements
     Stmt statement();

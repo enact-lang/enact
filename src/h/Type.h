@@ -25,6 +25,7 @@ struct NamedType;
 // │   ├── Integral
 // │   └── Decimal
 // ├── String
+// ├── Reference
 // ├── Struct
 // ├── Dynamic
 // └── Nothing
@@ -43,6 +44,7 @@ extern const Type NOTHING_TYPE;
 
 enum class TypeKind {
     PRIMITIVE,
+    REFERENCE,
     ARRAY,
     FUNCTION,
     TRAIT,
@@ -85,6 +87,13 @@ public:
     bool maybeString() const;
 
     // Complex type groups
+    bool isReference() const;
+    bool isReference(const TypeBase& to) const;
+    bool isConstReference() const;
+    bool isConstReference(const TypeBase& to) const;
+    bool isVarReference() const;
+    bool isVarReference(const TypeBase& to) const;
+
     bool isArray() const;
     bool isFunction() const;
     bool isTrait() const;
@@ -123,6 +132,17 @@ public:
     ~PrimitiveType() override = default;
 
     PrimitiveKind getPrimitiveKind() const;
+};
+
+class ReferenceType : public TypeBase {
+    Type m_underlying;
+    bool m_isVar;
+public:
+    ReferenceType(Type underlying, bool isVar);
+    ~ReferenceType() override = default;
+
+    Type getUnderlying() const;
+    bool isVar() const;
 };
 
 // Array types

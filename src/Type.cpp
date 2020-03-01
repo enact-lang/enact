@@ -28,6 +28,12 @@ bool TypeBase::operator==(const TypeBase &type) const {
             auto right = type.as<PrimitiveType>();
             return left->getPrimitiveKind() == right->getPrimitiveKind();
         }
+        case TypeKind::REFERENCE: {
+            auto left = this->as<ReferenceType>();
+            auto right = type.as<ReferenceType>();
+            return left->isVar() == right->isVar() &&
+                    *left->getUnderlying() == *right->getUnderlying();
+        }
         case TypeKind::ARRAY: {
             auto left = this->as<ArrayType>();
             auto right = type.as<ArrayType>();
@@ -75,6 +81,12 @@ bool TypeBase::looselyEquals(const TypeBase &type) const {
     if (type.isTrait() && this->isStruct()) {
         return this->as<StructType>()->getTrait(type) != std::nullopt;
     }
+    if (this->isReference() && !type.isReference()) {
+        return this->isReference(type);
+    }
+    if (this->isVarReference() && type.isConstReference()) {
+        return this->isReference(*type.as<ReferenceType>()->getUnderlying());
+    }
 
     return this->isDynamic() || type.isDynamic() || (this->isInt() && type.isNumeric()) || *this == type;
 }
@@ -92,6 +104,10 @@ std::string TypeBase::toString() const {
                 case PrimitiveKind::DYNAMIC: return "any";
                 default: return "";
             }
+        }
+        case TypeKind::REFERENCE: {
+            auto refType = this->as<ReferenceType>();
+            return (refType->isVar() ? "&var " : "") + refType->getUnderlying()->toString();
         }
         case TypeKind::ARRAY: {
             auto arrType = this->as<ArrayType>();
@@ -125,13 +141,15 @@ std::string TypeBase::toString() const {
 }
 
 bool TypeBase::isInt() const {
-    return m_kind == TypeKind::PRIMITIVE &&
-           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::INT;
+    return (m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::INT) ||
+           isReference(*INT_TYPE);
 }
 
 bool TypeBase::isFloat() const {
-    return m_kind == TypeKind::PRIMITIVE &&
-           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::FLOAT;
+    return (m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::FLOAT) ||
+           isReference(*FLOAT_TYPE);
 }
 
 bool TypeBase::isNumeric() const {
@@ -139,23 +157,27 @@ bool TypeBase::isNumeric() const {
 }
 
 bool TypeBase::isBool() const {
-    return m_kind == TypeKind::PRIMITIVE &&
-           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::BOOL;
+    return (m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::BOOL) ||
+           isReference(*BOOL_TYPE);
 }
 
 bool TypeBase::isString() const {
-    return m_kind == TypeKind::PRIMITIVE &&
-           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::STRING;
+    return (m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::STRING) ||
+           isReference(*STRING_TYPE);
 }
 
 bool TypeBase::isDynamic() const {
-    return m_kind == TypeKind::PRIMITIVE &&
-           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::DYNAMIC;
+    return (m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::DYNAMIC) ||
+           isReference(*DYNAMIC_TYPE);
 }
 
 bool TypeBase::isNothing() const {
-    return m_kind == TypeKind::PRIMITIVE &&
-           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::NOTHING;
+    return (m_kind == TypeKind::PRIMITIVE &&
+           this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::NOTHING) ||
+           isReference(*NOTHING_TYPE);
 }
 
 bool TypeBase::maybeInt() const {
@@ -178,24 +200,53 @@ bool TypeBase::maybeString() const {
     return isString() || isDynamic();
 }
 
+bool TypeBase::isReference() const {
+    return m_kind == TypeKind::REFERENCE;
+}
+
+bool TypeBase::isReference(const TypeBase &to) const {
+    return isReference() && *this->as<ReferenceType>()->getUnderlying() == to;
+}
+
+bool TypeBase::isConstReference() const {
+    return isReference() && !this->as<ReferenceType>()->isVar();
+}
+
+bool TypeBase::isConstReference(const TypeBase& to) const {
+    return isReference(to) && !this->as<ReferenceType>()->isVar();
+}
+
+bool TypeBase::isVarReference() const {
+    return isReference() && this->as<ReferenceType>()->isVar();
+}
+
+bool TypeBase::isVarReference(const TypeBase &to) const {
+    return isReference(to) && this->as<ReferenceType>()->isVar();
+}
+
 bool TypeBase::isArray() const {
-    return m_kind == TypeKind::ARRAY;
+    return m_kind == TypeKind::ARRAY ||
+            (isReference() && this->as<ReferenceType>()->getUnderlying()->isArray());
 }
 
 bool TypeBase::isFunction() const {
-    return m_kind == TypeKind::FUNCTION;
+    return m_kind == TypeKind::FUNCTION ||
+           (isReference() && this->as<ReferenceType>()->getUnderlying()->isFunction());
 }
 
 bool TypeBase::isTrait() const {
-    return m_kind == TypeKind::TRAIT;
+    return m_kind == TypeKind::TRAIT ||
+           (isReference() && this->as<ReferenceType>()->getUnderlying()->isTrait());
 }
 
 bool TypeBase::isStruct() const {
-    return m_kind == TypeKind::STRUCT;
+    return m_kind == TypeKind::STRUCT ||
+           (isReference() && this->as<ReferenceType>()->getUnderlying()->isStruct());
 }
 
 bool TypeBase::isConstructor() const {
-    return m_kind == TypeKind::CONSTRUCTOR;
+    return m_kind == TypeKind::CONSTRUCTOR ||
+           (isReference() && this->as<ReferenceType>()->getUnderlying()->isConstructor());
 }
 
 bool TypeBase::maybeArray() const {
@@ -225,6 +276,18 @@ PrimitiveKind PrimitiveType::getPrimitiveKind() const {
     return m_kind;
 }
 
+ReferenceType::ReferenceType(Type underlying, bool isVar) :
+        TypeBase{TypeKind::REFERENCE},
+        m_underlying{underlying},
+        m_isVar{isVar} {}
+
+Type ReferenceType::getUnderlying() const {
+    return m_underlying;
+}
+
+bool ReferenceType::isVar() const {
+    return m_isVar;
+}
 
 ArrayType::ArrayType(Type elementType) :
         TypeBase{TypeKind::ARRAY},

@@ -438,6 +438,13 @@ void Compiler::visitUnaryExpr(UnaryExpr &expr) {
 
             break;
         }
+        case TokenType::COPY: {
+            if (expr.operand->getType()->isDynamic()) {
+                // TODO: Implement runtime typechecking, i.e. emitByte(OpCode::CHECK_REFERENCE);
+            }
+            emitByte(OpCode::COPY);
+            break;
+        }
     }
 }
 

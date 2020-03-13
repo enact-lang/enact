@@ -644,6 +644,14 @@ void Analyser::visitUnaryExpr(UnaryExpr &expr) {
             expr.setType(expr.operand->getType());
             break;
 
+        case TokenType::COPY:
+            if (expr.operand->getType()->isPrimitive()) {
+                throw errorAt(expr.oper, "Cannot copy the value type '" +
+                        expr.operand->getType()->toString() + "'.");
+            }
+            expr.setType(expr.operand->getType());
+            break;
+
         default:
             break; // Unreachable.
     }

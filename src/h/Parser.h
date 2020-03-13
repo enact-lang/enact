@@ -122,6 +122,7 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CLASS
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CONST
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // CONTINUE
+            ParseRule{&Parser::unary,               nullptr,            Precedence::UNARY}, // COPY
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // EACH
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // ELSE
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // END

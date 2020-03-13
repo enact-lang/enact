@@ -70,6 +70,7 @@ public:
     virtual std::string toString() const;
 
     // Primitive type groups
+    bool isPrimitive() const;
     bool isNumeric() const;
     bool isInt() const;
     bool isFloat() const;
@@ -78,6 +79,7 @@ public:
     bool isDynamic() const;
     bool isNothing() const;
 
+    bool maybePrimitive() const;
     bool maybeNumeric() const;
     bool maybeInt() const;
     bool maybeFloat() const;

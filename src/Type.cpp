@@ -124,13 +124,17 @@ std::string TypeBase::toString() const {
     }
 }
 
+bool TypeBase::isPrimitive() const {
+    return m_kind == TypeKind::PRIMITIVE;
+}
+
 bool TypeBase::isInt() const {
-    return m_kind == TypeKind::PRIMITIVE &&
+    return isPrimitive() &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::INT;
 }
 
 bool TypeBase::isFloat() const {
-    return m_kind == TypeKind::PRIMITIVE &&
+    return isPrimitive() &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::FLOAT;
 }
 
@@ -139,23 +143,27 @@ bool TypeBase::isNumeric() const {
 }
 
 bool TypeBase::isBool() const {
-    return m_kind == TypeKind::PRIMITIVE &&
+    return isPrimitive() &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::BOOL;
 }
 
 bool TypeBase::isString() const {
-    return m_kind == TypeKind::PRIMITIVE &&
+    return isPrimitive() &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::STRING;
 }
 
 bool TypeBase::isDynamic() const {
-    return m_kind == TypeKind::PRIMITIVE &&
+    return isPrimitive() &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::DYNAMIC;
 }
 
 bool TypeBase::isNothing() const {
-    return m_kind == TypeKind::PRIMITIVE &&
+    return isPrimitive() &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::NOTHING;
+}
+
+bool TypeBase::maybePrimitive() const {
+    return isPrimitive() || isDynamic();
 }
 
 bool TypeBase::maybeInt() const {

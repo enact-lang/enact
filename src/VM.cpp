@@ -89,12 +89,23 @@ InterpretResult VM::run(FunctionObject* function) {
                 }
                 break;
             }
+            case OpCode::CHECK_REFERENCE: {
+                Value value = peek(0);
+                if (value.getType()->isPrimitive()) {
+                    runtimeError("Only reference types can be copied, not a value of type '"
+                                 + value.getType()->toString() + "'.");
+
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
             case OpCode::CHECK_CALLABLE: {
                 uint8_t argCount = READ_BYTE();
 
                 Value functionValue = peek(argCount);
                 if (!functionValue.getType()->isFunction()) {
-                    runtimeError("Only functions can be called.");
+                    runtimeError("Only functions can be called, not a value of type '"
+                            + functionValue.getType()->toString() + ".");
                     return InterpretResult::RUNTIME_ERROR;
                 }
 
@@ -154,6 +165,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
             case OpCode::NOT: push(Value{!pop().asBool()}); break;
+
+            case OpCode::COPY: push(Value{pop().asObject()->clone()}); break;
 
             case OpCode::ADD: NUMERIC_OP(+); break;
             case OpCode::SUBTRACT: NUMERIC_OP(-); break;
@@ -399,7 +412,7 @@ void VM::runtimeError(const std::string& msg) {
 
     const std::string source = Enact::getSourceLine(line);
 
-    std::cerr << "[line " << line << "] Error on this line:\n    " << source << "\n    ";
+    std::cerr << "[line " << line << "] Error here:\n    " << source << "\n    ";
     for (int i = 0; i < source.size(); ++i) {
         std::cerr << "^";
     }

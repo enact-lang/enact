@@ -127,6 +127,7 @@ TokenType Scanner::identifierType(std::string candidate) {
     if (candidate == "class")    return TokenType::CLASS;
     if (candidate == "const")    return TokenType::CONST;
     if (candidate == "continue") return TokenType::CONTINUE;
+    if (candidate == "copy")     return TokenType::COPY;
     if (candidate == "each")     return TokenType::EACH;
     if (candidate == "else")     return TokenType::ELSE;
     if (candidate == "end")      return TokenType::END;

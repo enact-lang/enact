@@ -124,6 +124,10 @@ std::string TypeBase::toString() const {
     }
 }
 
+bool TypeBase::isPrimitive() const {
+    return m_kind == TypeKind::PRIMITIVE && !isDynamic();
+}
+
 bool TypeBase::isInt() const {
     return m_kind == TypeKind::PRIMITIVE &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::INT;
@@ -156,6 +160,10 @@ bool TypeBase::isDynamic() const {
 bool TypeBase::isNothing() const {
     return m_kind == TypeKind::PRIMITIVE &&
            this->as<PrimitiveType>()->getPrimitiveKind() == PrimitiveKind::NOTHING;
+}
+
+bool TypeBase::maybePrimitive() const {
+    return m_kind == TypeKind::PRIMITIVE;
 }
 
 bool TypeBase::maybeInt() const {

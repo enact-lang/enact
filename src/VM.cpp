@@ -155,6 +155,8 @@ InterpretResult VM::run(FunctionObject* function) {
             }
             case OpCode::NOT: push(Value{!pop().asBool()}); break;
 
+            case OpCode::COPY: push(Value{pop().asObject()->clone()});
+
             case OpCode::ADD: NUMERIC_OP(+); break;
             case OpCode::SUBTRACT: NUMERIC_OP(-); break;
             case OpCode::MULTIPLY: NUMERIC_OP(*); break;

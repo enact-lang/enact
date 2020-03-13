@@ -3,6 +3,7 @@
 #include "h/Value.h"
 #include "h/Chunk.h"
 #include "h/VM.h"
+#include "h/GC.h"
 
 #ifdef DEBUG_LOG_GC
 #include <iostream>
@@ -61,6 +62,10 @@ Type StringObject::getType() const {
     return STRING_TYPE;
 }
 
+StringObject* StringObject::clone() const {
+    return GC::allocateObject<StringObject>(*this);
+}
+
 ArrayObject::ArrayObject() : Object{ObjectType::ARRAY}, m_vector{} {
 }
 
@@ -100,6 +105,10 @@ Type ArrayObject::getType() const {
     return std::make_shared<ArrayType>(elementType);
 }
 
+ArrayObject* ArrayObject::clone() const {
+    return GC::allocateObject<ArrayObject>(*this);
+}
+
 UpvalueObject::UpvalueObject(uint32_t location) : Object{ObjectType::UPVALUE}, m_location{location} {
 }
 
@@ -136,6 +145,10 @@ Type UpvalueObject::getType() const {
     return NOTHING_TYPE;
 }
 
+UpvalueObject* UpvalueObject::clone() const {
+    return GC::allocateObject<UpvalueObject>(*this);
+}
+
 ClosureObject::ClosureObject(FunctionObject *function) : Object{ObjectType::CLOSURE}, m_function{function}, m_upvalues{function->getUpvalueCount()} {
 }
 
@@ -153,6 +166,10 @@ std::string ClosureObject::toString() const {
 
 Type ClosureObject::getType() const {
     return m_function->getType();
+}
+
+ClosureObject* ClosureObject::clone() const {
+    return GC::allocateObject<ClosureObject>(*this);
 }
 
 FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
@@ -186,6 +203,10 @@ Type FunctionObject::getType() const {
     return m_type;
 }
 
+FunctionObject* FunctionObject::clone() const {
+    return GC::allocateObject<FunctionObject>(*this);
+}
+
 NativeObject::NativeObject(Type type, NativeFn function) : Object{ObjectType::NATIVE}, m_type{type}, m_function{function} {
 }
 
@@ -203,6 +224,10 @@ Type NativeObject::getType() const {
     return m_type;
 }
 
+NativeObject* NativeObject::clone() const {
+    return GC::allocateObject<NativeObject>(*this);
+}
+
 TypeObject::TypeObject(Type containedType) : Object{ObjectType::TYPE}, m_containedType{containedType} {
 }
 
@@ -216,4 +241,8 @@ std::string TypeObject::toString() const {
 
 Type TypeObject::getType() const {
     return NOTHING_TYPE;
+}
+
+TypeObject* TypeObject::clone() const {
+    return GC::allocateObject<TypeObject>(*this);
 }

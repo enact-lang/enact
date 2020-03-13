@@ -80,8 +80,11 @@ Expr Parser::array() {
         } while (consume(TokenType::COMMA));
 
         expect(TokenType::RIGHT_SQUARE, "Expected end of array.");
+
+        // Typename can be empty
+        typeName = consumeTypeName(true);
     } else {
-        // Empty literal must have a typename
+        // Typename cannot be empty
         typeName = consumeTypeName();
     }
 

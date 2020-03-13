@@ -69,6 +69,9 @@ bool TypeBase::operator!=(const TypeBase &type) const {
 }
 
 bool TypeBase::looselyEquals(const TypeBase &type) const {
+    if (this->isArray() && type.isArray()) {
+        return this->as<ArrayType>()->getElementType()->looselyEquals(*type.as<ArrayType>()->getElementType());
+    }
     if (this->isTrait() && type.isStruct()) {
         return type.as<StructType>()->getTrait(*this) != std::nullopt;
     }

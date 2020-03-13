@@ -21,6 +21,7 @@ enum class OpCode : uint8_t {
 
     NEGATE,
     NOT,
+    COPY,
 
     ADD,
     SUBTRACT,

@@ -122,7 +122,10 @@ public:
 
     ~ArrayObject() override = default;
 
-    std::optional<Value> at(size_t index) const;
+    size_t length() const;
+
+    Value& at(size_t index);
+    const Value& at(size_t index) const;
 
     const std::vector<Value>& asVector() const;
 

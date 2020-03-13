@@ -182,6 +182,34 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
 
+            case OpCode::GET_ARRAY_INDEX: {
+                int index = pop().asInt();
+                ArrayObject* array = pop().asObject()->as<ArrayObject>();
+
+                if (index >= array->length()) {
+                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                             + "length '" + std::to_string(array->asVector().size()) + "'.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                push(array->at(index));
+                break;
+            }
+            case OpCode::SET_ARRAY_INDEX: {
+                int index = pop().asInt();
+                ArrayObject* array = pop().asObject()->as<ArrayObject>();
+                Value newValue = peek(0);
+
+                if (index >= array->length()) {
+                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                                 + "length '" + std::to_string(array->asVector().size()) + "'.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                array->at(index) = newValue;
+                break;
+            }
+
             case OpCode::POP: pop(); break;
 
             case OpCode::GET_LOCAL: push(slots[READ_BYTE()]); break;

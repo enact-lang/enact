@@ -72,12 +72,16 @@ ArrayObject::ArrayObject() : Object{ObjectType::ARRAY}, m_vector{} {
 ArrayObject::ArrayObject(std::vector<Value> vector) : Object{ObjectType::ARRAY}, m_vector{std::move(vector)} {
 }
 
-std::optional<Value> ArrayObject::at(size_t index) const {
-    if (index >= m_vector.size()) {
-        return {};
-    }
+size_t ArrayObject::length() const {
+    return m_vector.size();
+}
 
-    return {m_vector[index]};
+Value& ArrayObject::at(size_t index) {
+    return m_vector[index];
+}
+
+const Value& ArrayObject::at(size_t index) const {
+    return m_vector[index];
 }
 
 const std::vector<Value>& ArrayObject::asVector() const {

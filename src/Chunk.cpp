@@ -99,6 +99,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::LESS:
         case OpCode::GREATER:
         case OpCode::EQUAL:
+        case OpCode::GET_ARRAY_INDEX:
+        case OpCode::SET_ARRAY_INDEX:
         case OpCode::POP:
         case OpCode::CLOSE_UPVALUE:
         case OpCode::RETURN: {
@@ -370,6 +372,8 @@ std::string opCodeToString(OpCode code) {
         case OpCode::LESS: return "LESS";
         case OpCode::GREATER: return "GREATER";
         case OpCode::EQUAL: return "EQUAL";
+        case OpCode::GET_ARRAY_INDEX: return "GET_ARRAY_INDEX";
+        case OpCode::SET_ARRAY_INDEX: return "SET_ARRAY_INDEX";
         case OpCode::POP: return "POP";
         case OpCode::GET_LOCAL: return "GET_LOCAL";
         case OpCode::GET_LOCAL_LONG: return "GET_LOCAL_LONG";

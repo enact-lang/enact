@@ -33,6 +33,9 @@ enum class OpCode : uint8_t {
     GREATER,
     EQUAL,
 
+    GET_ARRAY_INDEX,
+    SET_ARRAY_INDEX,
+
     POP,
 
     GET_LOCAL,

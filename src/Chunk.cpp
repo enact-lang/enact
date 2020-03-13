@@ -111,6 +111,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Byte instructions
+        case OpCode::ARRAY:
         case OpCode::CHECK_CALLABLE:
         case OpCode::GET_LOCAL:
         case OpCode::SET_LOCAL:
@@ -135,6 +136,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Long instructions
+        case OpCode::ARRAY_LONG:
         case OpCode::GET_LOCAL_LONG:
         case OpCode::SET_LOCAL_LONG:
         case OpCode::GET_UPVALUE_LONG:
@@ -372,6 +374,8 @@ std::string opCodeToString(OpCode code) {
         case OpCode::LESS: return "LESS";
         case OpCode::GREATER: return "GREATER";
         case OpCode::EQUAL: return "EQUAL";
+        case OpCode::ARRAY: return "ARRAY";
+        case OpCode::ARRAY_LONG: return "ARRAY_LONG";
         case OpCode::GET_ARRAY_INDEX: return "GET_ARRAY_INDEX";
         case OpCode::SET_ARRAY_INDEX: return "SET_ARRAY_INDEX";
         case OpCode::POP: return "POP";

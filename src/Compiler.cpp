@@ -280,7 +280,19 @@ void Compiler::visitAnyExpr(AnyExpr &expr) {
 }
 
 void Compiler::visitArrayExpr(ArrayExpr &expr) {
-    throw errorAt(expr.square, "Not implemented.");
+    for (Expr& value : expr.value) {
+        compile(value);
+    }
+
+    uint32_t length = expr.value.size();
+
+    if (length <= UINT8_MAX) {
+        emitByte(OpCode::ARRAY);
+        emitByte(static_cast<uint8_t>(length));
+    } else {
+        emitByte(OpCode::ARRAY_LONG);
+        emitLong(length);
+    }
 }
 
 void Compiler::visitAssignExpr(AssignExpr &expr) {
@@ -297,8 +309,25 @@ void Compiler::visitAssignExpr(AssignExpr &expr) {
             emitByte(OpCode::SET_LOCAL_LONG);
             emitLong(index);
         }
+    } else if (typeid(*expr.left) == typeid(SubscriptExpr)) {
+        auto subscriptExpr = std::static_pointer_cast<SubscriptExpr>(expr.left);
+
+        compile(expr.right);
+        compile(subscriptExpr->object);
+
+        if (subscriptExpr->object->getType()->isDynamic()) {
+            // TODO: Runtime check if this is an array and if the operand is of the correct type,
+            //  e.g. emitByte(OpCode::CHECK_ARRAY_VALUE)
+        }
+
+        compile(subscriptExpr->index);
+        if (subscriptExpr->index->getType()->isDynamic()) {
+            // TODO: Runtime check that this is an int, e.g. emitByte(OpCode::CHECK_INT)
+        }
+
+        emitByte(OpCode::SET_ARRAY_INDEX);
     } else {
-        throw errorAt(expr.oper, "Not implemented.");
+            throw errorAt(expr.oper, "Not implemented.");
     }
 }
 
@@ -411,7 +440,17 @@ void Compiler::visitStringExpr(StringExpr &expr) {
 }
 
 void Compiler::visitSubscriptExpr(SubscriptExpr &expr) {
-    throw errorAt(expr.square, "Not implemented.");
+    compile(expr.object);
+    if (expr.object->getType()->isDynamic()) {
+        // TODO: Check that operand is an array e.g. emitByte(OpCode::CHECK_ARRAY)
+    }
+
+    compile(expr.index);
+    if (expr.index->getType()->isDynamic()) {
+        // TODO: Check that index is an int, e.g. emitByte(OpCode::CHECK_INT)
+    }
+
+    emitByte(OpCode::GET_ARRAY_INDEX);
 }
 
 void Compiler::visitTernaryExpr(TernaryExpr &expr) {

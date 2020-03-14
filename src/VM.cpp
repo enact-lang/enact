@@ -186,8 +186,10 @@ InterpretResult VM::run(FunctionObject* function) {
             case OpCode::ARRAY: {
                 uint8_t length = READ_BYTE();
                 ArrayObject* array = GC::allocateObject<ArrayObject>(length);
-                for (uint8_t i = 0; i < length; ++i) {
-                    array->append(pop());
+                if (length != 0) {
+                    for (uint8_t i = length; i-- > 0;) {
+                        array->at(i) = pop();
+                    }
                 }
                 push(Value{array});
                 break;
@@ -195,8 +197,10 @@ InterpretResult VM::run(FunctionObject* function) {
             case OpCode::ARRAY_LONG: {
                 uint32_t length = READ_LONG();
                 ArrayObject* array = GC::allocateObject<ArrayObject>(length);
-                for (uint8_t i = 0; i < length; ++i) {
-                    array->append(pop());
+                if (length != 0) {
+                    for (uint32_t i = length; i-- > 0;) {
+                        array->at(i) = pop();
+                    }
                 }
                 push(Value{array});
                 break;

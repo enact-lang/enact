@@ -345,6 +345,16 @@ void Analyser::visitVariableStmt(VariableStmt &stmt) {
     declareVariable(stmt.name.lexeme, Variable{lookUpType(typeName, stmt.name), stmt.isConst});
 }
 
+void Analyser::visitAllotExpr(AllotExpr& expr) {
+    analyse(expr.target);
+    analyse(expr.value);
+
+    if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
+        throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.target->getType()->toString() +
+                                 "' with value of type '" + expr.value->getType()->toString() + "'.");
+    }
+}
+
 void Analyser::visitAnyExpr(AnyExpr &expr) {
     throw AnalysisError{};
 }
@@ -384,19 +394,17 @@ void Analyser::visitArrayExpr(ArrayExpr &expr) {
 }
 
 void Analyser::visitAssignExpr(AssignExpr &expr) {
-    analyse(expr.left);
-    analyse(expr.right);
+    analyse(expr.target);
+    analyse(expr.value);
 
-    if (!expr.left->getType()->looselyEquals(*expr.right->getType())) {
-        throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.left->getType()->toString() +
-                                 "' with value of type '" + expr.right->getType()->toString() + "'.");
+    if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
+        throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.target->getType()->toString() +
+                                 "' with value of type '" + expr.value->getType()->toString() + "'.");
     }
 
-    if (typeid(*expr.left) == typeid(VariableExpr)) {
-        auto name = std::static_pointer_cast<VariableExpr>(expr.left)->name;
-        if (lookUpVariable(name).isConst) {
-            throw errorAt(name, "Cannot assign to constant variable.");
-        }
+    auto name = expr.target->name;
+    if (lookUpVariable(name).isConst) {
+        throw errorAt(name, "Cannot assign to constant variable.");
     }
 }
 
@@ -517,7 +525,11 @@ void Analyser::visitCallExpr(CallExpr &expr) {
     }
 }
 
-void Analyser::visitFieldExpr(FieldExpr &expr) {
+void Analyser::visitFloatExpr(FloatExpr &expr) {
+    expr.setType(m_types["float"]);
+}
+
+void Analyser::visitGetExpr(GetExpr &expr) {
     analyse(expr.object);
 
     Type objectType = expr.object->getType();
@@ -559,10 +571,6 @@ void Analyser::visitFieldExpr(FieldExpr &expr) {
     } else {
         throw errorAt(expr.oper, "Only structs, traits and types have fields.");
     }
-}
-
-void Analyser::visitFloatExpr(FloatExpr &expr) {
-    expr.setType(m_types["float"]);
 }
 
 void Analyser::visitIntegerExpr(IntegerExpr &expr) {

@@ -61,14 +61,15 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
     void visitWhileStmt(WhileStmt& stmt) override;
     void visitVariableStmt(VariableStmt& stmt) override;
 
+    void visitAllotExpr(AllotExpr& expr) override;
     void visitAnyExpr(AnyExpr& expr) override;
     void visitArrayExpr(ArrayExpr& expr) override;
     void visitAssignExpr(AssignExpr& expr) override;
     void visitBinaryExpr(BinaryExpr& expr) override;
     void visitBooleanExpr(BooleanExpr& expr) override;
     void visitCallExpr(CallExpr& expr) override;
-    void visitFieldExpr(FieldExpr& expr) override;
     void visitFloatExpr(FloatExpr& expr) override;
+    void visitGetExpr(GetExpr& expr) override;
     void visitIntegerExpr(IntegerExpr& expr) override;
     void visitLogicalExpr(LogicalExpr& expr) override;
     void visitNilExpr(NilExpr& expr) override;

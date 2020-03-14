@@ -140,15 +140,19 @@ Expr Parser::binary(Expr left) {
     }
 }
 
-Expr Parser::assignment(Expr left) {
+Expr Parser::assignment(Expr target) {
     Token oper = m_previous;
 
-    Expr right = parsePrecedence(Precedence::ASSIGNMENT);
+    Expr value = parsePrecedence(Precedence::ASSIGNMENT);
 
-    if (typeid(*left) == typeid(VariableExpr) ||
-            typeid(*left) == typeid(FieldExpr) ||
-            typeid(*left) == typeid(SubscriptExpr)) {
-        return std::make_shared<AssignExpr>(left, right, oper);
+    if (typeid(*target) == typeid(VariableExpr)) {
+        auto variableTarget = std::static_pointer_cast<VariableExpr>(target);
+        return std::make_shared<AssignExpr>(variableTarget, value, oper);
+    } else if (typeid(*target) == typeid(SubscriptExpr)) {
+        auto subscriptTarget = std::static_pointer_cast<SubscriptExpr>(target);
+        return std::make_shared<AllotExpr>(subscriptTarget, value, oper);
+    } else if (typeid(*target) == typeid(GetExpr)) {
+        throw errorAt(oper, "Not implemented.");
     }
 
     throw errorAt(oper, "Invalid assignment target.");
@@ -159,7 +163,7 @@ Expr Parser::field(Expr object) {
     expect(TokenType::IDENTIFIER, "Expected field name after '.'.");
     Token name = m_previous;
 
-    return std::make_shared<FieldExpr>(object, name, oper);
+    return std::make_shared<GetExpr>(object, name, oper);
 }
 
 Expr Parser::ternary(Expr condition) {
@@ -210,7 +214,7 @@ Stmt Parser::functionDeclaration(bool mustParseBody) {
     std::vector<Stmt> body;
 
     if (!mustParseBody && consumeSeparator()) {
-        return std::make_shared<FunctionStmt>(name, typeName, params, body);
+        return std::make_shared<FunctionStmt>(name, typeName, params, body, nullptr);
     }
 
     expect(TokenType::COLON, "Expected ':' before function body.");
@@ -224,7 +228,7 @@ Stmt Parser::functionDeclaration(bool mustParseBody) {
 
     expectSeparator("Expected newline or ';' after function declaration.");
 
-    return std::make_shared<FunctionStmt>(name, typeName, params, body);
+    return std::make_shared<FunctionStmt>(name, typeName, params, body, nullptr);
 }
 
 Stmt Parser::structDeclaration() {

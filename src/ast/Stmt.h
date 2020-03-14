@@ -149,7 +149,7 @@ public:
     std::vector<Stmt> body;
     Token keyword;
 
-    ForStmt(Stmt initializer,Expr condition,Expr increment,std::vector<Stmt> body,Token keyword) :
+    ForStmt(Stmt initializer,Expr condition,Expr increment,std::vector<Stmt> body,Token keyword) : 
         initializer{initializer},condition{condition},increment{increment},body{body},keyword{keyword} {}
     ~ForStmt() override = default;
 
@@ -168,10 +168,10 @@ public:
     std::string returnTypeName;
     std::vector<NamedTypename> params;
     std::vector<Stmt> body;
-    Type type = nullptr;
+    Type type;
 
-    FunctionStmt(Token name,std::string returnTypeName,std::vector<NamedTypename> params,std::vector<Stmt> body) : 
-        name{name},returnTypeName{returnTypeName},params{params},body{body} {}
+    FunctionStmt(Token name,std::string returnTypeName,std::vector<NamedTypename> params,std::vector<Stmt> body,Type type) : 
+        name{name},returnTypeName{returnTypeName},params{params},body{body},type{type} {}
     ~FunctionStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -284,7 +284,7 @@ public:
     std::vector<Stmt> body;
     Token keyword;
 
-    WhileStmt(Expr condition,std::vector<Stmt> body,Token keyword) :
+    WhileStmt(Expr condition,std::vector<Stmt> body,Token keyword) : 
         condition{condition},body{body},keyword{keyword} {}
     ~WhileStmt() override = default;
 

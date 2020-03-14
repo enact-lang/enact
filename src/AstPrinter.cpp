@@ -166,6 +166,10 @@ std::string AstPrinter::visitVariableStmt(VariableStmt& stmt) {
     return "Stmt::Var " + stmt.name.lexeme + " " + evaluate(stmt.initializer);
 }
 
+std::string AstPrinter::visitAllotExpr(AllotExpr& expr) {
+    return "(= " + evaluate(expr.target) + " " + evaluate(expr.value) + ")";
+}
+
 std::string AstPrinter::visitAnyExpr(AnyExpr& expr) {
     return "_";
 }
@@ -185,7 +189,7 @@ std::string AstPrinter::visitArrayExpr(ArrayExpr& expr) {
 }
 
 std::string AstPrinter::visitAssignExpr(AssignExpr& expr) {
-    return "(= " + evaluate(expr.left) + " " + evaluate(expr.right) + ")";
+    return "(= " + evaluate(expr.target) + " " + evaluate(expr.value) + ")";
 }
 
 std::string AstPrinter::visitBinaryExpr(BinaryExpr& expr) {
@@ -206,12 +210,12 @@ std::string AstPrinter::visitCallExpr(CallExpr& expr) {
     return s.str();
 }
 
-std::string AstPrinter::visitFieldExpr(FieldExpr& expr) {
-    return "(. " + evaluate(expr.object) + " " + expr.name.lexeme + ")";
-}
-
 std::string AstPrinter::visitFloatExpr(FloatExpr& expr) {
     return std::to_string(expr.value);
+}
+
+std::string AstPrinter::visitGetExpr(GetExpr& expr) {
+    return "(. " + evaluate(expr.object) + " " + expr.name.lexeme + ")";
 }
 
 std::string AstPrinter::visitIntegerExpr(IntegerExpr& expr) {

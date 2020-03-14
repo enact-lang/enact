@@ -275,6 +275,23 @@ void Compiler::visitVariableStmt(VariableStmt &stmt) {
     m_locals.back().initialized = true;
 }
 
+void Compiler::visitAllotExpr(AllotExpr& expr) {
+    compile(expr.value);
+    compile(expr.target->object);
+
+    if (expr.target->object->getType()->isDynamic()) {
+        // TODO: Runtime check if this is an array and if the operand is of the correct type,
+        //  e.g. emitByte(OpCode::CHECK_ARRAY_VALUE)
+    }
+
+    compile(expr.target->index);
+    if (expr.target->index->getType()->isDynamic()) {
+        // TODO: Runtime check that this is an int, e.g. emitByte(OpCode::CHECK_INT)
+    }
+
+    emitByte(OpCode::SET_ARRAY_INDEX);
+}
+
 void Compiler::visitAnyExpr(AnyExpr &expr) {
     // TODO: Throw CompileError "Not implemented."
 }
@@ -296,38 +313,28 @@ void Compiler::visitArrayExpr(ArrayExpr &expr) {
 }
 
 void Compiler::visitAssignExpr(AssignExpr &expr) {
-    compile(expr.right);
+    compile(expr.value);
 
-    if (typeid(*expr.left) == typeid(VariableExpr)) {
-        auto variableExpr = std::static_pointer_cast<VariableExpr>(expr.left);
+    uint32_t index;
+    OpCode byteOp;
+    OpCode longOp;
 
-        uint32_t index = resolveLocal(variableExpr->name);
-        if (index <= UINT8_MAX) {
-            emitByte(OpCode::SET_LOCAL);
-            emitByte(static_cast<uint8_t>(index));
-        } else {
-            emitByte(OpCode::SET_LOCAL_LONG);
-            emitLong(index);
-        }
-    } else if (typeid(*expr.left) == typeid(SubscriptExpr)) {
-        auto subscriptExpr = std::static_pointer_cast<SubscriptExpr>(expr.left);
+    try {
+        index = resolveLocal(expr.target->name);
+        byteOp = OpCode::SET_LOCAL;
+        longOp = OpCode::SET_LOCAL_LONG;
+    } catch (CompileError&) {
+        index = resolveUpvalue(expr.target->name);
+        byteOp = OpCode::SET_UPVALUE;
+        longOp = OpCode::SET_UPVALUE_LONG;
+    }
 
-        compile(expr.right);
-        compile(subscriptExpr->object);
-
-        if (subscriptExpr->object->getType()->isDynamic()) {
-            // TODO: Runtime check if this is an array and if the operand is of the correct type,
-            //  e.g. emitByte(OpCode::CHECK_ARRAY_VALUE)
-        }
-
-        compile(subscriptExpr->index);
-        if (subscriptExpr->index->getType()->isDynamic()) {
-            // TODO: Runtime check that this is an int, e.g. emitByte(OpCode::CHECK_INT)
-        }
-
-        emitByte(OpCode::SET_ARRAY_INDEX);
+    if (index <= UINT8_MAX) {
+        emitByte(byteOp);
+        emitByte(static_cast<uint8_t>(index));
     } else {
-            throw errorAt(expr.oper, "Not implemented.");
+        emitByte(longOp);
+        emitLong(index);
     }
 }
 
@@ -399,12 +406,12 @@ void Compiler::visitCallExpr(CallExpr &expr) {
     emitByte(static_cast<uint8_t>(expr.arguments.size()));
 }
 
-void Compiler::visitFieldExpr(FieldExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
-}
-
 void Compiler::visitFloatExpr(FloatExpr &expr) {
     emitConstant(Value{expr.value});
+}
+
+void Compiler::visitGetExpr(GetExpr &expr) {
+    throw errorAt(expr.oper, "Not implemented.");
 }
 
 void Compiler::visitIntegerExpr(IntegerExpr &expr) {
@@ -488,24 +495,25 @@ void Compiler::visitUnaryExpr(UnaryExpr &expr) {
 }
 
 void Compiler::visitVariableExpr(VariableExpr &expr) {
-    try {
-        uint32_t index = resolveLocal(expr.name);
-        if (index <= UINT8_MAX) {
-            emitByte(OpCode::GET_LOCAL);
-            emitByte(static_cast<uint8_t>(index));
-        } else {
-            emitByte(OpCode::GET_LOCAL_LONG);
-            emitLong(index);
-        }
-        return;
-    } catch (CompileError& error) {}
+    uint32_t index;
+    OpCode byteOp;
+    OpCode longOp;
 
-    uint32_t index = resolveUpvalue(expr.name);
+    try {
+        index = resolveLocal(expr.name);
+        byteOp = OpCode::GET_LOCAL;
+        longOp = OpCode::GET_LOCAL_LONG;
+    } catch (CompileError& error) {
+        index = resolveUpvalue(expr.name);
+        byteOp = OpCode::GET_UPVALUE;
+        longOp = OpCode::GET_UPVALUE_LONG;
+    }
+
     if (index <= UINT8_MAX) {
-        emitByte(OpCode::GET_UPVALUE);
+        emitByte(byteOp);
         emitByte(static_cast<uint8_t>(index));
     } else {
-        emitByte(OpCode::GET_UPVALUE_LONG);
+        emitByte(longOp);
         emitLong(index);
     }
 }

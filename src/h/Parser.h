@@ -84,7 +84,7 @@ private:
     Expr call(Expr callee);
     Expr subscript(Expr object);
     Expr binary(Expr left);
-    Expr assignment(Expr left);
+    Expr assignment(Expr target);
     Expr field(Expr object);
     Expr ternary(Expr condition);
 

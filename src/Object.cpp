@@ -69,6 +69,9 @@ StringObject* StringObject::clone() const {
 ArrayObject::ArrayObject() : Object{ObjectType::ARRAY}, m_vector{} {
 }
 
+ArrayObject::ArrayObject(size_t length) : Object{ObjectType::ARRAY}, m_vector{length} {
+}
+
 ArrayObject::ArrayObject(std::vector<Value> vector) : Object{ObjectType::ARRAY}, m_vector{std::move(vector)} {
 }
 
@@ -82,6 +85,10 @@ Value& ArrayObject::at(size_t index) {
 
 const Value& ArrayObject::at(size_t index) const {
     return m_vector[index];
+}
+
+void ArrayObject::append(Value value) {
+    m_vector.push_back(value);
 }
 
 const std::vector<Value>& ArrayObject::asVector() const {

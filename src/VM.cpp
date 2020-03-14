@@ -182,6 +182,26 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
 
+
+            case OpCode::ARRAY: {
+                uint8_t length = READ_BYTE();
+                ArrayObject* array = GC::allocateObject<ArrayObject>(length);
+                for (uint8_t i = 0; i < length; ++i) {
+                    array->append(pop());
+                }
+                push(Value{array});
+                break;
+            }
+            case OpCode::ARRAY_LONG: {
+                uint32_t length = READ_LONG();
+                ArrayObject* array = GC::allocateObject<ArrayObject>(length);
+                for (uint8_t i = 0; i < length; ++i) {
+                    array->append(pop());
+                }
+                push(Value{array});
+                break;
+            }
+
             case OpCode::GET_ARRAY_INDEX: {
                 int index = pop().asInt();
                 ArrayObject* array = pop().asObject()->as<ArrayObject>();

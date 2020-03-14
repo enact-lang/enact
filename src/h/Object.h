@@ -118,6 +118,7 @@ class ArrayObject : public Object {
 
 public:
     explicit ArrayObject();
+    explicit ArrayObject(size_t length);
     explicit ArrayObject(std::vector<Value> vector);
 
     ~ArrayObject() override = default;
@@ -126,6 +127,8 @@ public:
 
     Value& at(size_t index);
     const Value& at(size_t index) const;
+
+    void append(Value value);
 
     const std::vector<Value>& asVector() const;
 

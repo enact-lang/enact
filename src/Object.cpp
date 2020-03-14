@@ -96,14 +96,18 @@ const std::vector<Value>& ArrayObject::asVector() const {
 }
 
 std::string ArrayObject::toString() const {
-    std::string output{"["};
+    std::stringstream output{};
     std::string separator{};
+
+    output << "[";
     for (const Value& item : asVector()) {
-        output += separator;
-        output += item.toString();
+        output << separator;
+        output << item.toString();
         separator = ", ";
     }
-    return output;
+    output << "]";
+
+    return output.str();
 }
 
 Type ArrayObject::getType() const {

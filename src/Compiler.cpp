@@ -110,9 +110,7 @@ void Compiler::visitForStmt(ForStmt &stmt) {
     endScope();
 
     compile(*stmt.increment);
-    endScope();
 
-    // Pop the increment
     emitByte(OpCode::POP);
 
     emitLoop(loopStartIndex, stmt.keyword);
@@ -120,6 +118,7 @@ void Compiler::visitForStmt(ForStmt &stmt) {
     patchJump(exitJumpIndex, stmt.keyword);
 
     emitByte(OpCode::POP);
+    endScope();
 }
 
 void Compiler::visitFunctionStmt(FunctionStmt &stmt) {

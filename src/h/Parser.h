@@ -154,7 +154,7 @@ private:
     std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true);
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> traitDeclaration();
-    std::unique_ptr<Stmt> variableDeclaration(bool isConst);
+    std::unique_ptr<Stmt> variableDeclaration(bool isConst, bool mustExpectSeparator = true);
 
     // Statements
     std::unique_ptr<Stmt> statement();

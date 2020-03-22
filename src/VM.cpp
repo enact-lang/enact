@@ -69,6 +69,16 @@ InterpretResult VM::run(FunctionObject* function) {
             case OpCode::FALSE: push(Value{false}); break;
             case OpCode::NIL: push(Value{}); break;
 
+            case OpCode::CHECK_INT: {
+                Value value = peek(0);
+                if (!value.getType()->isInt()) {
+                    runtimeError("Expected a value of type 'int', but got a value of type '"
+                                 + value.getType()->toString() + "' instead.");
+
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
             case OpCode::CHECK_NUMERIC: {
                 Value value = peek(0);
                 if (!value.getType()->isNumeric()) {

@@ -123,7 +123,7 @@ std::string AstPrinter::visitStructStmt(StructStmt& stmt) {
     s << "[\n";
 
     for (auto &field : stmt.fields) {
-        s << "field " << field.name.lexeme << " " << field.typeName << "\n";
+        s << "field " << field.name.lexeme << " " << field.typeName->name() << "\n";
     }
 
     for (auto &method : stmt.methods) {

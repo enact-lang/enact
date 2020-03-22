@@ -280,8 +280,8 @@ void Compiler::visitAllotExpr(AllotExpr& expr) {
     compile(*expr.target->object);
 
     if (expr.target->object->getType()->isDynamic()) {
-        // TODO: Runtime check if this is an array and if the operand is of the correct type,
-        //  e.g. emitByte(OpCode::CHECK_ARRAY_VALUE)
+        emitByte(OpCode::CHECK_INDEXABLE);
+        emitByte(OpCode::CHECK_ALLOTABLE);
     }
 
     compile(*expr.target->index);
@@ -454,7 +454,7 @@ void Compiler::visitStringExpr(StringExpr &expr) {
 void Compiler::visitSubscriptExpr(SubscriptExpr &expr) {
     compile(*expr.object);
     if (expr.object->getType()->isDynamic()) {
-        // TODO: Check that operand is an array e.g. emitByte(OpCode::CHECK_ARRAY)
+        emitByte(OpCode::CHECK_INDEXABLE);
     }
 
     compile(*expr.index);

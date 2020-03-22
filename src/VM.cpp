@@ -144,12 +144,12 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
             case OpCode::CHECK_ALLOTABLE: {
-                Type shouldBe = peek(2).getType()->as<ArrayType>()->getElementType();
-                Type type = peek(0).getType();
+                Type shouldBe = peek(0).getType()->as<ArrayType>()->getElementType();
+                Type valueType = peek(1).getType();
 
-                if (!type->looselyEquals(*shouldBe)) {
+                if (!valueType->looselyEquals(*shouldBe)) {
                     runtimeError("Expected a value of type '" + shouldBe->toString() +
-                        "' to assign in array, but got a value of type '" + type->toString() + "' instead.");
+                        "' to assign in array, but got a value of type '" + valueType->toString() + "' instead.");
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 break;

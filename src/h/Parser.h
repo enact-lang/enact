@@ -102,6 +102,7 @@ private:
             ParseRule{nullptr,               &Parser::binary,  Precedence::TERM}, // PLUS
             ParseRule{nullptr,               &Parser::ternary, Precedence::CONDITIONAL}, // QUESTION
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SEMICOLON
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SEPARATOR
             ParseRule{nullptr,               &Parser::binary,  Precedence::FACTOR}, // SLASH
             ParseRule{nullptr,               &Parser::binary,  Precedence::FACTOR}, // STAR
             ParseRule{&Parser::unary,      nullptr,            Precedence::UNARY}, // BANG

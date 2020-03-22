@@ -11,7 +11,8 @@ enum class TokenType {
     LEFT_SQUARE, RIGHT_SQUARE,
     COLON, COMMA, DOT, MINUS,
     NEWLINE, PLUS, QUESTION,
-    SEMICOLON, SLASH, STAR,
+    SEMICOLON, SEPARATOR, SLASH,
+    STAR,
 
     // 1 or 2 character tokens.
     BANG, BANG_EQUAL,

@@ -286,7 +286,7 @@ void Compiler::visitAllotExpr(AllotExpr& expr) {
 
     compile(*expr.target->index);
     if (expr.target->index->getType()->isDynamic()) {
-        // TODO: Runtime check that this is an int, e.g. emitByte(OpCode::CHECK_INT)
+        emitByte(OpCode::CHECK_INT);
     }
 
     emitByte(OpCode::SET_ARRAY_INDEX);
@@ -459,7 +459,7 @@ void Compiler::visitSubscriptExpr(SubscriptExpr &expr) {
 
     compile(*expr.index);
     if (expr.index->getType()->isDynamic()) {
-        // TODO: Check that index is an int, e.g. emitByte(OpCode::CHECK_INT)
+        emitByte(OpCode::CHECK_INT);
     }
 
     emitByte(OpCode::GET_ARRAY_INDEX);

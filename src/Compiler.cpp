@@ -101,6 +101,7 @@ void Compiler::visitForStmt(ForStmt &stmt) {
 
     size_t exitJumpIndex = emitJump(OpCode::JUMP_IF_FALSE);
 
+    // Pop the condition
     emitByte(OpCode::POP);
 
     beginScope();
@@ -111,13 +112,16 @@ void Compiler::visitForStmt(ForStmt &stmt) {
 
     compile(*stmt.increment);
 
+    // Pop the increment
     emitByte(OpCode::POP);
 
     emitLoop(loopStartIndex, stmt.keyword);
 
     patchJump(exitJumpIndex, stmt.keyword);
 
+    // Pop the condition
     emitByte(OpCode::POP);
+    
     endScope();
 }
 

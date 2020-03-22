@@ -115,11 +115,12 @@ class Value;
 
 class ArrayObject : public Object {
     std::vector<Value> m_vector;
+    Type m_type;
 
 public:
-    explicit ArrayObject();
-    explicit ArrayObject(size_t length);
-    explicit ArrayObject(std::vector<Value> vector);
+    explicit ArrayObject(Type type);
+    explicit ArrayObject(size_t length, Type type);
+    explicit ArrayObject(std::vector<Value> vector, Type type);
 
     ~ArrayObject() override = default;
 

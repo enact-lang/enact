@@ -134,6 +134,9 @@ InterpretResult VM::run(FunctionObject* function) {
                 }
                 break;
             }
+            case OpCode::CHECK_INDEXABLE: {
+                break;
+            }
             case OpCode::CHECK_TYPE: {
                 Type shouldBe = READ_CONSTANT().asObject()->getType();
                 Value value = peek(0);
@@ -185,7 +188,8 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::ARRAY: {
                 uint8_t length = READ_BYTE();
-                ArrayObject* array = GC::allocateObject<ArrayObject>(length);
+                Type type = READ_CONSTANT().asObject()->as<TypeObject>()->getContainedType();
+                auto* array = GC::allocateObject<ArrayObject>(length, type);
                 if (length != 0) {
                     for (uint8_t i = length; i-- > 0;) {
                         array->at(i) = pop();
@@ -196,7 +200,8 @@ InterpretResult VM::run(FunctionObject* function) {
             }
             case OpCode::ARRAY_LONG: {
                 uint32_t length = READ_LONG();
-                ArrayObject* array = GC::allocateObject<ArrayObject>(length);
+                Type type = READ_CONSTANT_LONG().asObject()->as<TypeObject>()->getContainedType();
+                auto* array = GC::allocateObject<ArrayObject>(length, type);
                 if (length != 0) {
                     for (uint32_t i = length; i-- > 0;) {
                         array->at(i) = pop();

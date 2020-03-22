@@ -303,12 +303,17 @@ void Compiler::visitArrayExpr(ArrayExpr &expr) {
 
     uint32_t length = expr.value.size();
 
-    if (length <= UINT8_MAX) {
+    auto* type = GC::allocateObject<TypeObject>(expr.getType());
+    uint32_t typeConstant = currentChunk().addConstant(Value{type});
+
+    if (length <= UINT8_MAX && typeConstant <= UINT8_MAX) {
         emitByte(OpCode::ARRAY);
         emitByte(static_cast<uint8_t>(length));
+        emitByte(static_cast<uint8_t>(typeConstant));
     } else {
         emitByte(OpCode::ARRAY_LONG);
         emitLong(length);
+        emitLong(typeConstant);
     }
 }
 

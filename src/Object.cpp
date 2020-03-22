@@ -66,13 +66,13 @@ StringObject* StringObject::clone() const {
     return GC::allocateObject<StringObject>(*this);
 }
 
-ArrayObject::ArrayObject() : Object{ObjectType::ARRAY}, m_vector{} {
+ArrayObject::ArrayObject(Type type) : Object{ObjectType::ARRAY}, m_type{type}, m_vector{} {
 }
 
-ArrayObject::ArrayObject(size_t length) : Object{ObjectType::ARRAY}, m_vector{length} {
+ArrayObject::ArrayObject(size_t length, Type type) : Object{ObjectType::ARRAY}, m_vector{length}, m_type{type} {
 }
 
-ArrayObject::ArrayObject(std::vector<Value> vector) : Object{ObjectType::ARRAY}, m_vector{std::move(vector)} {
+ArrayObject::ArrayObject(std::vector<Value> vector, Type type) : Object{ObjectType::ARRAY}, m_vector{std::move(vector)}, m_type{type} {
 }
 
 size_t ArrayObject::length() const {
@@ -111,13 +111,7 @@ std::string ArrayObject::toString() const {
 }
 
 Type ArrayObject::getType() const {
-    Type elementType = DYNAMIC_TYPE;
-
-    for (const auto& element : m_vector) {
-        elementType = element.getType();
-    }
-
-    return std::make_shared<ArrayType>(elementType);
+    return m_type;
 }
 
 ArrayObject* ArrayObject::clone() const {

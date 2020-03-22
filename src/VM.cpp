@@ -437,7 +437,7 @@ UpvalueObject* VM::captureUpvalue(uint32_t location) {
 
     if (upvalue != nullptr && upvalue->getLocation() == location) return upvalue;
 
-    UpvalueObject* createdUpvalue = GC::allocateObject<UpvalueObject>(location);
+    auto* createdUpvalue = GC::allocateObject<UpvalueObject>(location);
     createdUpvalue->setNext(upvalue);
 
     if (prevUpvalue == nullptr) {

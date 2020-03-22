@@ -13,6 +13,7 @@ enum class OpCode : uint8_t {
     FALSE,
     NIL,
 
+    CHECK_INT,
     CHECK_NUMERIC,
     CHECK_BOOL,
     CHECK_REFERENCE,

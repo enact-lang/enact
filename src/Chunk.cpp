@@ -86,6 +86,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::TRUE:
         case OpCode::FALSE:
         case OpCode::NIL:
+        case OpCode::CHECK_INT:
         case OpCode::CHECK_NUMERIC:
         case OpCode::CHECK_BOOL:
         case OpCode::CHECK_REFERENCE:
@@ -360,6 +361,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::TRUE: return "TRUE";
         case OpCode::FALSE: return "FALSE";
         case OpCode::NIL: return "NIL";
+        case OpCode::CHECK_INT: return "CHECK_INT";
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
         case OpCode::CHECK_REFERENCE: return "CHECK_REFERENCE";

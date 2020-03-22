@@ -135,6 +135,23 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
             case OpCode::CHECK_INDEXABLE: {
+                Value array = peek(0);
+                if (!array.getType()->isArray()) {
+                    runtimeError("Expected an array, but got a value of type '" + array.getType()->toString() +
+                            "' instead.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+            case OpCode::CHECK_ALLOTABLE: {
+                Type shouldBe = peek(2).getType()->as<ArrayType>()->getElementType();
+                Type type = peek(0).getType();
+
+                if (!type->looselyEquals(*shouldBe)) {
+                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                        "' to assign in array, but got a value of type '" + type->toString() + "' instead.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
                 break;
             }
             case OpCode::CHECK_TYPE: {

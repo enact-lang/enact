@@ -8,6 +8,7 @@
 #include "Chunk.h"
 #include "Scanner.h"
 #include "Token.h"
+#include "Typename.h"
 
 #include "../ast/Stmt.h"
 
@@ -27,8 +28,8 @@ enum class Precedence {
 };
 
 class Parser;
-typedef Expr (Parser::*PrefixFn)();
-typedef Expr (Parser::*InfixFn)(Expr);
+typedef std::unique_ptr<Expr> (Parser::*PrefixFn)();
+typedef std::unique_ptr<Expr> (Parser::*InfixFn)(std::unique_ptr<Expr>);
 
 struct ParseRule {
     PrefixFn prefix;
@@ -67,26 +68,26 @@ private:
     ParseError error(const std::string &message);
 
     const ParseRule& getParseRule(TokenType type);
-    Expr parsePrecedence(Precedence precedence);
+    std::unique_ptr<Expr> parsePrecedence(Precedence precedence);
 
-    Expr expression();
+    std::unique_ptr<Expr> expression();
 
     // Prefix parse rules
-    Expr grouping();
-    Expr variable();
-    Expr number();
-    Expr literal();
-    Expr string();
-    Expr array();
-    Expr unary();
+    std::unique_ptr<Expr> grouping();
+    std::unique_ptr<Expr> variable();
+    std::unique_ptr<Expr> number();
+    std::unique_ptr<Expr> literal();
+    std::unique_ptr<Expr> string();
+    std::unique_ptr<Expr> array();
+    std::unique_ptr<Expr> unary();
 
     // Infix parse rules
-    Expr call(Expr callee);
-    Expr subscript(Expr object);
-    Expr binary(Expr left);
-    Expr assignment(Expr target);
-    Expr field(Expr object);
-    Expr ternary(Expr condition);
+    std::unique_ptr<Expr> call(std::unique_ptr<Expr> callee);
+    std::unique_ptr<Expr> subscript(std::unique_ptr<Expr> object);
+    std::unique_ptr<Expr> binary(std::unique_ptr<Expr> left);
+    std::unique_ptr<Expr> assignment(std::unique_ptr<Expr> target);
+    std::unique_ptr<Expr> field(std::unique_ptr<Expr> object);
+    std::unique_ptr<Expr> ternary(std::unique_ptr<Expr> condition);
 
     std::array<ParseRule, (size_t)TokenType::MAX> m_parseRules = {
             ParseRule{&Parser::grouping,   &Parser::call,    Precedence::CALL}, // LEFT_PAREN
@@ -148,32 +149,33 @@ private:
     };
 
     // Declarations
-    Stmt declaration();
-    Stmt functionDeclaration(bool mustParseBody = true);
-    Stmt structDeclaration();
-    Stmt traitDeclaration();
-    Stmt variableDeclaration(bool isConst);
+    std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true);
+    std::unique_ptr<Stmt> structDeclaration();
+    std::unique_ptr<Stmt> traitDeclaration();
+    std::unique_ptr<Stmt> variableDeclaration(bool isConst);
 
     // Statements
-    Stmt statement();
-    Stmt blockStatement();
-    Stmt ifStatement();
-    Stmt whileStatement();
-    Stmt forStatement();
-    Stmt eachStatement();
-    Stmt givenStatement();
-    Stmt returnStatement();
-    Stmt breakStatement();
-    Stmt continueStatement();
-    Stmt expressionStatement();
+    std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> blockStatement();
+    std::unique_ptr<Stmt> ifStatement();
+    std::unique_ptr<Stmt> whileStatement();
+    std::unique_ptr<Stmt> forStatement();
+    std::unique_ptr<Stmt> eachStatement();
+    std::unique_ptr<Stmt> givenStatement();
+    std::unique_ptr<Stmt> returnStatement();
+    std::unique_ptr<Stmt> breakStatement();
+    std::unique_ptr<Stmt> continueStatement();
+    std::unique_ptr<Stmt> expressionStatement();
 
-    std::string consumeTypeName(bool emptyAllowed = false);
+    std::unique_ptr<const Typename> expectTypename(bool emptyAllowed = false);
+    std::unique_ptr<const Typename> expectFunctionTypename();
 
     void synchronise();
 
 public:
     explicit Parser(std::string source);
-    std::vector<Stmt> parse();
+    std::vector<std::unique_ptr<Stmt>> parse();
     bool hadError();
 };
 

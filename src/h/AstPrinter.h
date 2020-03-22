@@ -40,10 +40,10 @@ class AstPrinter : private StmtVisitor<std::string>, private ExprVisitor<std::st
     std::string visitUnaryExpr(UnaryExpr& expr) override;
     std::string visitVariableExpr(VariableExpr& expr) override;
 
-    std::string evaluate(Stmt stmt);
-    std::string evaluate(Expr expr);
+    std::string evaluate(Stmt& stmt);
+    std::string evaluate(Expr& expr);
 public:
-    void print(Stmt stmt);
+    void print(Stmt& stmt);
 };
 
 #endif //ENACT_ASTPRINTER_H

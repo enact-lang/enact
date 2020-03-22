@@ -39,10 +39,10 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
     std::vector<FunctionType> m_currentFunctions = {};
 
     // Keep track of functions that need to be analysed later
-    std::vector<FunctionStmt> m_globalFunctions;
+    std::vector<std::reference_wrapper<FunctionStmt>> m_globalFunctions;
 
-    void analyse(Stmt stmt);
-    void analyse(Expr expr);
+    void analyse(Stmt& stmt);
+    void analyse(Expr& expr);
 
     AnalysisError errorAt(const Token &token, const std::string &message);
 
@@ -83,9 +83,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
 
     Type getFunctionType(const FunctionStmt &stmt);
 
-    Type lookUpType(const Token& name);
-    Type lookUpType(const std::string& name, const Token& where);
-    Type lookUpFunctionType(const std::string& name, const Token& where);
+    Type lookUpType(const Typename& name);
 
     Variable& lookUpVariable(const Token& name);
     void declareVariable(const std::string& name, const Variable& variable);
@@ -94,7 +92,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
     void endScope();
 
 public:
-    void analyse(std::vector<Stmt> program);
+    std::vector<std::unique_ptr<Stmt>> analyse(std::vector<std::unique_ptr<Stmt>> program);
     bool hadError();
 };
 

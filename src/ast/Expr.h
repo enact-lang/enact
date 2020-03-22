@@ -4,15 +4,15 @@
 #ifndef ENACT_EXPR_H
 #define ENACT_EXPR_H
 
-#include "../h/Token.h"
 #include "../h/Type.h"
+#include "../h/Typename.h"
 #include <memory>
 #include <vector>
 
 template <class R>
 class ExprVisitor;
 
-class ExprBase {
+class Expr {
     Type m_type = nullptr;
 public:
     virtual void setType(Type t) { m_type = t; }
@@ -20,13 +20,11 @@ public:
         ENACT_ASSERT(m_type != nullptr, "Expr::getType(): Tried to get uninitialized type.");
         return m_type;
     }
-    virtual ~ExprBase() = default;
+    virtual ~Expr() = default;
 
     virtual std::string accept(ExprVisitor<std::string> *visitor) = 0;
     virtual void accept(ExprVisitor<void> *visitor) = 0;
 };
-
-typedef std::shared_ptr<ExprBase> Expr;
 
 class AllotExpr;
 class AnyExpr;
@@ -68,14 +66,16 @@ public:
     virtual R visitVariableExpr(VariableExpr& expr) = 0;
 };
 
-class AllotExpr : public ExprBase {
+class AllotExpr : public Expr {
 public:
-    std::shared_ptr<SubscriptExpr> target;
-    Expr value;
+    std::unique_ptr<SubscriptExpr> target;
+    std::unique_ptr<Expr> value;
     Token oper;
 
-    AllotExpr(std::shared_ptr<SubscriptExpr> target,Expr value,Token oper) : 
-        target{target},value{value},oper{oper} {}
+    AllotExpr(std::unique_ptr<SubscriptExpr> target,std::unique_ptr<Expr> value,Token oper) :
+            target{std::move(target)},
+            value{std::move(value)},
+            oper{oper} {}
     ~AllotExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -87,7 +87,7 @@ public:
     }
 };
 
-class AnyExpr : public ExprBase {
+class AnyExpr : public Expr {
 public:
     AnyExpr() = default;
     ~AnyExpr() override = default;
@@ -101,14 +101,16 @@ public:
     }
 };
 
-class ArrayExpr : public ExprBase {
+class ArrayExpr : public Expr {
 public:
-    std::vector<Expr> value;
+    std::vector<std::unique_ptr<Expr>> value;
     Token square;
-    std::string typeName;
+    std::unique_ptr<const Typename> typeName;
 
-    ArrayExpr(std::vector<Expr> value,Token square,std::string typeName) : 
-        value{value},square{square},typeName{typeName} {}
+    ArrayExpr(std::vector<std::unique_ptr<Expr>> value,Token square,std::unique_ptr<const Typename> typeName) :
+            value{std::move(value)},
+            square{square},
+            typeName{std::move(typeName)} {}
     ~ArrayExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -120,14 +122,16 @@ public:
     }
 };
 
-class AssignExpr : public ExprBase {
+class AssignExpr : public Expr {
 public:
-    std::shared_ptr<VariableExpr> target;
-    Expr value;
+    std::unique_ptr<VariableExpr> target;
+    std::unique_ptr<Expr> value;
     Token oper;
 
-    AssignExpr(std::shared_ptr<VariableExpr> target,Expr value,Token oper) : 
-        target{target},value{value},oper{oper} {}
+    AssignExpr(std::unique_ptr<VariableExpr> target,std::unique_ptr<Expr> value,Token oper) :
+            target{std::move(target)},
+            value{std::move(value)},
+            oper{oper} {}
     ~AssignExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -139,14 +143,16 @@ public:
     }
 };
 
-class BinaryExpr : public ExprBase {
+class BinaryExpr : public Expr {
 public:
-    Expr left;
-    Expr right;
+    std::unique_ptr<Expr> left;
+    std::unique_ptr<Expr> right;
     Token oper;
 
-    BinaryExpr(Expr left,Expr right,Token oper) : 
-        left{left},right{right},oper{oper} {}
+    BinaryExpr(std::unique_ptr<Expr> left,std::unique_ptr<Expr> right,Token oper) :
+            left{std::move(left)},
+            right{std::move(right)},
+            oper{oper} {}
     ~BinaryExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -158,12 +164,12 @@ public:
     }
 };
 
-class BooleanExpr : public ExprBase {
+class BooleanExpr : public Expr {
 public:
     bool value;
 
     BooleanExpr(bool value) : 
-        value{value} {}
+            value{value} {}
     ~BooleanExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -175,14 +181,16 @@ public:
     }
 };
 
-class CallExpr : public ExprBase {
+class CallExpr : public Expr {
 public:
-    Expr callee;
-    std::vector<Expr> arguments;
+    std::unique_ptr<Expr> callee;
+    std::vector<std::unique_ptr<Expr>> arguments;
     Token paren;
 
-    CallExpr(Expr callee,std::vector<Expr> arguments,Token paren) : 
-        callee{callee},arguments{arguments},paren{paren} {}
+    CallExpr(std::unique_ptr<Expr> callee,std::vector<std::unique_ptr<Expr>> arguments,Token paren) :
+            callee{std::move(callee)},
+            arguments{std::move(arguments)},
+            paren{paren} {}
     ~CallExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -194,12 +202,12 @@ public:
     }
 };
 
-class FloatExpr : public ExprBase {
+class FloatExpr : public Expr {
 public:
     double value;
 
     FloatExpr(double value) : 
-        value{value} {}
+            value{value} {}
     ~FloatExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -211,14 +219,16 @@ public:
     }
 };
 
-class GetExpr : public ExprBase {
+class GetExpr : public Expr {
 public:
-    Expr object;
+    std::unique_ptr<Expr> object;
     Token name;
     Token oper;
 
-    GetExpr(Expr object,Token name,Token oper) : 
-        object{object},name{name},oper{oper} {}
+    GetExpr(std::unique_ptr<Expr> object,Token name,Token oper) :
+            object{std::move(object)},
+            name{name},
+            oper{oper} {}
     ~GetExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -230,12 +240,12 @@ public:
     }
 };
 
-class IntegerExpr : public ExprBase {
+class IntegerExpr : public Expr {
 public:
     int value;
 
     IntegerExpr(int value) : 
-        value{value} {}
+            value{value} {}
     ~IntegerExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -247,14 +257,16 @@ public:
     }
 };
 
-class LogicalExpr : public ExprBase {
+class LogicalExpr : public Expr {
 public:
-    Expr left;
-    Expr right;
+    std::unique_ptr<Expr> left;
+    std::unique_ptr<Expr> right;
     Token oper;
 
-    LogicalExpr(Expr left,Expr right,Token oper) : 
-        left{left},right{right},oper{oper} {}
+    LogicalExpr(std::unique_ptr<Expr> left,std::unique_ptr<Expr> right,Token oper) :
+        left{std::move(left)},
+        right{std::move(right)},
+        oper{oper} {}
     ~LogicalExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -266,7 +278,7 @@ public:
     }
 };
 
-class NilExpr : public ExprBase {
+class NilExpr : public Expr {
 public:
     NilExpr() = default;
     ~NilExpr() override = default;
@@ -280,12 +292,12 @@ public:
     }
 };
 
-class StringExpr : public ExprBase {
+class StringExpr : public Expr {
 public:
     std::string value;
 
     StringExpr(std::string value) : 
-        value{value} {}
+            value{value} {}
     ~StringExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -297,14 +309,16 @@ public:
     }
 };
 
-class SubscriptExpr : public ExprBase {
+class SubscriptExpr : public Expr {
 public:
-    Expr object;
-    Expr index;
+    std::unique_ptr<Expr> object;
+    std::unique_ptr<Expr> index;
     Token square;
 
-    SubscriptExpr(Expr object,Expr index,Token square) : 
-        object{object},index{index},square{square} {}
+    SubscriptExpr(std::unique_ptr<Expr> object,std::unique_ptr<Expr> index,Token square) :
+            object{std::move(object)},
+            index{std::move(index)},
+            square{square} {}
     ~SubscriptExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -316,15 +330,18 @@ public:
     }
 };
 
-class TernaryExpr : public ExprBase {
+class TernaryExpr : public Expr {
 public:
-    Expr condition;
-    Expr thenExpr;
-    Expr elseExpr;
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Expr> thenExpr;
+    std::unique_ptr<Expr> elseExpr;
     Token oper;
 
-    TernaryExpr(Expr condition,Expr thenExpr,Expr elseExpr,Token oper) : 
-        condition{condition},thenExpr{thenExpr},elseExpr{elseExpr},oper{oper} {}
+    TernaryExpr(std::unique_ptr<Expr> condition,std::unique_ptr<Expr> thenExpr,std::unique_ptr<Expr> elseExpr,Token oper) :
+            condition{std::move(condition)},
+            thenExpr{std::move(thenExpr)},
+            elseExpr{std::move(elseExpr)},
+            oper{oper} {}
     ~TernaryExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -336,13 +353,14 @@ public:
     }
 };
 
-class UnaryExpr : public ExprBase {
+class UnaryExpr : public Expr {
 public:
-    Expr operand;
+    std::unique_ptr<Expr> operand;
     Token oper;
 
-    UnaryExpr(Expr operand,Token oper) : 
-        operand{operand},oper{oper} {}
+    UnaryExpr(std::unique_ptr<Expr> operand,Token oper) :
+            operand{std::move(operand)},
+            oper{oper} {}
     ~UnaryExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {
@@ -354,12 +372,12 @@ public:
     }
 };
 
-class VariableExpr : public ExprBase {
+class VariableExpr : public Expr {
 public:
     Token name;
 
     VariableExpr(Token name) : 
-        name{name} {}
+            name{name} {}
     ~VariableExpr() override = default;
 
     std::string accept(ExprVisitor<std::string> *visitor) override {

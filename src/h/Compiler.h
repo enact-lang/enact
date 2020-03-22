@@ -35,8 +35,8 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
 
     std::vector<Upvalue> m_upvalues{};
 
-    void compile(Stmt stmt);
-    void compile(Expr expr);
+    void compile(Stmt& stmt);
+    void compile(Expr& expr);
 
     void visitBlockStmt(BlockStmt& stmt) override;
     void visitBreakStmt(BreakStmt& stmt) override;
@@ -118,7 +118,7 @@ public:
     void init(FunctionKind functionKind, Type functionType, const std::string& name);
     FunctionObject* end();
 
-    void compile(std::vector<Stmt> ast);
+    void compile(std::vector<std::unique_ptr<Stmt>> ast);
 
     bool hadError();
 };

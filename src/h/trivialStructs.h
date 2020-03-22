@@ -3,25 +3,22 @@
 
 #include "../ast/Stmt.h"
 
-class StmtBase;
-typedef std::shared_ptr<StmtBase> Stmt;
+class Stmt;
 
 struct GivenCase {
-    Expr value;
-    std::vector<Stmt> body;
+    std::unique_ptr<Expr> value;
+    std::vector<std::unique_ptr<Stmt>> body;
     Token keyword;
 };
 
-// A name (token) associated with a typename (string).
-struct NamedTypename {
+struct Param {
     Token name;
-    std::string typeName;
+    std::unique_ptr<const Typename> typeName;
 };
 
-// A name (token) associated with a type.
-struct NamedType {
+struct Field {
     Token name;
-    Type type;
+    std::unique_ptr<const Typename> typeName;
 };
 
 

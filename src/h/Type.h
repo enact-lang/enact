@@ -2,6 +2,7 @@
 #define ENACT_TYPE_H
 
 #include "Token.h"
+#include "Typename.h"
 #include <vector>
 #include <unordered_map>
 #include <optional>
@@ -67,6 +68,7 @@ public:
     // dynamic, or convertible to each other.
     virtual bool looselyEquals(const TypeBase &type) const;
 
+    virtual std::unique_ptr<Typename> toTypename() const = 0;
     virtual std::string toString() const;
 
     // Primitive type groups
@@ -125,6 +127,8 @@ public:
     ~PrimitiveType() override = default;
 
     PrimitiveKind getPrimitiveKind() const;
+
+    std::unique_ptr<Typename> toTypename() const override;
 };
 
 // Array types
@@ -135,6 +139,8 @@ public:
     ~ArrayType() override = default;
 
     const Type getElementType() const;
+
+    std::unique_ptr<Typename> toTypename() const override;
 };
 
 // Function types
@@ -147,6 +153,8 @@ public:
 
     const Type getReturnType() const;
     const std::vector<Type>& getArgumentTypes() const;
+
+    std::unique_ptr<Typename> toTypename() const override;
 };
 
 
@@ -165,6 +173,8 @@ public:
 
     const std::unordered_map<std::string, Type>& getMethods() const;
     std::optional<Type> getMethod(const std::string& name) const;
+
+    std::unique_ptr<Typename> toTypename() const override;
 };
 
 // Struct types
@@ -195,6 +205,8 @@ public:
     std::optional<Type> getFieldOrMethod(const std::string& name) const;
 
     std::optional<Type> getAssocFunction(const std::string& name) const;
+
+    std::unique_ptr<Typename> toTypename() const override;
 };
 
 // Struct constructor types
@@ -207,6 +219,8 @@ public:
 
     const StructType& getStructType() const;
     const FunctionType& getFunctionType() const;
+
+    std::unique_ptr<Typename> toTypename() const override;
 };
 
 #endif //ENACT_TYPE_H

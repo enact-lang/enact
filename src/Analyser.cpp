@@ -4,7 +4,7 @@
 #include "h/Analyser.h"
 #include "h/Enact.h"
 
-void Analyser::analyse(std::vector<Stmt> program) {
+std::vector<std::unique_ptr<Stmt>> Analyser::analyse(std::vector<std::unique_ptr<Stmt>> program) {
     m_hadError = false;
 
     beginScope();
@@ -15,7 +15,7 @@ void Analyser::analyse(std::vector<Stmt> program) {
     declareVariable("dis", Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
 
     for (auto &stmt : program) {
-        analyse(stmt);
+        analyse(*stmt);
     }
 
     // Analyse all function bodies in the global scope
@@ -23,18 +23,20 @@ void Analyser::analyse(std::vector<Stmt> program) {
         analyseFunctionBody(function);
     }
     endScope();
+
+    return program;
 }
 
-void Analyser::analyse(Stmt stmt) {
+void Analyser::analyse(Stmt& stmt) {
     try {
-        stmt->accept(this);
+        stmt.accept(this);
     } catch (const AnalysisError &error) {
         m_hadError = true;
     }
 }
 
-void Analyser::analyse(Expr expr) {
-    expr->accept(this);
+void Analyser::analyse(Expr& expr) {
+    expr.accept(this);
 }
 
 bool Analyser::hadError() {
@@ -49,8 +51,8 @@ Analyser::AnalysisError Analyser::errorAt(const Token &token, const std::string 
 
 void Analyser::visitBlockStmt(BlockStmt &stmt) {
     beginScope();
-    for (Stmt &statement : stmt.statements) {
-        analyse(statement);
+    for (auto& statement : stmt.statements) {
+        analyse(*statement);
     }
     endScope();
 }
@@ -72,14 +74,14 @@ void Analyser::visitEachStmt(EachStmt &stmt) {
 }
 
 void Analyser::visitExpressionStmt(ExpressionStmt &stmt) {
-    analyse(stmt.expr);
+    analyse(*stmt.expr);
 }
 
 void Analyser::visitForStmt(ForStmt &stmt) {
     beginScope();
-    analyse(stmt.initializer);
+    analyse(*stmt.initializer);
 
-    analyse(stmt.condition);
+    analyse(*stmt.condition);
     if (!stmt.condition->getType()->maybeBool()) {
         throw errorAt(stmt.keyword, "Expected for loop condition of type 'bool', not '"
                 + stmt.condition->getType()->toString() + "'.");
@@ -87,13 +89,13 @@ void Analyser::visitForStmt(ForStmt &stmt) {
 
     m_insideLoop = true;
     beginScope();
-    for (Stmt &statement : stmt.body) {
-        analyse(statement);
+    for (auto& statement : stmt.body) {
+        analyse(*statement);
     }
     endScope();
     m_insideLoop = false;
 
-    analyse(stmt.increment);
+    analyse(*stmt.increment);
     endScope();
 }
 
@@ -110,11 +112,11 @@ void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
 }
 
 void Analyser::visitGivenStmt(GivenStmt &stmt) {
-    analyse(stmt.value);
+    analyse(*stmt.value);
     Type valueType = stmt.value->getType();
 
     for (const GivenCase &case_ : stmt.cases) {
-        analyse(case_.value);
+        analyse(*case_.value);
         if (!case_.value->getType()->looselyEquals(*valueType)) {
             throw errorAt(case_.keyword, "Given value of type '" + valueType->toString()
                                          + "' cannot be compared with case of type '" +
@@ -123,8 +125,8 @@ void Analyser::visitGivenStmt(GivenStmt &stmt) {
 
         beginScope();
 
-        for (const Stmt &bodyStmt : case_.body) {
-            analyse(bodyStmt);
+        for (auto& bodyStmt : case_.body) {
+            analyse(*bodyStmt);
         }
 
         endScope();
@@ -132,7 +134,7 @@ void Analyser::visitGivenStmt(GivenStmt &stmt) {
 }
 
 void Analyser::visitIfStmt(IfStmt &stmt) {
-    analyse(stmt.condition);
+    analyse(*stmt.condition);
 
     if (!stmt.condition->getType()->maybeBool()) {
         throw errorAt(stmt.keyword, "Expected if statement condition of type 'bool', not '"
@@ -140,14 +142,14 @@ void Analyser::visitIfStmt(IfStmt &stmt) {
     }
 
     beginScope();
-    for (Stmt &statement : stmt.thenBlock) {
-        analyse(statement);
+    for (auto& statement : stmt.thenBlock) {
+        analyse(*statement);
     }
     endScope();
 
     beginScope();
-    for (Stmt &statement : stmt.elseBlock) {
-        analyse(statement);
+    for (auto& statement : stmt.elseBlock) {
+        analyse(*statement);
     }
     endScope();
 }
@@ -157,7 +159,7 @@ void Analyser::visitReturnStmt(ReturnStmt &stmt) {
         throw errorAt(stmt.keyword, "Return is only allowed inside functions.");
     }
 
-    analyse(stmt.value);
+    analyse(*stmt.value);
 
     Type returnType = m_currentFunctions.back().getReturnType();
     if (!returnType->looselyEquals(*stmt.value->getType())) {
@@ -187,23 +189,23 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
         }
     }
 
-    // In the AST, fields are represented as a name paired with a type (NamedTypename).
+    // In the AST, fields are represented as a name paired with a type (Field).
     // We must now find the types that the typenames are referring to, and create
     // NamedTypes containing them.
     std::unordered_map<std::string, Type> fields;
     std::vector<Type> fieldTypes;
-    for (const NamedTypename &field : stmt.fields) {
+    for (const Field& field : stmt.fields) {
         // Check if the field has the same name as another field
         if (fields.count(field.name.lexeme) > 0) {
             throw errorAt(field.name, "Struct field '" + field.name.lexeme +
                                       "' cannot have the same name as another field.");
         }
 
-        if (m_types.count(field.typeName) > 0) {
-            fields.insert(std::pair(field.name.lexeme, m_types[field.typeName]));
-            fieldTypes.push_back(m_types[field.typeName]);
+        if (m_types.count(field.typeName->name()) > 0) {
+            fields.insert(std::pair(field.name.lexeme, m_types[field.typeName->name()]));
+            fieldTypes.push_back(m_types[field.typeName->name()]);
         } else {
-            throw errorAt(field.name, "Undeclared field type '" + field.typeName + "'.");
+            throw errorAt(field.name, "Undeclared field type '" + field.typeName->name() + "'.");
         }
     }
 
@@ -211,7 +213,7 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     // properly. We take the methods as they are represented in the AST (a pointer to
     // a FunctionStmt) and convert them to NamedTypes.
     std::unordered_map<std::string, Type> methods;
-    for (const std::shared_ptr<FunctionStmt> &method : stmt.methods) {
+    for (auto& method : stmt.methods) {
         // Check if the method has the same name as a field
         if (methods.count(method->name.lexeme) > 0 || fields.count(method->name.lexeme) > 0) {
             throw errorAt(method->name, "Struct method '" + method->name.lexeme +
@@ -250,7 +252,7 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     Type thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods, assocFunctions);
     m_types.insert(std::make_pair(stmt.name.lexeme, thisType));
 
-    for (const std::shared_ptr<FunctionStmt> &function : stmt.assocFunctions) {
+    for (auto& function : stmt.assocFunctions) {
         assocFunctions.insert(std::pair(function->name.lexeme, getFunctionType(*function)));
     }
 
@@ -267,11 +269,11 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     beginScope();
 
     // Next, we'll declare all fields and methods:
-    for (const auto &field : fields) {
+    for (const auto& field : fields) {
         declareVariable(field.first, Variable{field.second, false});
     }
 
-    for (const auto &method : methods) {
+    for (const auto& method : methods) {
         declareVariable(method.first, Variable{method.second, true});
     }
 
@@ -279,16 +281,16 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     declareVariable("this", Variable{thisType, false});
 
     // Now we can analyse the methods:
-    for (const std::shared_ptr<FunctionStmt> &method : stmt.methods) {
-        analyse(method);
+    for (auto& method : stmt.methods) {
+        analyse(*method);
     }
 
     // End the struct scope.
     endScope();
 
     // Look at the assoc functions (remember, they are outside of the struct scope):
-    for (const std::shared_ptr<FunctionStmt> &function : stmt.assocFunctions) {
-        analyse(function);
+    for (auto& function : stmt.assocFunctions) {
+        analyse(*function);
     }
 }
 
@@ -298,7 +300,7 @@ void Analyser::visitTraitStmt(TraitStmt &stmt) {
     }
 
     std::unordered_map<std::string, Type> methods;
-    for (const std::shared_ptr<FunctionStmt> &method : stmt.methods) {
+    for (auto& method : stmt.methods) {
         if (methods.count(method->name.lexeme) > 0) {
             throw errorAt(method->name, "Trait method '" + method->name.lexeme +
                                         "' cannot have the same name as another method.");
@@ -311,7 +313,7 @@ void Analyser::visitTraitStmt(TraitStmt &stmt) {
 }
 
 void Analyser::visitWhileStmt(WhileStmt &stmt) {
-    analyse(stmt.condition);
+    analyse(*stmt.condition);
   
     if (!stmt.condition->getType()->maybeBool()) {
         throw errorAt(stmt.keyword, "Expected while loop condition of type 'bool', not '"
@@ -320,34 +322,34 @@ void Analyser::visitWhileStmt(WhileStmt &stmt) {
 
     m_insideLoop = true;
     beginScope();
-    for (Stmt &statement : stmt.body) {
-        analyse(statement);
+    for (auto& statement : stmt.body) {
+        analyse(*statement);
     }
     endScope();
     m_insideLoop = false;
 }
 
 void Analyser::visitVariableStmt(VariableStmt &stmt) {
-    analyse(stmt.initializer);
+    analyse(*stmt.initializer);
 
-    std::string typeName = stmt.typeName;
+    std::unique_ptr<const Typename> typeName = stmt.typeName->clone();
 
-    if (stmt.typeName.empty()) {
+    if (typeName->name().empty()) {
         // Infer the type from the initializer
-        typeName = stmt.initializer->getType()->toString();
+        typeName = stmt.initializer->getType()->toTypename();
     }
 
-    if (!stmt.initializer->getType()->looselyEquals(*lookUpType(typeName, stmt.name))) {
-        throw errorAt(stmt.name, "Cannot initialize variable of type '" + typeName +
+    if (!stmt.initializer->getType()->looselyEquals(*lookUpType(*typeName))) {
+        throw errorAt(stmt.name, "Cannot initialize variable of type '" + typeName->name() +
                                  "' with value of type '" + stmt.initializer->getType()->toString() + "'.");
     }
 
-    declareVariable(stmt.name.lexeme, Variable{lookUpType(typeName, stmt.name), stmt.isConst});
+    declareVariable(stmt.name.lexeme, Variable{lookUpType(*typeName), stmt.isConst});
 }
 
 void Analyser::visitAllotExpr(AllotExpr& expr) {
-    analyse(expr.target);
-    analyse(expr.value);
+    analyse(*expr.target);
+    analyse(*expr.value);
 
     if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
         throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.target->getType()->toString() +
@@ -361,13 +363,13 @@ void Analyser::visitAnyExpr(AnyExpr &expr) {
 
 void Analyser::visitArrayExpr(ArrayExpr &expr) {
     std::vector<Type> elementTypes{};
-    for (Expr &element : expr.value) {
-        analyse(element);
+    for (auto& element : expr.value) {
+        analyse(*element);
         elementTypes.push_back(element->getType());
     }
 
-    if (!expr.typeName.empty()) {
-        Type elementType = lookUpType(expr.typeName, expr.square);
+    if (!expr.typeName->name().empty()) {
+        Type elementType = lookUpType(*expr.typeName);
 
         for (Type &type : elementTypes) {
             if (!elementType->looselyEquals(*type)) {
@@ -394,8 +396,8 @@ void Analyser::visitArrayExpr(ArrayExpr &expr) {
 }
 
 void Analyser::visitAssignExpr(AssignExpr &expr) {
-    analyse(expr.target);
-    analyse(expr.value);
+    analyse(*expr.target);
+    analyse(*expr.value);
 
     if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
         throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.target->getType()->toString() +
@@ -409,8 +411,8 @@ void Analyser::visitAssignExpr(AssignExpr &expr) {
 }
 
 void Analyser::visitBinaryExpr(BinaryExpr &expr) {
-    analyse(expr.left);
-    analyse(expr.right);
+    analyse(*expr.left);
+    analyse(*expr.right);
 
     Type left = expr.left->getType();
     Type right = expr.right->getType();
@@ -486,9 +488,9 @@ void Analyser::visitBooleanExpr(BooleanExpr &expr) {
 }
 
 void Analyser::visitCallExpr(CallExpr &expr) {
-    analyse(expr.callee);
+    analyse(*expr.callee);
     for (auto& argument : expr.arguments) {
-        analyse(argument);
+        analyse(*argument);
     }
 
     Type type = expr.callee->getType();
@@ -530,7 +532,7 @@ void Analyser::visitFloatExpr(FloatExpr &expr) {
 }
 
 void Analyser::visitGetExpr(GetExpr &expr) {
-    analyse(expr.object);
+    analyse(*expr.object);
 
     Type objectType = expr.object->getType();
 
@@ -578,8 +580,8 @@ void Analyser::visitIntegerExpr(IntegerExpr &expr) {
 }
 
 void Analyser::visitLogicalExpr(LogicalExpr &expr) {
-    analyse(expr.left);
-    analyse(expr.right);
+    analyse(*expr.left);
+    analyse(*expr.right);
 
     Type left = expr.left->getType();
     Type right = expr.right->getType();
@@ -601,8 +603,8 @@ void Analyser::visitStringExpr(StringExpr &expr) {
 }
 
 void Analyser::visitSubscriptExpr(SubscriptExpr &expr) {
-    analyse(expr.object);
-    analyse(expr.index);
+    analyse(*expr.object);
+    analyse(*expr.index);
 
     if (!expr.object->getType()->maybeArray()) {
         throw errorAt(expr.square, "Only arrays can be subscripted.");
@@ -621,13 +623,13 @@ void Analyser::visitSubscriptExpr(SubscriptExpr &expr) {
 }
 
 void Analyser::visitTernaryExpr(TernaryExpr &expr) {
-    analyse(expr.condition);
+    analyse(*expr.condition);
     if (!expr.condition->getType()->maybeBool()) {
         throw errorAt(expr.oper, "Conditional operator condition must be a boolean.");
     }
 
-    analyse(expr.thenExpr);
-    analyse(expr.elseExpr);
+    analyse(*expr.thenExpr);
+    analyse(*expr.elseExpr);
 
     if (!expr.thenExpr->getType()->looselyEquals(*expr.elseExpr->getType())) {
         throw errorAt(expr.oper, "Mismatched types in conditional operation: '" + expr.thenExpr->getType()->toString()
@@ -636,7 +638,7 @@ void Analyser::visitTernaryExpr(TernaryExpr &expr) {
 }
 
 void Analyser::visitUnaryExpr(UnaryExpr &expr) {
-    analyse(expr.operand);
+    analyse(*expr.operand);
     switch (expr.oper.type) {
         case TokenType::BANG:
             if (!(expr.operand->getType()->maybeBool())) {
@@ -680,8 +682,8 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
         declareVariable(stmt.params[i].name.lexeme, Variable{functionType->getArgumentTypes()[i]});
     }
 
-    for (Stmt &statement : stmt.body) {
-        analyse(statement);
+    for (auto& statement : stmt.body) {
+        analyse(*statement);
     }
 
     m_currentFunctions.pop_back();
@@ -690,10 +692,10 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
 
 Type Analyser::getFunctionType(const FunctionStmt &stmt) {
     Type returnType;
-    if (stmt.returnTypeName.empty()) {
+    if (stmt.returnTypename->name().empty()) {
         returnType = NOTHING_TYPE;
     } else {
-        returnType = lookUpType(stmt.returnTypeName, stmt.name);
+        returnType = lookUpType(*stmt.returnTypename);
     }
 
     if (stmt.params.size() > 255) {
@@ -701,82 +703,39 @@ Type Analyser::getFunctionType(const FunctionStmt &stmt) {
     }
 
     std::vector<Type> parameterTypes;
-    for (const NamedTypename &parameter : stmt.params) {
-        parameterTypes.push_back(lookUpType(parameter.typeName, parameter.name));
+    for (const Param& parameter : stmt.params) {
+        parameterTypes.push_back(lookUpType(*parameter.typeName));
     }
 
     return std::make_shared<FunctionType>(returnType, parameterTypes);
 }
 
-Type Analyser::lookUpType(const Token &name) {
-    return lookUpType(name.lexeme, name);
-}
+Type Analyser::lookUpType(const Typename& name) {
+    switch (name.kind()) {
+        case Typename::Kind::BASIC:
+            if (m_types.count(name.name()) > 0) {
+                return m_types[name.name()];
+            } else if (name.name() == "") {
+                return m_types["nothing"];
+            }
+            break;
+        case Typename::Kind::ARRAY: {
+            auto arrName = dynamic_cast<const ArrayTypename&>(name);
+            return std::make_shared<ArrayType>(lookUpType(arrName.elementTypename()));
+        }
+        case Typename::Kind::FUNCTION: {
+            auto funName = static_cast<const FunctionTypename&>(name);
 
-Type Analyser::lookUpType(const std::string &name, const Token &where) {
-    if (!name.empty()) {
-        if (name[0] == '[' && name[name.size() - 1] == ']') {
-            std::string elementTypeName = name.substr(1, name.size() - 2);
-            return std::make_shared<ArrayType>(lookUpType(elementTypeName, where));
+            std::vector<Type> argTypes{};
+            for (const auto& argName : funName.argumentTypenames()) {
+                argTypes.push_back(lookUpType(*argName));
+            }
+
+            return std::make_shared<FunctionType>(lookUpType(funName.returnTypename()), std::move(argTypes));
         }
     }
 
-    if (name.size() >= 4 &&
-            name[0] == 'f' &&
-            name[1] == 'u' &&
-            name[2] == 'n' &&
-            (name[3] == ' ' || name[3] == '(')) {
-        return lookUpFunctionType(name, where);
-    }
-
-    if (m_types.count(name) > 0) {
-        return m_types[name];
-    }
-
-    throw errorAt(where, "Undefined type '" + name + "'.");
-}
-
-Type Analyser::lookUpFunctionType(const std::string& name, const Token& where) {
-    int current = 3;
-
-    while (name[current] == ' ' || name[current] == '(') ++current;
-
-    int openBrackets = 1;
-    std::vector<Type> paramTypes;
-    while (openBrackets != 0) {
-        std::string paramTypeName;
-        do {
-            if (name[current] == ' ') {
-                ++current;
-                continue;
-            }
-            if (name[current] == ',') {
-                if (openBrackets > 1) {
-                    paramTypeName.push_back(name[current]);
-                    ++current;
-                    continue;
-                } else {
-                    ++current;
-                    break;
-                }
-            }
-            if (name[current] == '(') ++openBrackets;
-            if (name[current] == ')') --openBrackets;
-            if (openBrackets == 0) continue;
-            paramTypeName.push_back(name[current]);
-            ++current;
-        } while (openBrackets != 0);
-        paramTypes.push_back(lookUpType(paramTypeName, where));
-    }
-
-    std::string returnTypeName;
-    while (++current < name.size()) {
-        if (name[current] == ' ') continue;
-        returnTypeName.push_back(name[current]);
-    }
-    if (returnTypeName.empty()) returnTypeName = "nothing";
-    Type returnType = lookUpType(returnTypeName, where);
-
-    return std::make_shared<FunctionType>(returnType, paramTypes);
+    throw errorAt(name.where(), "Undefined type '" + name.name() + "'.");
 }
 
 Analyser::Variable &Analyser::lookUpVariable(const Token &name) {

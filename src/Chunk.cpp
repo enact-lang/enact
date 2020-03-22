@@ -90,6 +90,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::CHECK_BOOL:
         case OpCode::CHECK_REFERENCE:
         case OpCode::CHECK_INDEXABLE:
+        case OpCode::CHECK_ALLOTABLE:
         case OpCode::NEGATE:
         case OpCode::NOT:
         case OpCode::COPY:
@@ -364,6 +365,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::CHECK_REFERENCE: return "CHECK_REFERENCE";
         case OpCode::CHECK_CALLABLE: return "CHECK_CALLABLE";
         case OpCode::CHECK_INDEXABLE: return "CHECK_INDEXABLE";
+        case OpCode::CHECK_ALLOTABLE: return "CHECK_ALLOTABLE";
         case OpCode::CHECK_TYPE: return "CHECK_TYPE";
         case OpCode::CHECK_TYPE_LONG: return "CHECK_TYPE_LONG";
         case OpCode::NEGATE: return "NEGATE";

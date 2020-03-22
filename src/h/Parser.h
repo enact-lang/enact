@@ -102,6 +102,7 @@ private:
             ParseRule{nullptr,               &Parser::binary,  Precedence::TERM}, // PLUS
             ParseRule{nullptr,               &Parser::ternary, Precedence::CONDITIONAL}, // QUESTION
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SEMICOLON
+            ParseRule{nullptr,               nullptr,            Precedence::NONE}, // SEPARATOR
             ParseRule{nullptr,               &Parser::binary,  Precedence::FACTOR}, // SLASH
             ParseRule{nullptr,               &Parser::binary,  Precedence::FACTOR}, // STAR
             ParseRule{&Parser::unary,      nullptr,            Precedence::UNARY}, // BANG
@@ -153,7 +154,7 @@ private:
     std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true);
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> traitDeclaration();
-    std::unique_ptr<Stmt> variableDeclaration(bool isConst);
+    std::unique_ptr<Stmt> variableDeclaration(bool isConst, bool mustExpectSeparator = true);
 
     // Statements
     std::unique_ptr<Stmt> statement();

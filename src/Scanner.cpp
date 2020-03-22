@@ -29,6 +29,7 @@ Token Scanner::scanToken() {
         case '+': return makeToken(TokenType::PLUS);
         case '?': return makeToken(TokenType::QUESTION);
         case ';': return makeToken(TokenType::SEMICOLON);
+        case '|': return makeToken(TokenType::SEPARATOR);
         case '/': return makeToken(TokenType::SLASH);
         case '*': return makeToken(TokenType::STAR);
 

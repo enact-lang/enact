@@ -182,7 +182,7 @@ std::unique_ptr<Expr> Parser::ternary(std::unique_ptr<Expr> condition) {
 }
 
 std::unique_ptr<Stmt> Parser::declaration() {
-    ignoreNewline();
+    consumeSeparator();
     try {
         if (consume(TokenType::FUN)) return functionDeclaration();
         if (consume(TokenType::STRUCT)) return structDeclaration();
@@ -222,7 +222,7 @@ std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
     }
 
     expect(TokenType::COLON, "Expected ':' before function body.");
-    ignoreNewline();
+    consumeSeparator();
 
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
@@ -251,14 +251,14 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     }
 
     expect(TokenType::COLON, "Expected ':' before struct body.");
-    ignoreNewline();
+    consumeSeparator();
 
     std::vector<Field> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
 
     while (!check(TokenType::END) && !isAtEnd()) {
-        ignoreNewline();
+        consumeSeparator();
         if (consume(TokenType::IDENTIFIER)) {
             // Field declaration
             Token fieldName = m_previous;
@@ -295,11 +295,11 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
     Token name = m_previous;
 
     expect(TokenType::COLON, "Expected ':' after trait name.");
-    ignoreNewline();
+    consumeSeparator();
 
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     while (!check(TokenType::END) && !isAtEnd()) {
-        ignoreNewline();
+        consumeSeparator();
         if (consume(TokenType::FUN)) {
             auto method = std::unique_ptr<FunctionStmt>{
                     static_cast<FunctionStmt*>(functionDeclaration(false).release())
@@ -316,7 +316,7 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
     return std::make_unique<TraitStmt>(name, std::move(methods));
 }
 
-std::unique_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
+std::unique_ptr<Stmt> Parser::variableDeclaration(bool isConst, bool mustExpectSeparator) {
     expect(TokenType::IDENTIFIER, "Expected variable name.");
     Token name = m_previous;
 
@@ -326,7 +326,7 @@ std::unique_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
 
     std::unique_ptr<Expr> initializer = expression();
 
-    expectSeparator("Expected newline or ';' after variable declaration.");
+    if (mustExpectSeparator) expectSeparator("Expected newline or ';' after variable declaration.");
 
     return std::make_unique<VariableStmt>(name, std::move(typeName), std::move(initializer), isConst);
 }
@@ -346,7 +346,7 @@ std::unique_ptr<Stmt> Parser::statement() {
 
 std::unique_ptr<Stmt> Parser::blockStatement() {
     expect(TokenType::COLON, "Expected ':' before block body.");
-    ignoreNewline();
+    consumeSeparator();
 
     std::vector<std::unique_ptr<Stmt>> statements;
     while (!check(TokenType::END) && !isAtEnd()) {
@@ -364,7 +364,7 @@ std::unique_ptr<Stmt> Parser::ifStatement() {
 
     std::unique_ptr<Expr> condition = expression();
     expect(TokenType::COLON, "Expected ':' after if condition.");
-    ignoreNewline();
+    consumeSeparator();
 
     std::vector<std::unique_ptr<Stmt>> thenBlock;
     while (!check(TokenType::END) && !check(TokenType::ELSE) && !isAtEnd()) {
@@ -375,7 +375,7 @@ std::unique_ptr<Stmt> Parser::ifStatement() {
 
     if (consume(TokenType::ELSE)) {
         expect(TokenType::COLON, "Expected ':' after start of else block.");
-        ignoreNewline();
+        consumeSeparator();
         while (!check(TokenType::END) && !isAtEnd()) {
             elseBlock.push_back(declaration());
         }
@@ -393,7 +393,7 @@ std::unique_ptr<Stmt> Parser::whileStatement() {
     std::unique_ptr<Expr> condition = expression();
     
     expect(TokenType::COLON, "Expected ':' after while condition.");
-    ignoreNewline();
+    consumeSeparator();
 
     std::vector<std::unique_ptr<Stmt>> body;
     while (!check(TokenType::END) && !isAtEnd()) {
@@ -410,23 +410,26 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     Token keyword = m_previous;
 
     std::unique_ptr<Stmt> initializer;
-    if (consume(TokenType::SEMICOLON)) {
+    if (check(TokenType::SEPARATOR)) {
         initializer = std::make_unique<ExpressionStmt>(std::make_unique<NilExpr>());
     } else if (consume(TokenType::VAR)) {
-        initializer = variableDeclaration(false);
+        initializer = variableDeclaration(false, false);
     } else if (consume(TokenType::CONST)) {
-        initializer = variableDeclaration(true);
+        initializer = variableDeclaration(true, false);
     } else {
-        initializer = expressionStatement();
+        initializer = std::make_unique<ExpressionStmt>(expression());
     }
 
+    expect(TokenType::SEPARATOR, "Expected '|' after for loop initializer.");
+
     std::unique_ptr<Expr> condition;
-    if (!consume(TokenType::SEMICOLON)) {
+    if (!check(TokenType::SEPARATOR)) {
         condition = expression();
-        expect(TokenType::SEMICOLON, "Expected ';' after for loop condition.");
     } else {
         condition = std::make_unique<BooleanExpr>(true);
     }
+
+    expect(TokenType::SEPARATOR, "Expected '|' after for loop condition.");
 
     std::unique_ptr<Expr> increment;
     if (!check(TokenType::COLON)) {
@@ -437,7 +440,7 @@ std::unique_ptr<Stmt> Parser::forStatement() {
 
     expect(TokenType::COLON, "Expected ':' before body of for loop.");
 
-    ignoreNewline();
+    consumeSeparator();
 
     std::vector<std::unique_ptr<Stmt>> body;
     while (!check(TokenType::END) && !isAtEnd()) {
@@ -459,7 +462,7 @@ std::unique_ptr<Stmt> Parser::eachStatement() {
     std::unique_ptr<Expr> object = expression();
 
     expect(TokenType::COLON, "Expected ':' before each loop body.");
-    ignoreNewline();
+    consumeSeparator();
 
     std::vector<std::unique_ptr<Stmt>> body;
     while (!check(TokenType::END) && !isAtEnd()) {
@@ -478,7 +481,7 @@ std::unique_ptr<Stmt> Parser::givenStatement() {
 
     std::vector<GivenCase> cases;
     while (!check(TokenType::END) && !isAtEnd()) {
-        ignoreNewline();
+        consumeSeparator();
 
         if (consume(TokenType::WHEN)) {
             Token keyword = m_previous;
@@ -581,10 +584,6 @@ void Parser::undoAdvance() {
     m_previous = m_scanner.backtrack();
 }
 
-void Parser::ignoreNewline() {
-    while (consume(TokenType::NEWLINE));
-}
-
 bool Parser::check(TokenType expected) {
     return m_current.type == expected;
 }
@@ -597,16 +596,20 @@ bool Parser::consume(TokenType expected) {
     return false;
 }
 
-bool Parser::consumeSeparator() {
-    return consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON);
-}
-
 void Parser::expect(TokenType type, const std::string &message) {
     if (m_current.type == type) {
         advance();
     } else {
         throw errorAtCurrent(message);
     }
+}
+
+bool Parser::consumeSeparator() {
+    bool didConsume = false;
+    while (consume(TokenType::NEWLINE) || consume(TokenType::SEMICOLON)) {
+        didConsume = true;
+    }
+    return didConsume;
 }
 
 void Parser::expectSeparator(const std::string &message) {

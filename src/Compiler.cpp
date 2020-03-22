@@ -121,7 +121,7 @@ void Compiler::visitForStmt(ForStmt &stmt) {
 
     // Pop the condition
     emitByte(OpCode::POP);
-    
+
     endScope();
 }
 

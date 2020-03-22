@@ -10,15 +10,13 @@
 template <class R>
 class StmtVisitor;
 
-class StmtBase {
+class Stmt {
 public:
-    virtual ~StmtBase() = default;
+    virtual ~Stmt() = default;
 
     virtual std::string accept(StmtVisitor<std::string> *visitor) = 0;
     virtual void accept(StmtVisitor<void> *visitor) = 0;
 };
-
-typedef std::shared_ptr<StmtBase> Stmt;
 
 class BlockStmt;
 class BreakStmt;
@@ -54,12 +52,12 @@ public:
     virtual R visitVariableStmt(VariableStmt& stmt) = 0;
 };
 
-class BlockStmt : public StmtBase {
+class BlockStmt : public Stmt {
 public:
-    std::vector<Stmt> statements;
+    std::vector<std::unique_ptr<Stmt>> statements;
 
-    BlockStmt(std::vector<Stmt> statements) : 
-        statements{statements} {}
+    BlockStmt(std::vector<std::unique_ptr<Stmt>> statements) :
+            statements{std::move(statements)} {}
     ~BlockStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -71,12 +69,12 @@ public:
     }
 };
 
-class BreakStmt : public StmtBase {
+class BreakStmt : public Stmt {
 public:
     Token keyword;
 
     BreakStmt(Token keyword) : 
-        keyword{keyword} {}
+            keyword{keyword} {}
     ~BreakStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -88,12 +86,12 @@ public:
     }
 };
 
-class ContinueStmt : public StmtBase {
+class ContinueStmt : public Stmt {
 public:
     Token keyword;
 
     ContinueStmt(Token keyword) : 
-        keyword{keyword} {}
+            keyword{keyword} {}
     ~ContinueStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -105,14 +103,16 @@ public:
     }
 };
 
-class EachStmt : public StmtBase {
+class EachStmt : public Stmt {
 public:
     Token name;
-    Expr object;
-    std::vector<Stmt> body;
+    std::unique_ptr<Expr> object;
+    std::vector<std::unique_ptr<Stmt>> body;
 
-    EachStmt(Token name,Expr object,std::vector<Stmt> body) : 
-        name{name},object{object},body{body} {}
+    EachStmt(Token name, std::unique_ptr<Expr> object, std::vector<std::unique_ptr<Stmt>> body) :
+            name{name},
+            object{std::move(object)},
+            body{std::move(body)} {}
     ~EachStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -124,12 +124,12 @@ public:
     }
 };
 
-class ExpressionStmt : public StmtBase {
+class ExpressionStmt : public Stmt {
 public:
-    Expr expr;
+    std::unique_ptr<Expr> expr;
 
-    ExpressionStmt(Expr expr) : 
-        expr{expr} {}
+    ExpressionStmt(std::unique_ptr<Expr> expr) :
+            expr{std::move(expr)} {}
     ~ExpressionStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -141,16 +141,20 @@ public:
     }
 };
 
-class ForStmt : public StmtBase {
+class ForStmt : public Stmt {
 public:
-    Stmt initializer;
-    Expr condition;
-    Expr increment;
-    std::vector<Stmt> body;
+    std::unique_ptr<Stmt> initializer;
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Expr> increment;
+    std::vector<std::unique_ptr<Stmt>> body;
     Token keyword;
 
-    ForStmt(Stmt initializer,Expr condition,Expr increment,std::vector<Stmt> body,Token keyword) :
-        initializer{initializer},condition{condition},increment{increment},body{body},keyword{keyword} {}
+    ForStmt(std::unique_ptr<Stmt> initializer, std::unique_ptr<Expr> condition, std::unique_ptr<Expr> increment, std::vector<std::unique_ptr<Stmt>> body, Token keyword) :
+            initializer{std::move(initializer)},
+            condition{std::move(condition)},
+            increment{std::move(increment)},
+            body{std::move(body)},
+            keyword{keyword} {}
     ~ForStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -162,16 +166,20 @@ public:
     }
 };
 
-class FunctionStmt : public StmtBase {
+class FunctionStmt : public Stmt {
 public:
     Token name;
-    std::string returnTypeName;
-    std::vector<NamedTypename> params;
-    std::vector<Stmt> body;
-    Type type = nullptr;
+    std::unique_ptr<const Typename> returnTypename;
+    std::vector<Param> params;
+    std::vector<std::unique_ptr<Stmt>> body;
+    Type type;
 
-    FunctionStmt(Token name,std::string returnTypeName,std::vector<NamedTypename> params,std::vector<Stmt> body) : 
-        name{name},returnTypeName{returnTypeName},params{params},body{body} {}
+    FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param>&& params, std::vector<std::unique_ptr<Stmt>> body, Type type) :
+            name{name},
+            returnTypename{std::move(returnTypename)},
+            params{std::move(params)},
+            body{std::move(body)},
+            type{type} {}
     ~FunctionStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -183,13 +191,14 @@ public:
     }
 };
 
-class GivenStmt : public StmtBase {
+class GivenStmt : public Stmt {
 public:
-    Expr value;
+    std::unique_ptr<Expr> value;
     std::vector<GivenCase> cases;
 
-    GivenStmt(Expr value,std::vector<GivenCase> cases) : 
-        value{value},cases{cases} {}
+    GivenStmt(std::unique_ptr<Expr> value, std::vector<GivenCase>&& cases) :
+            value{std::move(value)},
+            cases{std::move(cases)} {}
     ~GivenStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -201,15 +210,18 @@ public:
     }
 };
 
-class IfStmt : public StmtBase {
+class IfStmt : public Stmt {
 public:
-    Expr condition;
-    std::vector<Stmt> thenBlock;
-    std::vector<Stmt> elseBlock;
+    std::unique_ptr<Expr> condition;
+    std::vector<std::unique_ptr<Stmt>> thenBlock;
+    std::vector<std::unique_ptr<Stmt>> elseBlock;
     Token keyword;
 
-    IfStmt(Expr condition,std::vector<Stmt> thenBlock,std::vector<Stmt> elseBlock,Token keyword) : 
-        condition{condition},thenBlock{thenBlock},elseBlock{elseBlock},keyword{keyword} {}
+    IfStmt(std::unique_ptr<Expr> condition, std::vector<std::unique_ptr<Stmt>> thenBlock, std::vector<std::unique_ptr<Stmt>> elseBlock, Token keyword) :
+            condition{std::move(condition)},
+            thenBlock{std::move(thenBlock)},
+            elseBlock{std::move(elseBlock)},
+            keyword{keyword} {}
     ~IfStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -221,13 +233,14 @@ public:
     }
 };
 
-class ReturnStmt : public StmtBase {
+class ReturnStmt : public Stmt {
 public:
     Token keyword;
-    Expr value;
+    std::unique_ptr<Expr> value;
 
-    ReturnStmt(Token keyword,Expr value) : 
-        keyword{keyword},value{value} {}
+    ReturnStmt(Token keyword, std::unique_ptr<Expr> value) :
+            keyword{keyword},
+            value{std::move(value)} {}
     ~ReturnStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -239,16 +252,20 @@ public:
     }
 };
 
-class StructStmt : public StmtBase {
+class StructStmt : public Stmt {
 public:
     Token name;
     std::vector<Token> traits;
-    std::vector<NamedTypename> fields;
-    std::vector<std::shared_ptr<FunctionStmt>> methods;
-    std::vector<std::shared_ptr<FunctionStmt>> assocFunctions;
+    std::vector<Field> fields;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+    std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
 
-    StructStmt(Token name,std::vector<Token> traits,std::vector<NamedTypename> fields,std::vector<std::shared_ptr<FunctionStmt>> methods,std::vector<std::shared_ptr<FunctionStmt>> assocFunctions) : 
-        name{name},traits{traits},fields{fields},methods{methods},assocFunctions{assocFunctions} {}
+    StructStmt(Token name, std::vector<Token> traits, std::vector<Field>&& fields, std::vector<std::unique_ptr<FunctionStmt>> methods, std::vector<std::unique_ptr<FunctionStmt>> assocFunctions) :
+            name{name},
+            traits{traits},
+            fields{std::move(fields)},
+            methods{std::move(methods)},
+            assocFunctions{std::move(assocFunctions)} {}
     ~StructStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -260,13 +277,14 @@ public:
     }
 };
 
-class TraitStmt : public StmtBase {
+class TraitStmt : public Stmt {
 public:
     Token name;
-    std::vector<std::shared_ptr<FunctionStmt>> methods;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
 
-    TraitStmt(Token name,std::vector<std::shared_ptr<FunctionStmt>> methods) : 
-        name{name},methods{methods} {}
+    TraitStmt(Token name, std::vector<std::unique_ptr<FunctionStmt>> methods) :
+            name{name},
+            methods{std::move(methods)} {}
     ~TraitStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -278,14 +296,16 @@ public:
     }
 };
 
-class WhileStmt : public StmtBase {
+class WhileStmt : public Stmt {
 public:
-    Expr condition;
-    std::vector<Stmt> body;
+    std::unique_ptr<Expr> condition;
+    std::vector<std::unique_ptr<Stmt>> body;
     Token keyword;
 
-    WhileStmt(Expr condition,std::vector<Stmt> body,Token keyword) :
-        condition{condition},body{body},keyword{keyword} {}
+    WhileStmt(std::unique_ptr<Expr> condition, std::vector<std::unique_ptr<Stmt>> body, Token keyword) :
+            condition{std::move(condition)},
+            body{std::move(body)},
+            keyword{keyword} {}
     ~WhileStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -297,15 +317,18 @@ public:
     }
 };
 
-class VariableStmt : public StmtBase {
+class VariableStmt : public Stmt {
 public:
     Token name;
-    std::string typeName;
-    Expr initializer;
+    std::unique_ptr<const Typename> typeName;
+    std::unique_ptr<Expr> initializer;
     bool isConst;
 
-    VariableStmt(Token name,std::string typeName,Expr initializer,bool isConst) : 
-        name{name},typeName{typeName},initializer{initializer},isConst{isConst} {}
+    VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer, bool isConst) :
+            name{name},
+            typeName{std::move(typeName)},
+            initializer{std::move(initializer)},
+            isConst{isConst} {}
     ~VariableStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {

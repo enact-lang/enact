@@ -86,9 +86,12 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::TRUE:
         case OpCode::FALSE:
         case OpCode::NIL:
+        case OpCode::CHECK_INT:
         case OpCode::CHECK_NUMERIC:
         case OpCode::CHECK_BOOL:
         case OpCode::CHECK_REFERENCE:
+        case OpCode::CHECK_INDEXABLE:
+        case OpCode::CHECK_ALLOTABLE:
         case OpCode::NEGATE:
         case OpCode::NOT:
         case OpCode::COPY:
@@ -99,6 +102,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::LESS:
         case OpCode::GREATER:
         case OpCode::EQUAL:
+        case OpCode::GET_ARRAY_INDEX:
+        case OpCode::SET_ARRAY_INDEX:
         case OpCode::POP:
         case OpCode::CLOSE_UPVALUE:
         case OpCode::RETURN: {
@@ -109,6 +114,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Byte instructions
+        case OpCode::ARRAY:
         case OpCode::CHECK_CALLABLE:
         case OpCode::GET_LOCAL:
         case OpCode::SET_LOCAL:
@@ -133,6 +139,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         }
 
         // Long instructions
+        case OpCode::ARRAY_LONG:
         case OpCode::GET_LOCAL_LONG:
         case OpCode::SET_LOCAL_LONG:
         case OpCode::GET_UPVALUE_LONG:
@@ -354,10 +361,13 @@ std::string opCodeToString(OpCode code) {
         case OpCode::TRUE: return "TRUE";
         case OpCode::FALSE: return "FALSE";
         case OpCode::NIL: return "NIL";
+        case OpCode::CHECK_INT: return "CHECK_INT";
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
         case OpCode::CHECK_REFERENCE: return "CHECK_REFERENCE";
         case OpCode::CHECK_CALLABLE: return "CHECK_CALLABLE";
+        case OpCode::CHECK_INDEXABLE: return "CHECK_INDEXABLE";
+        case OpCode::CHECK_ALLOTABLE: return "CHECK_ALLOTABLE";
         case OpCode::CHECK_TYPE: return "CHECK_TYPE";
         case OpCode::CHECK_TYPE_LONG: return "CHECK_TYPE_LONG";
         case OpCode::NEGATE: return "NEGATE";
@@ -370,6 +380,10 @@ std::string opCodeToString(OpCode code) {
         case OpCode::LESS: return "LESS";
         case OpCode::GREATER: return "GREATER";
         case OpCode::EQUAL: return "EQUAL";
+        case OpCode::ARRAY: return "ARRAY";
+        case OpCode::ARRAY_LONG: return "ARRAY_LONG";
+        case OpCode::GET_ARRAY_INDEX: return "GET_ARRAY_INDEX";
+        case OpCode::SET_ARRAY_INDEX: return "SET_ARRAY_INDEX";
         case OpCode::POP: return "POP";
         case OpCode::GET_LOCAL: return "GET_LOCAL";
         case OpCode::GET_LOCAL_LONG: return "GET_LOCAL_LONG";

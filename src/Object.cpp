@@ -66,18 +66,29 @@ StringObject* StringObject::clone() const {
     return GC::allocateObject<StringObject>(*this);
 }
 
-ArrayObject::ArrayObject() : Object{ObjectType::ARRAY}, m_vector{} {
+ArrayObject::ArrayObject(Type type) : Object{ObjectType::ARRAY}, m_type{type}, m_vector{} {
 }
 
-ArrayObject::ArrayObject(std::vector<Value> vector) : Object{ObjectType::ARRAY}, m_vector{std::move(vector)} {
+ArrayObject::ArrayObject(size_t length, Type type) : Object{ObjectType::ARRAY}, m_vector{length}, m_type{type} {
 }
 
-std::optional<Value> ArrayObject::at(size_t index) const {
-    if (index >= m_vector.size()) {
-        return {};
-    }
+ArrayObject::ArrayObject(std::vector<Value> vector, Type type) : Object{ObjectType::ARRAY}, m_vector{std::move(vector)}, m_type{type} {
+}
 
-    return {m_vector[index]};
+size_t ArrayObject::length() const {
+    return m_vector.size();
+}
+
+Value& ArrayObject::at(size_t index) {
+    return m_vector[index];
+}
+
+const Value& ArrayObject::at(size_t index) const {
+    return m_vector[index];
+}
+
+void ArrayObject::append(Value value) {
+    m_vector.push_back(value);
 }
 
 const std::vector<Value>& ArrayObject::asVector() const {
@@ -85,24 +96,22 @@ const std::vector<Value>& ArrayObject::asVector() const {
 }
 
 std::string ArrayObject::toString() const {
-    std::string output{"["};
+    std::stringstream output{};
     std::string separator{};
+
+    output << "[";
     for (const Value& item : asVector()) {
-        output += separator;
-        output += item.toString();
+        output << separator;
+        output << item.toString();
         separator = ", ";
     }
-    return output;
+    output << "]";
+
+    return output.str();
 }
 
 Type ArrayObject::getType() const {
-    Type elementType = DYNAMIC_TYPE;
-
-    for (const auto& element : m_vector) {
-        elementType = element.getType();
-    }
-
-    return std::make_shared<ArrayType>(elementType);
+    return m_type;
 }
 
 ArrayObject* ArrayObject::clone() const {

@@ -9,7 +9,7 @@ const ParseRule& Parser::getParseRule(TokenType type) {
     return m_parseRules[(size_t)type];
 }
 
-Expr Parser::parsePrecedence(Precedence precedence) {
+std::unique_ptr<Expr> Parser::parsePrecedence(Precedence precedence) {
     advance();
     PrefixFn prefixRule = getParseRule(m_previous.type).prefix;
     if (prefixRule == nullptr) {
@@ -18,87 +18,90 @@ Expr Parser::parsePrecedence(Precedence precedence) {
         return nullptr;
     }
 
-    Expr expr = (this->*(prefixRule))();
+    std::unique_ptr<Expr> expr = (this->*(prefixRule))();
 
     while (precedence <= getParseRule(m_current.type).precedence) {
         advance();
         InfixFn infixRule = getParseRule(m_previous.type).infix;
-        expr = (this->*(infixRule))(expr);
+        expr = (this->*(infixRule))(std::move(expr));
     }
 
     return expr;
 }
 
-Expr Parser::expression() {
+std::unique_ptr<Expr> Parser::expression() {
     return parsePrecedence(Precedence::ASSIGNMENT);
 }
 
-Expr Parser::grouping() {
-    Expr expr = expression();
+std::unique_ptr<Expr> Parser::grouping() {
+    std::unique_ptr<Expr> expr = expression();
     expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");
     return expr;
 }
 
-Expr Parser::variable() {
+std::unique_ptr<Expr> Parser::variable() {
     if (m_previous.lexeme != "_") {
-        return std::make_shared<VariableExpr>(m_previous);
+        return std::make_unique<VariableExpr>(m_previous);
     } else {
-        return std::make_shared<AnyExpr>();
+        return std::make_unique<AnyExpr>();
     }
 }
 
-Expr Parser::number() {
+std::unique_ptr<Expr> Parser::number() {
     if (m_previous.type == TokenType::INTEGER) {
         int value = std::stoi(m_previous.lexeme);
-        return std::make_shared<IntegerExpr>(value);
+        return std::make_unique<IntegerExpr>(value);
     }
     double value = std::stod(m_previous.lexeme);
-    return std::make_shared<FloatExpr>(value);
+    return std::make_unique<FloatExpr>(value);
 }
 
-Expr Parser::literal() {
+std::unique_ptr<Expr> Parser::literal() {
     switch (m_previous.type) {
-        case TokenType::TRUE: return std::make_shared<BooleanExpr>(true);
-        case TokenType::FALSE: return std::make_shared<BooleanExpr>(false);
-        case TokenType::NIL: return std::make_shared<NilExpr>();
+        case TokenType::TRUE: return std::make_unique<BooleanExpr>(true);
+        case TokenType::FALSE: return std::make_unique<BooleanExpr>(false);
+        case TokenType::NIL: return std::make_unique<NilExpr>();
     }
 }
 
-Expr Parser::string() {
-    return std::make_shared<StringExpr>(m_previous.lexeme.substr(1, m_previous.lexeme.size() - 2));
+std::unique_ptr<Expr> Parser::string() {
+    return std::make_unique<StringExpr>(m_previous.lexeme.substr(1, m_previous.lexeme.size() - 2));
 }
 
-Expr Parser::array() {
+std::unique_ptr<Expr> Parser::array() {
     Token square = m_previous;
 
-    std::string typeName{};
+    std::unique_ptr<const Typename> typeName;
 
-    std::vector<Expr> elements;
+    std::vector<std::unique_ptr<Expr>> elements;
     if (!consume(TokenType::RIGHT_SQUARE)) {
         do {
             elements.push_back(expression());
         } while (consume(TokenType::COMMA));
 
         expect(TokenType::RIGHT_SQUARE, "Expected end of array.");
+
+        // Typename can be empty
+        typeName = expectTypename(true);
     } else {
-        // Empty literal must have a typename
-        typeName = consumeTypeName();
+        // Typename cannot be empty
+        typeName = expectTypename();
     }
 
-    return std::make_shared<ArrayExpr>(elements, square, typeName);
+    return std::make_unique<ArrayExpr>(std::move(elements), square, std::move(typeName));
 }
 
-Expr Parser::unary() {
+std::unique_ptr<Expr> Parser::unary() {
     Token oper = m_previous;
 
-    Expr expr = parsePrecedence(Precedence::UNARY);
+    std::unique_ptr<Expr> expr = parsePrecedence(Precedence::UNARY);
 
-    return std::make_shared<UnaryExpr>(expr, oper);
+    return std::make_unique<UnaryExpr>(std::move(expr), oper);
 }
 
-Expr Parser::call(Expr callee) {
+std::unique_ptr<Expr> Parser::call(std::unique_ptr<Expr> callee) {
     Token leftParen = m_previous;
-    std::vector<Expr> arguments;
+    std::vector<std::unique_ptr<Expr>> arguments;
 
     if (!consume(TokenType::RIGHT_PAREN)) {
         do {
@@ -110,67 +113,75 @@ Expr Parser::call(Expr callee) {
 
     if (arguments.size() > 255) throw errorAt(leftParen, "Too many arguments. Max is 255.");
 
-    return std::make_shared<CallExpr>(callee, arguments, leftParen);
+    return std::make_unique<CallExpr>(std::move(callee), std::move(arguments), leftParen);
 }
 
-Expr Parser::subscript(Expr object) {
+std::unique_ptr<Expr> Parser::subscript(std::unique_ptr<Expr> object) {
     Token square = m_previous;
-    Expr index = expression();
+    std::unique_ptr<Expr> index = expression();
     expect(TokenType::RIGHT_SQUARE, "Expected ']' after subscript index.");
 
-    return std::make_shared<SubscriptExpr>(object, index, square);
+    return std::make_unique<SubscriptExpr>(std::move(object), std::move(index), square);
 }
 
-Expr Parser::binary(Expr left) {
+std::unique_ptr<Expr> Parser::binary(std::unique_ptr<Expr> left) {
     Token oper = m_previous;
 
     const ParseRule &rule = getParseRule(oper.type);
-    Expr right = parsePrecedence((Precedence)((int)rule.precedence + 1));
+    std::unique_ptr<Expr> right = parsePrecedence((Precedence)((int)rule.precedence + 1));
 
     switch (oper.type) {
         case TokenType::AND:
         case TokenType::OR:
-            return std::make_shared<LogicalExpr>(left, right, oper);
+            return std::make_unique<LogicalExpr>(std::move(left), std::move(right), oper);
 
         default:
-            return std::make_shared<BinaryExpr>(left, right, oper);
+            return std::make_unique<BinaryExpr>(std::move(left), std::move(right), oper);
     }
 }
 
-Expr Parser::assignment(Expr left) {
+std::unique_ptr<Expr> Parser::assignment(std::unique_ptr<Expr> target) {
     Token oper = m_previous;
 
-    Expr right = parsePrecedence(Precedence::ASSIGNMENT);
+    std::unique_ptr<Expr> value = parsePrecedence(Precedence::ASSIGNMENT);
 
-    if (typeid(*left) == typeid(VariableExpr) ||
-            typeid(*left) == typeid(FieldExpr) ||
-            typeid(*left) == typeid(SubscriptExpr)) {
-        return std::make_shared<AssignExpr>(left, right, oper);
+    if (typeid(*target) == typeid(VariableExpr)) {
+        auto variableTarget = std::unique_ptr<VariableExpr>{
+                static_cast<VariableExpr*>(target.release())
+        };
+        return std::make_unique<AssignExpr>(std::move(variableTarget), std::move(value), oper);
+    } else if (typeid(*target) == typeid(SubscriptExpr)) {
+        auto subscriptTarget = std::unique_ptr<SubscriptExpr>{
+                static_cast<SubscriptExpr*>(target.release())
+        };
+        return std::make_unique<AllotExpr>(std::move(subscriptTarget), std::move(value), oper);
+    } else if (typeid(*target) == typeid(GetExpr)) {
+        throw errorAt(oper, "Not implemented.");
     }
 
     throw errorAt(oper, "Invalid assignment target.");
 }
 
-Expr Parser::field(Expr object) {
+std::unique_ptr<Expr> Parser::field(std::unique_ptr<Expr> object) {
     Token oper = m_previous;
     expect(TokenType::IDENTIFIER, "Expected field name after '.'.");
     Token name = m_previous;
 
-    return std::make_shared<FieldExpr>(object, name, oper);
+    return std::make_unique<GetExpr>(std::move(object), name, oper);
 }
 
-Expr Parser::ternary(Expr condition) {
-    Expr thenBranch = parsePrecedence(Precedence::CONDITIONAL);
+std::unique_ptr<Expr> Parser::ternary(std::unique_ptr<Expr> condition) {
+    std::unique_ptr<Expr> thenBranch = parsePrecedence(Precedence::CONDITIONAL);
 
     expect(TokenType::COLON, "Expected ':' after then value of conditional expression.");
     Token oper = m_previous;
 
-    Expr elseBranch = parsePrecedence(Precedence::ASSIGNMENT);
+    std::unique_ptr<Expr> elseBranch = parsePrecedence(Precedence::ASSIGNMENT);
 
-    return std::make_shared<TernaryExpr>(condition, thenBranch, elseBranch, oper);
+    return std::make_unique<TernaryExpr>(std::move(condition), std::move(thenBranch), std::move(elseBranch), oper);
 }
 
-Stmt Parser::declaration() {
+std::unique_ptr<Stmt> Parser::declaration() {
     ignoreNewline();
     try {
         if (consume(TokenType::FUN)) return functionDeclaration();
@@ -185,29 +196,29 @@ Stmt Parser::declaration() {
     }
 }
 
-Stmt Parser::functionDeclaration(bool mustParseBody) {
+std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
     expect(TokenType::IDENTIFIER, "Expected function name.");
     Token name = m_previous;
 
     expect(TokenType::LEFT_PAREN, "Expected '(' after function name.");
 
-    std::vector<NamedTypename> params;
+    std::vector<Param> params;
     if (!consume(TokenType::RIGHT_PAREN)) {
         do {
             expect(TokenType::IDENTIFIER, "Expected parameter name.");
-            params.push_back(NamedTypename{m_previous, consumeTypeName()});
+            params.push_back(Param{m_previous, expectTypename()});
         } while (consume(TokenType::COMMA));
 
         expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
     }
 
     // Get the return type
-    std::string typeName = consumeTypeName(true);
+    std::unique_ptr<const Typename> returnTypename = expectTypename(true);
 
-    std::vector<Stmt> body;
+    std::vector<std::unique_ptr<Stmt>> body;
 
     if (!mustParseBody && consumeSeparator()) {
-        return std::make_shared<FunctionStmt>(name, typeName, params, body);
+        return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr);
     }
 
     expect(TokenType::COLON, "Expected ':' before function body.");
@@ -221,10 +232,10 @@ Stmt Parser::functionDeclaration(bool mustParseBody) {
 
     expectSeparator("Expected newline or ';' after function declaration.");
 
-    return std::make_shared<FunctionStmt>(name, typeName, params, body);
+    return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr);
 }
 
-Stmt Parser::structDeclaration() {
+std::unique_ptr<Stmt> Parser::structDeclaration() {
     expect(TokenType::IDENTIFIER, "Expected struct name.");
     Token name = m_previous;
 
@@ -242,28 +253,32 @@ Stmt Parser::structDeclaration() {
     expect(TokenType::COLON, "Expected ':' before struct body.");
     ignoreNewline();
 
-    std::vector<NamedTypename> fields;
-    std::vector<std::shared_ptr<FunctionStmt>> methods;
-    std::vector<std::shared_ptr<FunctionStmt>> assocFunctions;
+    std::vector<Field> fields;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+    std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
 
     while (!check(TokenType::END) && !isAtEnd()) {
         ignoreNewline();
         if (consume(TokenType::IDENTIFIER)) {
             // Field declaration
             Token fieldName = m_previous;
-            std::string fieldType = consumeTypeName();
+            std::unique_ptr<const Typename> fieldType = expectTypename();
 
-            fields.push_back(NamedTypename{fieldName, fieldType});
+            fields.push_back(Field{fieldName, std::move(fieldType)});
 
             expectSeparator("Expected newline or ';' after field declaration.");
         } else if (consume(TokenType::FUN)) {
             // Method declaration
-            std::shared_ptr<FunctionStmt> method = std::static_pointer_cast<FunctionStmt>(functionDeclaration());
-            methods.push_back(method);
+            auto method = std::unique_ptr<FunctionStmt>{
+                    static_cast<FunctionStmt*>(functionDeclaration().release())
+            };
+            methods.push_back(std::move(method));
         } else if (consume(TokenType::ASSOC)) {
             // Associated function declaration
-            auto function = std::static_pointer_cast<FunctionStmt>(functionDeclaration());
-            assocFunctions.push_back(function);
+            auto function = std::unique_ptr<FunctionStmt>{
+                    static_cast<FunctionStmt*>(functionDeclaration().release())
+            };
+            assocFunctions.push_back(std::move(function));
         } else {
             throw errorAtCurrent("Expected field or method declaration.");
         }
@@ -272,22 +287,24 @@ Stmt Parser::structDeclaration() {
     expect(TokenType::END, "Expected 'end' at end of struct declaration.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<StructStmt>(name, traits, fields, methods, assocFunctions);
+    return std::make_unique<StructStmt>(name, traits, std::move(fields), std::move(methods), std::move(assocFunctions));
 }
 
-Stmt Parser::traitDeclaration() {
+std::unique_ptr<Stmt> Parser::traitDeclaration() {
     expect(TokenType::IDENTIFIER, "Expected trait name.");
     Token name = m_previous;
 
     expect(TokenType::COLON, "Expected ':' after trait name.");
     ignoreNewline();
 
-    std::vector<std::shared_ptr<FunctionStmt>> methods;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
     while (!check(TokenType::END) && !isAtEnd()) {
         ignoreNewline();
         if (consume(TokenType::FUN)) {
-            auto method = std::static_pointer_cast<FunctionStmt>(functionDeclaration(false));
-            methods.push_back(method);
+            auto method = std::unique_ptr<FunctionStmt>{
+                    static_cast<FunctionStmt*>(functionDeclaration(false).release())
+            };
+            methods.push_back(std::move(method));
         } else {
             throw errorAtCurrent("Expected method declaration.");
         }
@@ -296,25 +313,25 @@ Stmt Parser::traitDeclaration() {
     expect(TokenType::END, "Expected 'end' at end of trait declaration.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<TraitStmt>(name, methods);
+    return std::make_unique<TraitStmt>(name, std::move(methods));
 }
 
-Stmt Parser::variableDeclaration(bool isConst) {
+std::unique_ptr<Stmt> Parser::variableDeclaration(bool isConst) {
     expect(TokenType::IDENTIFIER, "Expected variable name.");
     Token name = m_previous;
 
-    std::string typeName { consumeTypeName(true) };
+    std::unique_ptr<const Typename> typeName{expectTypename(true)};
 
     expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
 
-    Expr initializer = expression();
+    std::unique_ptr<Expr> initializer = expression();
 
     expectSeparator("Expected newline or ';' after variable declaration.");
 
-    return std::make_shared<VariableStmt>(name, typeName, initializer, isConst);
+    return std::make_unique<VariableStmt>(name, std::move(typeName), std::move(initializer), isConst);
 }
 
-Stmt Parser::statement() {
+std::unique_ptr<Stmt> Parser::statement() {
     if (consume(TokenType::BLOCK)) return blockStatement();
     if (consume(TokenType::IF)) return ifStatement();
     if (consume(TokenType::WHILE)) return whileStatement();
@@ -327,11 +344,11 @@ Stmt Parser::statement() {
     return expressionStatement();
 }
 
-Stmt Parser::blockStatement() {
+std::unique_ptr<Stmt> Parser::blockStatement() {
     expect(TokenType::COLON, "Expected ':' before block body.");
     ignoreNewline();
 
-    std::vector<Stmt> statements;
+    std::vector<std::unique_ptr<Stmt>> statements;
     while (!check(TokenType::END) && !isAtEnd()) {
         statements.push_back(declaration());
     }
@@ -339,22 +356,22 @@ Stmt Parser::blockStatement() {
     expect(TokenType::END, "Expected 'end' at end of block.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<BlockStmt>(statements);
+    return std::make_unique<BlockStmt>(std::move(statements));
 }
 
-Stmt Parser::ifStatement() {
+std::unique_ptr<Stmt> Parser::ifStatement() {
     Token keyword = m_previous;
 
-    Expr condition = expression();
+    std::unique_ptr<Expr> condition = expression();
     expect(TokenType::COLON, "Expected ':' after if condition.");
     ignoreNewline();
 
-    std::vector<Stmt> thenBlock;
+    std::vector<std::unique_ptr<Stmt>> thenBlock;
     while (!check(TokenType::END) && !check(TokenType::ELSE) && !isAtEnd()) {
         thenBlock.push_back(declaration());
     }
 
-    std::vector<Stmt> elseBlock;
+    std::vector<std::unique_ptr<Stmt>> elseBlock;
 
     if (consume(TokenType::ELSE)) {
         expect(TokenType::COLON, "Expected ':' after start of else block.");
@@ -367,18 +384,18 @@ Stmt Parser::ifStatement() {
     expect(TokenType::END, "Expected 'end' at end of if statement.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<IfStmt>(condition, thenBlock, elseBlock, keyword);
+    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBlock), std::move(elseBlock), keyword);
 }
 
-Stmt Parser::whileStatement() {
+std::unique_ptr<Stmt> Parser::whileStatement() {
     Token keyword = m_previous;
 
-    Expr condition = expression();
+    std::unique_ptr<Expr> condition = expression();
     
     expect(TokenType::COLON, "Expected ':' after while condition.");
     ignoreNewline();
 
-    std::vector<Stmt> body;
+    std::vector<std::unique_ptr<Stmt>> body;
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
     }
@@ -386,15 +403,15 @@ Stmt Parser::whileStatement() {
     expect(TokenType::END, "Expected 'end' at end of while loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<WhileStmt>(condition, body, keyword);
+    return std::make_unique<WhileStmt>(std::move(condition), std::move(body), keyword);
 }
 
-Stmt Parser::forStatement() {
+std::unique_ptr<Stmt> Parser::forStatement() {
     Token keyword = m_previous;
 
-    Stmt initializer;
+    std::unique_ptr<Stmt> initializer;
     if (consume(TokenType::SEMICOLON)) {
-        initializer = std::make_shared<ExpressionStmt>(std::make_shared<NilExpr>());
+        initializer = std::make_unique<ExpressionStmt>(std::make_unique<NilExpr>());
     } else if (consume(TokenType::VAR)) {
         initializer = variableDeclaration(false);
     } else if (consume(TokenType::CONST)) {
@@ -403,26 +420,26 @@ Stmt Parser::forStatement() {
         initializer = expressionStatement();
     }
 
-    Expr condition;
+    std::unique_ptr<Expr> condition;
     if (!consume(TokenType::SEMICOLON)) {
         condition = expression();
         expect(TokenType::SEMICOLON, "Expected ';' after for loop condition.");
     } else {
-        condition = std::make_shared<BooleanExpr>(true);
+        condition = std::make_unique<BooleanExpr>(true);
     }
 
-    Expr increment;
+    std::unique_ptr<Expr> increment;
     if (!check(TokenType::COLON)) {
         increment = expression();
     } else {
-        increment = std::make_shared<NilExpr>();
+        increment = std::make_unique<NilExpr>();
     }
 
     expect(TokenType::COLON, "Expected ':' before body of for loop.");
 
     ignoreNewline();
 
-    std::vector<Stmt> body;
+    std::vector<std::unique_ptr<Stmt>> body;
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
     }
@@ -430,21 +447,21 @@ Stmt Parser::forStatement() {
     expect(TokenType::END, "Expected 'end' at end of for loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<ForStmt>(initializer, condition, increment, body, keyword);
+    return std::make_unique<ForStmt>(std::move(initializer), std::move(condition), std::move(increment), std::move(body), keyword);
 }
 
-Stmt Parser::eachStatement() {
+std::unique_ptr<Stmt> Parser::eachStatement() {
     expect(TokenType::IDENTIFIER, "Expected item name after 'each'.");
     Token name = m_previous;
 
     expect(TokenType::IN, "Expected 'in' after each loop item name.");
 
-    Expr object = expression();
+    std::unique_ptr<Expr> object = expression();
 
     expect(TokenType::COLON, "Expected ':' before each loop body.");
     ignoreNewline();
 
-    std::vector<Stmt> body;
+    std::vector<std::unique_ptr<Stmt>> body;
     while (!check(TokenType::END) && !isAtEnd()) {
         body.push_back(declaration());
     }
@@ -452,11 +469,11 @@ Stmt Parser::eachStatement() {
     expect(TokenType::END, "Expected 'end' at end of each loop.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<EachStmt>(name, object, body);
+    return std::make_unique<EachStmt>(name, std::move(object), std::move(body));
 }
 
-Stmt Parser::givenStatement() {
-    Expr value = expression();
+std::unique_ptr<Stmt> Parser::givenStatement() {
+    std::unique_ptr<Expr> value = expression();
     expect(TokenType::COLON, "Expected ':' before given statement body.");
 
     std::vector<GivenCase> cases;
@@ -466,69 +483,69 @@ Stmt Parser::givenStatement() {
         if (consume(TokenType::WHEN)) {
             Token keyword = m_previous;
 
-            Expr caseValue = expression();
+            std::unique_ptr<Expr> caseValue = expression();
             expect(TokenType::COLON, "Expected ':' before case body");
 
-            std::vector<Stmt> caseBody;
+            std::vector<std::unique_ptr<Stmt>> caseBody;
             while (!check(TokenType::WHEN) && !check(TokenType::ELSE) && !check(TokenType::END) && !isAtEnd()) {
                 caseBody.push_back(declaration());
             }
 
-            cases.push_back(GivenCase{caseValue, caseBody, keyword});
+            cases.push_back(GivenCase{std::move(caseValue), std::move(caseBody), keyword});
         } else if (consume(TokenType::ELSE)) {
             Token keyword = m_previous;
 
             expect(TokenType::COLON, "Expected ':' before 'else' case body.");
 
-            std::vector<Stmt> caseBody;
+            std::vector<std::unique_ptr<Stmt>> caseBody;
             while (!check(TokenType::WHEN) && !check(TokenType::END) && !isAtEnd()) {
                 caseBody.push_back(declaration());
             }
 
-            Expr caseValue = std::make_shared<AnyExpr>();
+            std::unique_ptr<Expr> caseValue = std::make_unique<AnyExpr>();
 
-            cases.push_back(GivenCase{caseValue, caseBody, keyword});
+            cases.push_back(GivenCase{std::move(caseValue), std::move(caseBody), keyword});
         }
     }
 
     expect(TokenType::END, "Expected 'end' at end of given statement.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_shared<GivenStmt>(value, cases);
+    return std::make_unique<GivenStmt>(std::move(value), std::move(cases));
 }
 
-Stmt Parser::returnStatement() {
+std::unique_ptr<Stmt> Parser::returnStatement() {
     Token keyword = m_previous;
-    Expr value = expression();
+    std::unique_ptr<Expr> value = expression();
 
     expectSeparator("Expected newline or ';' after return statement.");
 
-    return std::make_shared<ReturnStmt>(keyword, value);
+    return std::make_unique<ReturnStmt>(keyword, std::move(value));
 }
 
-Stmt Parser::breakStatement() {
+std::unique_ptr<Stmt> Parser::breakStatement() {
     expectSeparator("Expected newline or ';' after break statement.");
-    return std::make_shared<BreakStmt>(m_previous);
+    return std::make_unique<BreakStmt>(m_previous);
 }
 
-Stmt Parser::continueStatement() {
+std::unique_ptr<Stmt> Parser::continueStatement() {
     expectSeparator("Expected newline or ';' after continue statement.");
-    return std::make_shared<ContinueStmt>(m_previous);
+    return std::make_unique<ContinueStmt>(m_previous);
 }
 
-Stmt Parser::expressionStatement() {
-    Expr expr = expression();
+std::unique_ptr<Stmt> Parser::expressionStatement() {
+    std::unique_ptr<Expr> expr = expression();
     expectSeparator("Expected newline or ';' after expression.");
-    return std::make_shared<ExpressionStmt>(expr);
+    return std::make_unique<ExpressionStmt>(std::move(expr));
 }
 
-std::vector<Stmt> Parser::parse() {
+std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     advance();
-    std::vector<Stmt> statements{};
+    std::vector<std::unique_ptr<Stmt>> statements{};
 
     while (!isAtEnd()) {
-        Stmt stmt = declaration();
-        if (stmt) statements.push_back(stmt);
+        std::unique_ptr<Stmt> stmt = declaration();
+        if (stmt) statements.push_back(std::move(stmt));
     }
 
     return statements;
@@ -597,59 +614,50 @@ void Parser::expectSeparator(const std::string &message) {
     throw errorAtCurrent(message);
 }
 
-std::string Parser::consumeTypeName(bool emptyAllowed) {
+std::unique_ptr<const Typename> Parser::expectTypename(bool emptyAllowed) {
+    std::unique_ptr<const Typename> typeName;
+
+    bool isEnclosed = consume(TokenType::LEFT_PAREN);
+
     if (consume(TokenType::FUN)) {
-        std::string typeName;
-
-        expect(TokenType::LEFT_PAREN, "Expected '(' after 'fun' in function type.");
-        typeName += "fun (";
-
-        std::string separator = "";
-        if (!consume(TokenType::RIGHT_PAREN)) {
-            do {
-                typeName += separator;
-                typeName += consumeTypeName();
-                separator = ", ";
-            } while (consume(TokenType::COMMA));
-
-            expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
-        }
-        typeName += ")";
-
-        // Get the return type
-        typeName += consumeTypeName(true);
-        return typeName;
-    }
-
-    // May be enclosed in square brackets to signify list type
-    if (consume(TokenType::LEFT_SQUARE)) {
-        std::string typeName;
-
-        typeName += "[";
-
-        std::string elementType = consumeTypeName();
-        if (elementType.empty()) {
-            undoAdvance();
-            return "";
-        }
-
-        typeName += elementType;
-
-        expect(TokenType::RIGHT_SQUARE, "Expected ']' after list type name.");
-
-        typeName += "]";
-        return typeName;
-    }
-
-    if (consume(TokenType::IDENTIFIER)) {
-        return m_previous.lexeme;
-    }
-
-    if (!emptyAllowed) {
+        typeName = expectFunctionTypename();
+    } else if (consume(TokenType::IDENTIFIER)) {
+        typeName = std::make_unique<BasicTypename>(m_previous);
+    } else if (!emptyAllowed) {
         throw error("Expected a typename.");
     }
 
-    return "";
+    if (typeName && consume(TokenType::LEFT_SQUARE)) {
+        expect(TokenType::RIGHT_SQUARE, "Expected ']' to complete list typename.");
+        typeName = std::make_unique<ArrayTypename>(std::move(typeName));
+    }
+
+    if (isEnclosed && !consume(TokenType::RIGHT_PAREN)) {
+        throw error("Expected ')' after typename.");
+    }
+
+    if (!typeName && emptyAllowed) {
+        typeName = std::make_unique<BasicTypename>("", m_previous);
+    }
+
+    return typeName;
+}
+
+std::unique_ptr<const Typename> Parser::expectFunctionTypename() {
+    expect(TokenType::LEFT_PAREN, "Expected '(' after 'fun' in function type.");
+
+    std::vector<std::unique_ptr<const Typename>> argumentTypenames;
+    if (!consume(TokenType::RIGHT_PAREN)) {
+        do {
+            argumentTypenames.push_back(expectTypename());
+        } while (consume(TokenType::COMMA));
+
+        expect(TokenType::RIGHT_PAREN, "Expected end of parameter list in function type.");
+    }
+
+    std::unique_ptr<const Typename> returnTypename = expectTypename(true);
+
+    return std::make_unique<FunctionTypename>(std::move(returnTypename), std::move(argumentTypenames));
 }
 
 void Parser::synchronise() {

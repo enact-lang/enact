@@ -13,10 +13,13 @@ enum class OpCode : uint8_t {
     FALSE,
     NIL,
 
+    CHECK_INT,
     CHECK_NUMERIC,
     CHECK_BOOL,
     CHECK_REFERENCE,
     CHECK_CALLABLE,
+    CHECK_INDEXABLE,
+    CHECK_ALLOTABLE,
     CHECK_TYPE,
     CHECK_TYPE_LONG,
 
@@ -32,6 +35,12 @@ enum class OpCode : uint8_t {
     LESS,
     GREATER,
     EQUAL,
+
+    ARRAY,
+    ARRAY_LONG,
+
+    GET_ARRAY_INDEX,
+    SET_ARRAY_INDEX,
 
     POP,
 

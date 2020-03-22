@@ -40,25 +40,25 @@ InterpretResult Enact::run(const std::string& source) {
 
     { // Free up memory for the VM
         Parser parser{m_source};
-        std::vector<Stmt> statements = parser.parse();
+        std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
 
         Analyser analyser{};
-        analyser.analyse(statements);
+        statements = analyser.analyse(std::move(statements));
 
         if (parser.hadError()) return InterpretResult::PARSE_ERROR;
         if (analyser.hadError()) return InterpretResult::ANALYSIS_ERROR;
 
         if (getFlags().flagEnabled(Flag::DEBUG_PRINT_AST)) {
             AstPrinter astPrinter;
-            for (const Stmt &stmt : statements) {
-                astPrinter.print(stmt);
+            for (const auto& stmt : statements) {
+                astPrinter.print(*stmt);
                 std::cout << "\n";
             }
         }
 
         Compiler compiler{};
         compiler.init(FunctionKind::SCRIPT, std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), "");
-        compiler.compile(statements);
+        compiler.compile(std::move(statements));
         script = compiler.end();
         if (compiler.hadError()) return InterpretResult::COMPILE_ERROR;
     }

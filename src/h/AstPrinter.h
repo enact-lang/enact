@@ -22,14 +22,15 @@ class AstPrinter : private StmtVisitor<std::string>, private ExprVisitor<std::st
     std::string visitWhileStmt(WhileStmt& stmt) override;
     std::string visitVariableStmt(VariableStmt& stmt) override;
 
+    std::string visitAllotExpr(AllotExpr& expr) override;
     std::string visitAnyExpr(AnyExpr& expr) override;
     std::string visitArrayExpr(ArrayExpr& expr) override;
     std::string visitAssignExpr(AssignExpr& expr) override;
     std::string visitBinaryExpr(BinaryExpr& expr) override;
     std::string visitBooleanExpr(BooleanExpr& expr) override;
     std::string visitCallExpr(CallExpr& expr) override;
-    std::string visitFieldExpr(FieldExpr& expr) override;
     std::string visitFloatExpr(FloatExpr& expr) override;
+    std::string visitGetExpr(GetExpr& expr) override;
     std::string visitIntegerExpr(IntegerExpr& expr) override;
     std::string visitLogicalExpr(LogicalExpr& expr) override;
     std::string visitNilExpr(NilExpr& expr) override;
@@ -39,10 +40,10 @@ class AstPrinter : private StmtVisitor<std::string>, private ExprVisitor<std::st
     std::string visitUnaryExpr(UnaryExpr& expr) override;
     std::string visitVariableExpr(VariableExpr& expr) override;
 
-    std::string evaluate(Stmt stmt);
-    std::string evaluate(Expr expr);
+    std::string evaluate(Stmt& stmt);
+    std::string evaluate(Expr& expr);
 public:
-    void print(Stmt stmt);
+    void print(Stmt& stmt);
 };
 
 #endif //ENACT_ASTPRINTER_H

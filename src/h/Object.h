@@ -115,14 +115,21 @@ class Value;
 
 class ArrayObject : public Object {
     std::vector<Value> m_vector;
+    Type m_type;
 
 public:
-    explicit ArrayObject();
-    explicit ArrayObject(std::vector<Value> vector);
+    explicit ArrayObject(Type type);
+    explicit ArrayObject(size_t length, Type type);
+    explicit ArrayObject(std::vector<Value> vector, Type type);
 
     ~ArrayObject() override = default;
 
-    std::optional<Value> at(size_t index) const;
+    size_t length() const;
+
+    Value& at(size_t index);
+    const Value& at(size_t index) const;
+
+    void append(Value value);
 
     const std::vector<Value>& asVector() const;
 

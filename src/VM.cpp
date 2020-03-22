@@ -69,6 +69,16 @@ InterpretResult VM::run(FunctionObject* function) {
             case OpCode::FALSE: push(Value{false}); break;
             case OpCode::NIL: push(Value{}); break;
 
+            case OpCode::CHECK_INT: {
+                Value value = peek(0);
+                if (!value.getType()->isInt()) {
+                    runtimeError("Expected a value of type 'int', but got a value of type '"
+                                 + value.getType()->toString() + "' instead.");
+
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
             case OpCode::CHECK_NUMERIC: {
                 Value value = peek(0);
                 if (!value.getType()->isNumeric()) {
@@ -134,6 +144,26 @@ InterpretResult VM::run(FunctionObject* function) {
                 }
                 break;
             }
+            case OpCode::CHECK_INDEXABLE: {
+                Value array = peek(0);
+                if (!array.getType()->isArray()) {
+                    runtimeError("Expected an array, but got a value of type '" + array.getType()->toString() +
+                            "' instead.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+            case OpCode::CHECK_ALLOTABLE: {
+                Type shouldBe = peek(0).getType()->as<ArrayType>()->getElementType();
+                Type valueType = peek(1).getType();
+
+                if (!valueType->looselyEquals(*shouldBe)) {
+                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                        "' to assign in array, but got a value of type '" + valueType->toString() + "' instead.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
             case OpCode::CHECK_TYPE: {
                 Type shouldBe = READ_CONSTANT().asObject()->getType();
                 Value value = peek(0);
@@ -179,6 +209,60 @@ InterpretResult VM::run(FunctionObject* function) {
                 Value b = pop();
                 Value a = pop();
                 push(Value{a == b});
+                break;
+            }
+
+
+            case OpCode::ARRAY: {
+                uint8_t length = READ_BYTE();
+                Type type = READ_CONSTANT().asObject()->as<TypeObject>()->getContainedType();
+                auto* array = GC::allocateObject<ArrayObject>(length, type);
+                if (length != 0) {
+                    for (uint8_t i = length; i-- > 0;) {
+                        array->at(i) = pop();
+                    }
+                }
+                push(Value{array});
+                break;
+            }
+            case OpCode::ARRAY_LONG: {
+                uint32_t length = READ_LONG();
+                Type type = READ_CONSTANT_LONG().asObject()->as<TypeObject>()->getContainedType();
+                auto* array = GC::allocateObject<ArrayObject>(length, type);
+                if (length != 0) {
+                    for (uint32_t i = length; i-- > 0;) {
+                        array->at(i) = pop();
+                    }
+                }
+                push(Value{array});
+                break;
+            }
+
+            case OpCode::GET_ARRAY_INDEX: {
+                int index = pop().asInt();
+                ArrayObject* array = pop().asObject()->as<ArrayObject>();
+
+                if (index >= array->length()) {
+                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                             + "length '" + std::to_string(array->asVector().size()) + "'.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                push(array->at(index));
+                break;
+            }
+            case OpCode::SET_ARRAY_INDEX: {
+                int index = pop().asInt();
+                ArrayObject* array = pop().asObject()->as<ArrayObject>();
+                Value newValue = peek(0);
+
+                if (index >= array->length()) {
+                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                                 + "length '" + std::to_string(array->asVector().size()) + "'.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                array->at(index) = newValue;
                 break;
             }
 
@@ -385,7 +469,7 @@ UpvalueObject* VM::captureUpvalue(uint32_t location) {
 
     if (upvalue != nullptr && upvalue->getLocation() == location) return upvalue;
 
-    UpvalueObject* createdUpvalue = GC::allocateObject<UpvalueObject>(location);
+    auto* createdUpvalue = GC::allocateObject<UpvalueObject>(location);
     createdUpvalue->setNext(upvalue);
 
     if (prevUpvalue == nullptr) {

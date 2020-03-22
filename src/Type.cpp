@@ -69,6 +69,9 @@ bool TypeBase::operator!=(const TypeBase &type) const {
 }
 
 bool TypeBase::looselyEquals(const TypeBase &type) const {
+    if (this->isArray() && type.isArray()) {
+        return this->as<ArrayType>()->getElementType()->looselyEquals(*type.as<ArrayType>()->getElementType());
+    }
     if (this->isTrait() && type.isStruct()) {
         return type.as<StructType>()->getTrait(*this) != std::nullopt;
     }
@@ -80,48 +83,7 @@ bool TypeBase::looselyEquals(const TypeBase &type) const {
 }
 
 std::string TypeBase::toString() const {
-    switch (m_kind) {
-        case TypeKind::PRIMITIVE: {
-            auto primType = this->as<PrimitiveType>();
-            switch (primType->getPrimitiveKind()) {
-                case PrimitiveKind::INT: return "int";
-                case PrimitiveKind::FLOAT: return "float";
-                case PrimitiveKind::BOOL: return "bool";
-                case PrimitiveKind::STRING: return "string";
-                case PrimitiveKind::NOTHING: return "nothing";
-                case PrimitiveKind::DYNAMIC: return "any";
-                default: return "";
-            }
-        }
-        case TypeKind::ARRAY: {
-            auto arrType = this->as<ArrayType>();
-            return "[" + arrType->getElementType()->toString() + "]";
-        }
-        case TypeKind::FUNCTION: {
-            auto funType = this->as<FunctionType>();
-
-            std::stringstream ret{};
-            ret << "fun (";
-            std::string separator = "";
-            for (const Type& argType : funType->getArgumentTypes()) {
-                ret << separator << argType->toString();
-                separator = ", ";
-            }
-
-            ret << ") " << funType->getReturnType()->toString();
-
-            return ret.str();
-        }
-        case TypeKind::TRAIT: {
-            return this->as<TraitType>()->getName();
-        }
-        case TypeKind::STRUCT: {
-            return this->as<StructType>()->getName();
-        }
-
-        // Unreachable
-        default: return "";
-    }
+    return toTypename()->name();
 }
 
 bool TypeBase::isPrimitive() const {
@@ -224,7 +186,6 @@ bool TypeBase::maybeStruct() const {
 
 
 // Primitive types
-
 PrimitiveType::PrimitiveType(PrimitiveKind kind) :
         TypeBase{TypeKind::PRIMITIVE},
         m_kind{kind} {}
@@ -233,6 +194,18 @@ PrimitiveKind PrimitiveType::getPrimitiveKind() const {
     return m_kind;
 }
 
+std::unique_ptr<Typename> PrimitiveType::toTypename() const {
+    std::string name;
+    switch (m_kind) {
+        case PrimitiveKind::INT: name = "int"; break;
+        case PrimitiveKind::FLOAT: name = "float"; break;
+        case PrimitiveKind::BOOL: name = "bool"; break;
+        case PrimitiveKind::STRING: name = "string"; break;
+        case PrimitiveKind::DYNAMIC: name = "any"; break;
+        case PrimitiveKind::NOTHING: name = "nothing"; break;
+    }
+    return std::make_unique<BasicTypename>(Token{TokenType::IDENTIFIER, name, 0, 0});
+}
 
 ArrayType::ArrayType(Type elementType) :
         TypeBase{TypeKind::ARRAY},
@@ -240,6 +213,10 @@ ArrayType::ArrayType(Type elementType) :
 
 const Type ArrayType::getElementType() const {
     return m_elementType;
+}
+
+std::unique_ptr<Typename> ArrayType::toTypename() const {
+    return std::make_unique<ArrayTypename>(m_elementType->toTypename());
 }
 
 FunctionType::FunctionType(Type returnType, std::vector<Type> argumentTypes) :
@@ -253,6 +230,14 @@ const Type FunctionType::getReturnType() const {
 
 const std::vector<Type>& FunctionType::getArgumentTypes() const {
     return m_argumentTypes;
+}
+
+std::unique_ptr<Typename> FunctionType::toTypename() const {
+    std::vector<std::unique_ptr<const Typename>> argumentTypenames;
+    for (Type type : m_argumentTypes) {
+        argumentTypenames.push_back(type->toTypename());
+    }
+    return std::make_unique<FunctionTypename>(m_returnType->toTypename(), std::move(argumentTypenames));
 }
 
 TraitType::TraitType(std::string name, std::unordered_map<std::string, Type> methods) :
@@ -274,6 +259,10 @@ std::optional<Type> TraitType::getMethod(const std::string &name) const {
     }
 
     return {};
+}
+
+std::unique_ptr<Typename> TraitType::toTypename() const {
+    return std::make_unique<BasicTypename>(m_name, Token{TokenType::IDENTIFIER, m_name, 0, 0});
 }
 
 StructType::StructType(std::string name, std::vector<Type> traits,
@@ -343,6 +332,10 @@ std::optional<Type> StructType::getAssocFunction(const std::string &name) const 
     return {};
 }
 
+std::unique_ptr<Typename> StructType::toTypename() const {
+    return std::make_unique<BasicTypename>(m_name, Token{TokenType::IDENTIFIER, m_name, 0, 0});
+}
+
 ConstructorType::ConstructorType(StructType structType) :
         TypeBase{TypeKind::CONSTRUCTOR},
         m_structType{structType},
@@ -355,4 +348,8 @@ const StructType &ConstructorType::getStructType() const {
 
 const FunctionType &ConstructorType::getFunctionType() const {
     return m_functionType;
+}
+
+std::unique_ptr<Typename> ConstructorType::toTypename() const {
+    return m_functionType.toTypename();
 }

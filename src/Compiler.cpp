@@ -44,29 +44,29 @@ FunctionObject* Compiler::end() {
     return m_currentFunction;
 }
 
-void Compiler::compile(std::vector<Stmt> ast) {
+void Compiler::compile(std::vector<std::unique_ptr<Stmt>> ast) {
     for (auto& stmt : ast) {
-        compile(stmt);
+        compile(*stmt);
     }
 }
 
-void Compiler::compile(Stmt stmt) {
+void Compiler::compile(Stmt& stmt) {
     try {
-        stmt->accept(this);
+        stmt.accept(this);
     } catch (CompileError& error) {
         Enact::reportErrorAt(error.getToken(), error.getMessage());
         m_hadError = true;
     }
 }
 
-void Compiler::compile(Expr expr) {
-    expr->accept(this);
+void Compiler::compile(Expr& expr) {
+    expr.accept(this);
 }
 
 void Compiler::visitBlockStmt(BlockStmt &stmt) {
     beginScope();
-    for (const Stmt& statement : stmt.statements) {
-        compile(statement);
+    for (auto& statement : stmt.statements) {
+        compile(*statement);
     }
     endScope();
 }
@@ -84,17 +84,17 @@ void Compiler::visitEachStmt(EachStmt &stmt) {
 }
 
 void Compiler::visitExpressionStmt(ExpressionStmt &stmt) {
-    compile(stmt.expr);
+    compile(*stmt.expr);
     emitByte(OpCode::POP);
 }
 
 void Compiler::visitForStmt(ForStmt &stmt) {
     beginScope();
-    compile(stmt.initializer);
+    compile(*stmt.initializer);
 
     size_t loopStartIndex = currentChunk().getCount();
 
-    compile(stmt.condition);
+    compile(*stmt.condition);
     if (stmt.condition->getType()->isDynamic()) {
         emitByte(OpCode::CHECK_BOOL);
     }
@@ -104,12 +104,12 @@ void Compiler::visitForStmt(ForStmt &stmt) {
     emitByte(OpCode::POP);
 
     beginScope();
-    for (Stmt& statement : stmt.body) {
-        compile(statement);
+    for (auto& statement : stmt.body) {
+        compile(*statement);
     }
     endScope();
 
-    compile(stmt.increment);
+    compile(*stmt.increment);
     endScope();
 
     // Pop the increment
@@ -129,12 +129,12 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
     Compiler compiler{this};
     compiler.init(FunctionKind::FUNCTION, stmt.type, stmt.name.lexeme);
 
-    for (const NamedTypename& param : stmt.params) {
+    for (const Param& param : stmt.params) {
         compiler.addLocal(param.name);
         compiler.m_locals.back().initialized = true;
     }
 
-    compiler.compile(stmt.body);
+    compiler.compile(std::move(stmt.body));
     FunctionObject* function = compiler.end();
 
     uint32_t constantIndex = currentChunk().addConstant(Value{function});
@@ -166,8 +166,8 @@ void Compiler::visitGivenStmt(GivenStmt &stmt) {
     std::vector<Jump> exitJumps;
 
     for (GivenCase& case_ : stmt.cases) {
-        compile(stmt.value);
-        compile(case_.value);
+        compile(*stmt.value);
+        compile(*case_.value);
         emitByte(OpCode::EQUAL);
 
         size_t jumpToNext = emitJump(OpCode::JUMP_IF_FALSE);
@@ -175,8 +175,8 @@ void Compiler::visitGivenStmt(GivenStmt &stmt) {
         emitByte(OpCode::POP);
 
         beginScope();
-        for (Stmt& statement : case_.body) {
-            compile(statement);
+        for (auto& statement : case_.body) {
+            compile(*statement);
         }
         endScope();
 
@@ -195,7 +195,7 @@ void Compiler::visitGivenStmt(GivenStmt &stmt) {
 }
 
 void Compiler::visitIfStmt(IfStmt &stmt) {
-    compile(stmt.condition);
+    compile(*stmt.condition);
     if (stmt.condition->getType()->isDynamic()) {
         emitByte(OpCode::CHECK_BOOL);
     }
@@ -207,8 +207,8 @@ void Compiler::visitIfStmt(IfStmt &stmt) {
     emitByte(OpCode::POP);
 
     beginScope();
-    for (Stmt& statement : stmt.thenBlock) {
-        compile(statement);
+    for (auto& statement : stmt.thenBlock) {
+        compile(*statement);
     }
     endScope();
 
@@ -222,8 +222,8 @@ void Compiler::visitIfStmt(IfStmt &stmt) {
     emitByte(OpCode::POP);
 
     beginScope();
-    for (Stmt& statement : stmt.elseBlock) {
-        compile(statement);
+    for (auto& statement : stmt.elseBlock) {
+        compile(*statement);
     }
     endScope();
 
@@ -232,7 +232,7 @@ void Compiler::visitIfStmt(IfStmt &stmt) {
 }
 
 void Compiler::visitReturnStmt(ReturnStmt &stmt) {
-    compile(stmt.value);
+    compile(*stmt.value);
     emitByte(OpCode::RETURN);
 }
 
@@ -247,7 +247,7 @@ void Compiler::visitTraitStmt(TraitStmt &stmt) {
 void Compiler::visitWhileStmt(WhileStmt &stmt) {
     size_t loopStartIndex = currentChunk().getCount();
 
-    compile(stmt.condition);
+    compile(*stmt.condition);
     if (stmt.condition->getType()->isDynamic()) {
         emitByte(OpCode::CHECK_BOOL);
     }
@@ -257,8 +257,8 @@ void Compiler::visitWhileStmt(WhileStmt &stmt) {
     emitByte(OpCode::POP);
 
     beginScope();
-    for (Stmt& statement : stmt.body) {
-        compile(statement);
+    for (auto& statement : stmt.body) {
+        compile(*statement);
     }
     endScope();
 
@@ -271,8 +271,25 @@ void Compiler::visitWhileStmt(WhileStmt &stmt) {
 
 void Compiler::visitVariableStmt(VariableStmt &stmt) {
     addLocal(stmt.name);
-    compile(stmt.initializer);
+    compile(*stmt.initializer);
     m_locals.back().initialized = true;
+}
+
+void Compiler::visitAllotExpr(AllotExpr& expr) {
+    compile(*expr.value);
+    compile(*expr.target->object);
+
+    if (expr.target->object->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_INDEXABLE);
+        emitByte(OpCode::CHECK_ALLOTABLE);
+    }
+
+    compile(*expr.target->index);
+    if (expr.target->index->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_INT);
+    }
+
+    emitByte(OpCode::SET_ARRAY_INDEX);
 }
 
 void Compiler::visitAnyExpr(AnyExpr &expr) {
@@ -280,30 +297,54 @@ void Compiler::visitAnyExpr(AnyExpr &expr) {
 }
 
 void Compiler::visitArrayExpr(ArrayExpr &expr) {
-    throw errorAt(expr.square, "Not implemented.");
+    for (auto& value : expr.value) {
+        compile(*value);
+    }
+
+    uint32_t length = expr.value.size();
+
+    auto* type = GC::allocateObject<TypeObject>(expr.getType());
+    uint32_t typeConstant = currentChunk().addConstant(Value{type});
+
+    if (length <= UINT8_MAX && typeConstant <= UINT8_MAX) {
+        emitByte(OpCode::ARRAY);
+        emitByte(static_cast<uint8_t>(length));
+        emitByte(static_cast<uint8_t>(typeConstant));
+    } else {
+        emitByte(OpCode::ARRAY_LONG);
+        emitLong(length);
+        emitLong(typeConstant);
+    }
 }
 
 void Compiler::visitAssignExpr(AssignExpr &expr) {
-    compile(expr.right);
+    compile(*expr.value);
 
-    if (typeid(*expr.left) == typeid(VariableExpr)) {
-        auto variableExpr = std::static_pointer_cast<VariableExpr>(expr.left);
+    uint32_t index;
+    OpCode byteOp;
+    OpCode longOp;
 
-        uint32_t index = resolveLocal(variableExpr->name);
-        if (index <= UINT8_MAX) {
-            emitByte(OpCode::SET_LOCAL);
-            emitByte(static_cast<uint8_t>(index));
-        } else {
-            emitByte(OpCode::SET_LOCAL_LONG);
-            emitLong(index);
-        }
+    try {
+        index = resolveLocal(expr.target->name);
+        byteOp = OpCode::SET_LOCAL;
+        longOp = OpCode::SET_LOCAL_LONG;
+    } catch (CompileError&) {
+        index = resolveUpvalue(expr.target->name);
+        byteOp = OpCode::SET_UPVALUE;
+        longOp = OpCode::SET_UPVALUE_LONG;
+    }
+
+    if (index <= UINT8_MAX) {
+        emitByte(byteOp);
+        emitByte(static_cast<uint8_t>(index));
     } else {
-        throw errorAt(expr.oper, "Not implemented.");
+        emitByte(longOp);
+        emitLong(index);
     }
 }
 
 void Compiler::visitBinaryExpr(BinaryExpr &expr) {
-    compile(expr.left);
+    compile(*expr.left);
 
     if (expr.oper.type != TokenType::EQUAL
             && expr.oper.type != TokenType::BANG_EQUAL
@@ -311,7 +352,7 @@ void Compiler::visitBinaryExpr(BinaryExpr &expr) {
         emitByte(OpCode::CHECK_NUMERIC);
     }
 
-    compile(expr.right);
+    compile(*expr.right);
 
     if (expr.oper.type != TokenType::EQUAL
             && expr.oper.type != TokenType::BANG_EQUAL
@@ -350,12 +391,12 @@ void Compiler::visitBooleanExpr(BooleanExpr &expr) {
 }
 
 void Compiler::visitCallExpr(CallExpr &expr) {
-    compile(expr.callee);
+    compile(*expr.callee);
 
     bool needRuntimeCheck = expr.callee->getType()->isDynamic();
 
     for (int i = 0; i < expr.arguments.size(); ++i) {
-        compile(expr.arguments[i]);
+        compile(*expr.arguments[i]);
         if (expr.arguments[i]->getType()->isDynamic()) {
             needRuntimeCheck = true;
         }
@@ -370,12 +411,12 @@ void Compiler::visitCallExpr(CallExpr &expr) {
     emitByte(static_cast<uint8_t>(expr.arguments.size()));
 }
 
-void Compiler::visitFieldExpr(FieldExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
-}
-
 void Compiler::visitFloatExpr(FloatExpr &expr) {
     emitConstant(Value{expr.value});
+}
+
+void Compiler::visitGetExpr(GetExpr &expr) {
+    throw errorAt(expr.oper, "Not implemented.");
 }
 
 void Compiler::visitIntegerExpr(IntegerExpr &expr) {
@@ -384,7 +425,7 @@ void Compiler::visitIntegerExpr(IntegerExpr &expr) {
 
 void Compiler::visitLogicalExpr(LogicalExpr &expr) {
     // Always compile the left operand
-    compile(expr.left);
+    compile(*expr.left);
 
     size_t jumpIndex = 0;
 
@@ -396,7 +437,7 @@ void Compiler::visitLogicalExpr(LogicalExpr &expr) {
 
     emitByte(OpCode::POP);
 
-    compile(expr.right);
+    compile(*expr.right);
 
     patchJump(jumpIndex, expr.oper);
 }
@@ -411,7 +452,17 @@ void Compiler::visitStringExpr(StringExpr &expr) {
 }
 
 void Compiler::visitSubscriptExpr(SubscriptExpr &expr) {
-    throw errorAt(expr.square, "Not implemented.");
+    compile(*expr.object);
+    if (expr.object->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_INDEXABLE);
+    }
+
+    compile(*expr.index);
+    if (expr.index->getType()->isDynamic()) {
+        emitByte(OpCode::CHECK_INT);
+    }
+
+    emitByte(OpCode::GET_ARRAY_INDEX);
 }
 
 void Compiler::visitTernaryExpr(TernaryExpr &expr) {
@@ -419,7 +470,7 @@ void Compiler::visitTernaryExpr(TernaryExpr &expr) {
 }
 
 void Compiler::visitUnaryExpr(UnaryExpr &expr) {
-    compile(expr.operand);
+    compile(*expr.operand);
 
     switch (expr.oper.type) {
         case TokenType::MINUS: {
@@ -449,24 +500,25 @@ void Compiler::visitUnaryExpr(UnaryExpr &expr) {
 }
 
 void Compiler::visitVariableExpr(VariableExpr &expr) {
-    try {
-        uint32_t index = resolveLocal(expr.name);
-        if (index <= UINT8_MAX) {
-            emitByte(OpCode::GET_LOCAL);
-            emitByte(static_cast<uint8_t>(index));
-        } else {
-            emitByte(OpCode::GET_LOCAL_LONG);
-            emitLong(index);
-        }
-        return;
-    } catch (CompileError& error) {}
+    uint32_t index;
+    OpCode byteOp;
+    OpCode longOp;
 
-    uint32_t index = resolveUpvalue(expr.name);
+    try {
+        index = resolveLocal(expr.name);
+        byteOp = OpCode::GET_LOCAL;
+        longOp = OpCode::GET_LOCAL_LONG;
+    } catch (CompileError& error) {
+        index = resolveUpvalue(expr.name);
+        byteOp = OpCode::GET_UPVALUE;
+        longOp = OpCode::GET_UPVALUE_LONG;
+    }
+
     if (index <= UINT8_MAX) {
-        emitByte(OpCode::GET_UPVALUE);
+        emitByte(byteOp);
         emitByte(static_cast<uint8_t>(index));
     } else {
-        emitByte(OpCode::GET_UPVALUE_LONG);
+        emitByte(longOp);
         emitLong(index);
     }
 }

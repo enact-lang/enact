@@ -1,3 +1,6 @@
+# THIS SCRIPT IS DEPRECATED
+# It will NOT generate a correct AST
+
 # This script generates the AST classes found in Expr.h/cpp and Stmt.h/cpp.
 
 
@@ -116,13 +119,15 @@ def generate_tree(name, type_fields, visitor_types, includes):
 generate_tree(
     "Expr",
     {
-        "Array":    ["std::vector<Expr> value", "Token square", "std::string typeName"],
-        "Assign":   ["Expr left", "Expr right", "Token oper"],
+        "Allot":    ["std::shared_ptr<SubscriptExpr> target", "Expr value", "Token oper"],
+        "Any":      [],
+        "Array":    ["std::vector<Expr> value", "Token square", "std::unique_ptr<Typename> typeName"],
+        "Assign":   ["std::shared_ptr<VariableExpr> target", "Expr value", "Token oper"],
         "Binary":   ["Expr left", "Expr right", "Token oper"],
         "Boolean":  ["bool value"],
         "Call":     ["Expr callee", "std::vector<Expr> arguments", "Token paren"],
-        "Field":    ["Expr object", "Token name", "Token oper"],
         "Float":    ["double value"],
+        "Get":      ["Expr object", "Token name", "Token oper"],
         "Integer":  ["int value"],
         "Logical":  ["Expr left", "Expr right", "Token oper"],
         "Nil":      [],
@@ -130,11 +135,10 @@ generate_tree(
         "Subscript":["Expr object", "Expr index", "Token square"],
         "Ternary":  ["Expr condition", "Expr thenExpr", "Expr elseExpr", "Token oper"],
         "Unary":    ["Expr operand", "Token oper"],
-        "Any":      [],
         "Variable": ["Token name"]
     },
     ["std::string", "void"],
-    ['"../h/Token.h"', '"../h/Type.h"', "<memory>", "<vector>"]
+    ['"../h/Type.h"', '"../h/Typename.h"', "<memory>", "<vector>"]
 )
 
 generate_tree(
@@ -145,15 +149,15 @@ generate_tree(
         "Continue":     ["Token keyword"],
         "Each":         ["Token name", "Expr object", "std::vector<Stmt> body"],
         "Expression":   ["Expr expr"],
-        "For":          ["Stmt initializer", "Expr condition", "Expr increment", "std::vector<Stmt> body"],
-        "Function":     ["Token name", "std::string returnTypeName", "std::vector<NamedTypename> params", "std::vector<Stmt> body"],
+        "For":          ["Stmt initializer", "Expr condition", "Expr increment", "std::vector<Stmt> body", "Token keyword"],
+        "Function":     ["Token name", "std::unique_ptr<Typename> returnTypename", "std::vector<std::unique_ptr<Typename>> params", "std::vector<Stmt> body", "Type type"],
         "Given":        ["Expr value", "std::vector<GivenCase> cases"],
         "If":           ["Expr condition", "std::vector<Stmt> thenBlock", "std::vector<Stmt> elseBlock", "Token keyword"],
         "Return":       ["Token keyword", "Expr value"],
-        "Struct":       ["Token name", "std::vector<Token> traits", "std::vector<NamedTypename> fields", "std::vector<std::shared_ptr<FunctionStmt>> methods", "std::vector<std::shared_ptr<FunctionStmt>> assocFunctions"],
+        "Struct":       ["Token name", "std::vector<Token> traits", "std::vector<std::unique_ptr<Typename>> fields", "std::vector<std::shared_ptr<FunctionStmt>> methods", "std::vector<std::shared_ptr<FunctionStmt>> assocFunctions"],
         "Trait":        ["Token name", "std::vector<std::shared_ptr<FunctionStmt>> methods"],
-        "While":        ["Expr condition", "std::vector<Stmt> body"],
-        "Variable":     ["Token name", "std::string typeName", "Expr initializer", "bool isConst"],
+        "While":        ["Expr condition", "std::vector<Stmt> body", "Token keyword"],
+        "Variable":     ["Token name", "Typename typeName", "Expr initializer", "bool isConst"],
     },
     ["std::string", "void"],
     ['"Expr.h"', '"../h/trivialStructs.h"']

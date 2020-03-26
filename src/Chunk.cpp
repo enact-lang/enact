@@ -106,8 +106,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_ARRAY_INDEX:
         case OpCode::POP:
         case OpCode::CLOSE_UPVALUE:
-        case OpCode::RETURN:
-        case OpCode::STRUCT: {
+        case OpCode::RETURN: {
             std::string str;
             std::tie(str, index) = disassembleSimple(index);
             s << str;
@@ -163,6 +162,22 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         // Long constant instructions
         case OpCode::CONSTANT_LONG:
         case OpCode::CHECK_TYPE_LONG: {
+            std::string str;
+            std::tie(str, index) = disassembleLongConstant(index);
+            s << str;
+            break;
+        }
+
+        // Two-argument constant instructions
+        case OpCode::STRUCT: {
+            std::string str;
+            std::tie(str, index) = disassembleConstant(index, 2);
+            s << str;
+            break;
+        }
+
+        // Two-argument long constant instructions
+        case OpCode::STRUCT_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLongConstant(index);
             s << str;
@@ -286,36 +301,40 @@ std::pair<std::string, size_t> Chunk::disassembleLong(size_t index) const {
     return {s.str(), ++index};
 }
 
-std::pair<std::string, size_t> Chunk::disassembleConstant(size_t index) const {
+std::pair<std::string, size_t> Chunk::disassembleConstant(size_t index, size_t argCount) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
     s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
-    size_t constant = m_code[++index];
+    for (size_t i = argCount; i <= argCount; ++i) {
+        size_t constant = m_code[++index];
 
-    s << " " << constant << " (";
-    s << m_constants[constant] << ")\n";
+        s << " " << constant << " (";
+        s << m_constants[constant] << ")\n";
+    }
 
     return {s.str(), ++index};
 }
 
-std::pair<std::string, size_t> Chunk::disassembleLongConstant(size_t index) const {
+std::pair<std::string, size_t> Chunk::disassembleLongConstant(size_t index, size_t argCount) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
     s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
-    size_t constant =  m_code[index + 1] |
-                       (m_code[index + 2] << 8) |
-                       (m_code[index + 3] << 16);
+    for (size_t i = argCount; i <= argCount; ++i) {
+        size_t constant = m_code[index + 1] |
+                          (m_code[index + 2] << 8) |
+                          (m_code[index + 3] << 16);
 
-    index += 3;
+        index += 3;
 
-    s << " " << constant << " (";
-    s << m_constants[constant] << ")\n";
+        s << " " << constant << " (";
+        s << m_constants[constant] << ")\n";
+    }
 
     return {s.str(), ++index};
 }
@@ -404,6 +423,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::CLOSE_UPVALUE: return "CLOSE_UPVALUE";
         case OpCode::RETURN: return "RETURN";
         case OpCode::STRUCT: return "STRUCT";
+        case OpCode::STRUCT_LONG: return "STRUCT_LONG";
         // Unreachable.
         default: return "";
     }

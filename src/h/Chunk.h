@@ -72,6 +72,7 @@ enum class OpCode : uint8_t {
     RETURN,
 
     STRUCT,
+    STRUCT_LONG,
 };
 
 std::string opCodeToString(OpCode code);
@@ -86,8 +87,8 @@ class Chunk {
     std::pair<std::string, size_t> disassembleByte(size_t index) const;
     std::pair<std::string, size_t> disassembleShort(size_t index) const;
     std::pair<std::string, size_t> disassembleLong(size_t index) const;
-    std::pair<std::string, size_t> disassembleConstant(size_t index) const;
-    std::pair<std::string, size_t> disassembleLongConstant(size_t index) const;
+    std::pair<std::string, size_t> disassembleConstant(size_t index, size_t argCount = 1) const;
+    std::pair<std::string, size_t> disassembleLongConstant(size_t index, size_t argCount = 1) const;
 
 public:
     Chunk() = default;

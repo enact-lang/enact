@@ -418,6 +418,23 @@ InterpretResult VM::run(FunctionObject* function) {
                 frame = &m_frames[m_frameCount - 1];
                 break;
             }
+
+            case OpCode::STRUCT: {
+                const std::string& name = READ_CONSTANT().asObject()->as<StringObject>()->asStdString();
+                Type type = READ_CONSTANT().asObject()->as<TypeObject>()->getContainedType();
+                auto* struct_ = GC::allocateObject<StructObject>(name, type);
+
+                push(Value{struct_});
+                break;
+            }
+            case OpCode::STRUCT_LONG: {
+                const std::string& name = READ_CONSTANT_LONG().asObject()->as<StringObject>()->asStdString();
+                Type type = READ_CONSTANT_LONG().asObject()->as<TypeObject>()->getContainedType();
+                auto* struct_ = GC::allocateObject<StructObject>(name, type);
+
+                push(Value{struct_});
+                break;
+            }
         }
 
         #undef READ_BYTE

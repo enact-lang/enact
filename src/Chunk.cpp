@@ -106,7 +106,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_ARRAY_INDEX:
         case OpCode::POP:
         case OpCode::CLOSE_UPVALUE:
-        case OpCode::RETURN: {
+        case OpCode::RETURN:
+        case OpCode::STRUCT: {
             std::string str;
             std::tie(str, index) = disassembleSimple(index);
             s << str;
@@ -402,6 +403,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::CLOSURE_LONG: return "CLOSURE_LONG";
         case OpCode::CLOSE_UPVALUE: return "CLOSE_UPVALUE";
         case OpCode::RETURN: return "RETURN";
+        case OpCode::STRUCT: return "STRUCT";
         // Unreachable.
         default: return "";
     }

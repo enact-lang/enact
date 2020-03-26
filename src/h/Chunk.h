@@ -70,6 +70,8 @@ enum class OpCode : uint8_t {
     CLOSE_UPVALUE,
   
     RETURN,
+
+    STRUCT,
 };
 
 std::string opCodeToString(OpCode code);

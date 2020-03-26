@@ -2,6 +2,7 @@
 #define ENACT_OBJECT_H
 
 #include <string>
+#include "Chunk.h"
 #include "Type.h"
 #include "Value.h"
 
@@ -10,6 +11,7 @@ enum class ObjectType {
     ARRAY,
     UPVALUE,
     CLOSURE,
+    STRUCT,
     FUNCTION,
     NATIVE,
     TYPE
@@ -19,6 +21,7 @@ class StringObject;
 class ArrayObject;
 class UpvalueObject;
 class ClosureObject;
+class StructObject;
 class FunctionObject;
 class NativeObject;
 class TypeObject;
@@ -70,6 +73,8 @@ inline bool Object::is() const {
         return m_type == ObjectType::UPVALUE;
     } else if (std::is_same_v<T, ClosureObject>) {
         return m_type == ObjectType::CLOSURE;
+    } else if (std::is_same_v<T, StructObject>) {
+        return m_type == ObjectType::STRUCT;
     } else if (std::is_same_v<T, FunctionObject>) {
         return m_type == ObjectType::FUNCTION;
     } else if (std::is_same_v<T, NativeObject>) {
@@ -178,7 +183,18 @@ public:
     ClosureObject* clone() const override;
 };
 
-#include "Chunk.h"
+class StructObject : public Object {
+    std::string m_name{};
+    Type m_type{nullptr};
+
+public:
+    StructObject(std::string name, Type type);
+    ~StructObject() override = default;
+
+    std::string toString() const override;
+    Type getType() const override;
+    StructObject* clone() const override;
+};
 
 class FunctionObject : public Object {
     Type m_type{nullptr};

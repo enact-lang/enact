@@ -181,6 +181,21 @@ ClosureObject* ClosureObject::clone() const {
     return GC::allocateObject<ClosureObject>(*this);
 }
 
+StructObject::StructObject(std::string name, Type type) : Object{ObjectType::STRUCT}, m_name{name}, m_type{type} {
+}
+
+std::string StructObject::toString() const {
+    return m_name + "()";
+}
+
+Type StructObject::getType() const {
+    return m_type;
+}
+
+StructObject* StructObject::clone() const {
+    return GC::allocateObject<StructObject>(*this);
+}
+
 FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
         Object{ObjectType::FUNCTION}, m_type{type}, m_chunk{std::move(chunk)}, m_name{std::move(name)} {
 }

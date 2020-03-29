@@ -63,7 +63,11 @@ Type StringObject::getType() const {
 }
 
 StringObject* StringObject::clone() const {
-    return GC::allocateObject<StringObject>(*this);
+    return new StringObject(*this);
+}
+
+size_t StringObject::size() const {
+    return sizeof(StringObject);
 }
 
 ArrayObject::ArrayObject(Type type) : Object{ObjectType::ARRAY}, m_type{type}, m_vector{} {
@@ -115,7 +119,11 @@ Type ArrayObject::getType() const {
 }
 
 ArrayObject* ArrayObject::clone() const {
-    return GC::allocateObject<ArrayObject>(*this);
+    return new ArrayObject(*this);
+}
+
+size_t ArrayObject::size() const {
+    return sizeof(ArrayObject);
 }
 
 UpvalueObject::UpvalueObject(uint32_t location) : Object{ObjectType::UPVALUE}, m_location{location} {
@@ -155,7 +163,11 @@ Type UpvalueObject::getType() const {
 }
 
 UpvalueObject* UpvalueObject::clone() const {
-    return GC::allocateObject<UpvalueObject>(*this);
+    return new UpvalueObject(*this);
+}
+
+size_t UpvalueObject::size() const {
+    return sizeof(UpvalueObject);
 }
 
 ClosureObject::ClosureObject(FunctionObject *function) : Object{ObjectType::CLOSURE}, m_function{function}, m_upvalues{function->getUpvalueCount()} {
@@ -178,22 +190,30 @@ Type ClosureObject::getType() const {
 }
 
 ClosureObject* ClosureObject::clone() const {
-    return GC::allocateObject<ClosureObject>(*this);
+    return new ClosureObject(*this);
+}
+
+size_t ClosureObject::size() const {
+    return sizeof(ClosureObject);
 }
 
 StructObject::StructObject(std::string name, Type type) : Object{ObjectType::STRUCT}, m_name{name}, m_type{type} {
 }
 
 std::string StructObject::toString() const {
-    return m_name + "()";
+    return "<constructor " + m_name + ">";
 }
 
 Type StructObject::getType() const {
-    return m_type;
+    return std::make_shared<ConstructorType>(*m_type->as<StructType>());
 }
 
 StructObject* StructObject::clone() const {
-    return GC::allocateObject<StructObject>(*this);
+    return new StructObject(*this);
+}
+
+size_t StructObject::size() const {
+    return sizeof(StructObject);
 }
 
 FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
@@ -228,7 +248,11 @@ Type FunctionObject::getType() const {
 }
 
 FunctionObject* FunctionObject::clone() const {
-    return GC::allocateObject<FunctionObject>(*this);
+    return new FunctionObject(*this);
+}
+
+size_t FunctionObject::size() const {
+    return sizeof(FunctionObject);
 }
 
 NativeObject::NativeObject(Type type, NativeFn function) : Object{ObjectType::NATIVE}, m_type{type}, m_function{function} {
@@ -249,7 +273,11 @@ Type NativeObject::getType() const {
 }
 
 NativeObject* NativeObject::clone() const {
-    return GC::allocateObject<NativeObject>(*this);
+    return new NativeObject(*this);
+}
+
+size_t NativeObject::size() const {
+    return sizeof(NativeObject);
 }
 
 TypeObject::TypeObject(Type containedType) : Object{ObjectType::TYPE}, m_containedType{containedType} {
@@ -268,5 +296,9 @@ Type TypeObject::getType() const {
 }
 
 TypeObject* TypeObject::clone() const {
-    return GC::allocateObject<TypeObject>(*this);
+    return new TypeObject(*this);
+}
+
+size_t TypeObject::size() const {
+    return sizeof(TypeObject);
 }

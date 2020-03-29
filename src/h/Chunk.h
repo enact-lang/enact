@@ -73,6 +73,8 @@ enum class OpCode : uint8_t {
 
     STRUCT,
     STRUCT_LONG,
+
+    PAUSE,
 };
 
 std::string opCodeToString(OpCode code);

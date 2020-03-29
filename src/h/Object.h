@@ -56,6 +56,7 @@ public:
     virtual std::string toString() const = 0;
     virtual Type getType() const = 0;
     virtual Object* clone() const = 0;
+    virtual size_t size() const = 0;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Object& object);
@@ -114,9 +115,8 @@ public:
     std::string toString() const override;
     Type getType() const override;
     StringObject* clone() const override;
+    size_t size() const override;
 };
-
-class Value;
 
 class ArrayObject : public Object {
     std::vector<Value> m_vector;
@@ -141,6 +141,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     ArrayObject* clone() const override;
+    size_t size() const override;
 };
 
 class UpvalueObject : public Object {
@@ -165,6 +166,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     UpvalueObject* clone() const override;
+    size_t size() const override;
 };
 
 class ClosureObject : public Object {
@@ -181,6 +183,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     ClosureObject* clone() const override;
+    size_t size() const override;
 };
 
 class StructObject : public Object {
@@ -194,6 +197,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     StructObject* clone() const override;
+    size_t size() const override;
 };
 
 class FunctionObject : public Object {
@@ -213,6 +217,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     FunctionObject* clone() const override;
+    size_t size() const override;
 };
 
 typedef Value (*NativeFn)(uint8_t argCount, Value* args);
@@ -230,6 +235,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     NativeObject* clone() const override;
+    size_t size() const override;
 };
 
 class TypeObject : public Object {
@@ -244,6 +250,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     TypeObject* clone() const override;
+    size_t size() const override;
 };
 
 #endif //ENACT_OBJECT_H

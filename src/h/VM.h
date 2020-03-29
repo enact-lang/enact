@@ -8,15 +8,10 @@
 
 #include <optional>
 
-constexpr size_t FRAMES_MAX = 64;
+class Context;
+enum class InterpretResult;
 
-enum class InterpretResult {
-    PARSE_ERROR,
-    ANALYSIS_ERROR,
-    COMPILE_ERROR,
-    RUNTIME_ERROR,
-    OK,
-};
+constexpr size_t FRAMES_MAX = 64;
 
 struct CallFrame {
     ClosureObject* closure;
@@ -27,16 +22,22 @@ struct CallFrame {
 class VM {
     friend class GC;
 
-    std::vector<Value> m_stack;
+    Context& m_context;
+
+    std::vector<Value> m_stack{};
 
     std::array<CallFrame, FRAMES_MAX> m_frames{CallFrame{nullptr, nullptr, 0}};
     size_t m_frameCount = 0;
 
     UpvalueObject* m_openUpvalues = nullptr;
+
+    size_t m_pc = 0;
+
 public:
-    VM();
+    explicit VM(Context& context);
 
     InterpretResult run(FunctionObject* function);
+    InterpretResult step();
 
     void push(Value value);
     Value pop();

@@ -2,29 +2,37 @@
 #include <set>
 #include <sstream>
 #include "h/Analyser.h"
-#include "h/Enact.h"
+#include "h/Context.h"
 
-std::vector<std::unique_ptr<Stmt>> Analyser::analyse(std::vector<std::unique_ptr<Stmt>> program) {
+Analyser::Analyser(Context& context) : m_context{context} {
+}
+
+std::vector<std::unique_ptr<Stmt>> Analyser::analyse(std::vector<std::unique_ptr<Stmt>> ast) {
     m_hadError = false;
 
-    beginScope();
+    if (m_scopes.empty()) {
+        beginScope();
 
-    declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
-    declareVariable("print", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
-    declareVariable("put", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
-    declareVariable("dis", Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+        declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
+        declareVariable("print",
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+        declareVariable("put",
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+        declareVariable("dis",
+                        Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+    }
 
-    for (auto &stmt : program) {
+    for (auto &stmt : ast) {
         analyse(*stmt);
     }
 
     // Analyse all function bodies in the global scope
-    for (auto& function : m_globalFunctions) {
-        analyseFunctionBody(function);
+    for (auto it = m_globalFunctions.rbegin(); it != m_globalFunctions.rend(); it++) {
+        analyseFunctionBody(*it);
+        m_globalFunctions.pop_back();
     }
-    endScope();
 
-    return program;
+    return ast;
 }
 
 void Analyser::analyse(Stmt& stmt) {
@@ -44,7 +52,7 @@ bool Analyser::hadError() {
 }
 
 Analyser::AnalysisError Analyser::errorAt(const Token &token, const std::string &message) {
-    Enact::reportErrorAt(token, message);
+    m_context.reportErrorAt(token, message);
     m_hadError = true;
     return AnalysisError{};
 }
@@ -58,13 +66,13 @@ void Analyser::visitBlockStmt(BlockStmt &stmt) {
 }
 
 void Analyser::visitBreakStmt(BreakStmt &stmt) {
-    if (!m_insideLoop) {
+    if (m_loopCount == 0) {
         throw errorAt(stmt.keyword, "Break is only allowed inside loops.");
     }
 }
 
 void Analyser::visitContinueStmt(ContinueStmt &stmt) {
-    if (!m_insideLoop) {
+    if (m_loopCount == 0) {
         throw errorAt(stmt.keyword, "Continue is only allowed inside loops.");
     }
 }
@@ -87,13 +95,13 @@ void Analyser::visitForStmt(ForStmt &stmt) {
                 + stmt.condition->getType()->toString() + "'.");
     }
 
-    m_insideLoop = true;
+    m_loopCount++;
     beginScope();
     for (auto& statement : stmt.body) {
         analyse(*statement);
     }
     endScope();
-    m_insideLoop = false;
+    m_loopCount--;
 
     analyse(*stmt.increment);
     endScope();
@@ -248,17 +256,13 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     // Assoc functions must be kept separate from the fields, as they are called on
     // the type rather than an instance of the type.
     std::unordered_map<std::string, Type> assocFunctions;
-
-    Type thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods, assocFunctions);
-    m_types.insert(std::make_pair(stmt.name.lexeme, thisType));
-
     for (auto& function : stmt.assocFunctions) {
         assocFunctions.insert(std::pair(function->name.lexeme, getFunctionType(*function)));
     }
 
-    thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods, assocFunctions);
-
-    m_types[stmt.name.lexeme] = thisType;
+    Type thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods, assocFunctions);
+    m_types.insert(std::make_pair(stmt.name.lexeme, thisType));
+    stmt.type = thisType;
 
     // Now, create a constructor for the struct.
     Variable constructor{std::make_shared<ConstructorType>(*thisType->as<StructType>()), true};
@@ -320,13 +324,13 @@ void Analyser::visitWhileStmt(WhileStmt &stmt) {
                 + stmt.condition->getType()->toString() + "'.");
     }
 
-    m_insideLoop = true;
+    m_loopCount++;
     beginScope();
     for (auto& statement : stmt.body) {
         analyse(*statement);
     }
     endScope();
-    m_insideLoop = false;
+    m_loopCount--;
 }
 
 void Analyser::visitVariableStmt(VariableStmt &stmt) {

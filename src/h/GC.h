@@ -5,62 +5,43 @@
 #include "Object.h"
 #include "Enact.h"
 
+class Context;
+
 constexpr size_t GC_HEAP_GROW_FACTOR = 2;
 
-class VM;
-class Compiler;
-
 class GC {
-    static size_t m_bytesAllocated;
-    static size_t m_nextRun;
+    Context& m_context;
 
-    static std::vector<Object*> m_objects;
+    size_t m_bytesAllocated = 0;
+    size_t m_nextRun = 1024 * 1024;
 
-    static Compiler* m_currentCompiler;
-    static VM* m_currentVM;
+    std::vector<Object*> m_objects{};
+    std::vector<Object*> m_greyStack{};
 
-    static std::vector<Object*> m_greyStack;
+    void markRoots();
+    void markCompilerRoots();
+    void markVMRoots();
+    void markObject(Object* object);
+    void markValue(Value value);
+    void markValues(const std::vector<Value>& values);
 
-    static void markRoots();
-    static void traceReferences();
-    static void sweep();
-    static void markCompilerRoots();
-    static void markVMRoots();
-    static void markObject(Object* object);
-    static void markValue(Value value);
-    static void markValues(const std::vector<Value>& values);
-    static void blackenObject(Object* object);
+    void traceReferences();
+    void blackenObject(Object* object);
+
+    void sweep();
     
 public:
+    explicit GC(Context& context);
+    ~GC();
+
     template <typename T, typename... Args>
-    inline static T* allocateObject(Args&&... args) {
-        static_assert(std::is_base_of_v<Object, T>,
-                      "GC::allocateObject<T>: T must derive from Object.");
+    T* allocateObject(Args&&... args);
+    Object* cloneObject(Object* object);
 
-        m_bytesAllocated += sizeof(T);
-        if (m_bytesAllocated > m_nextRun || Enact::getFlags().flagEnabled(Flag::DEBUG_STRESS_GC)) {
-                collectGarbage();
-        }
+    void collectGarbage();
 
-        T* object = new T{args...};
-
-        m_objects.push_back(object);
-
-        if (Enact::getFlags().flagEnabled(Flag::DEBUG_LOG_GC)) {
-            std::cout << static_cast<void *>(object) << ": allocated object of size " << sizeof(T) << " and type " <<
-                      static_cast<int>(static_cast<Object *>(object)->m_type) << ".\n";
-        }
-
-        return object;
-    }
-
-    static void collectGarbage();
-
-    static void freeObject(Object* object);
-    static void freeObjects();
-
-    static void setCompiler(Compiler* compiler);
-    static void setVM(VM* vm);
+    void freeObject(Object* object);
+    void freeObjects();
 };
 
 #endif //ENACT_GC_H

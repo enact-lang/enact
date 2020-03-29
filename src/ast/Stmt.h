@@ -259,13 +259,15 @@ public:
     std::vector<Field> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
+    Type type;
 
-    StructStmt(Token name, std::vector<Token> traits, std::vector<Field>&& fields, std::vector<std::unique_ptr<FunctionStmt>> methods, std::vector<std::unique_ptr<FunctionStmt>> assocFunctions) :
+    StructStmt(Token name, std::vector<Token> traits, std::vector<Field>&& fields, std::vector<std::unique_ptr<FunctionStmt>> methods, std::vector<std::unique_ptr<FunctionStmt>> assocFunctions, Type type) :
             name{name},
             traits{traits},
             fields{std::move(fields)},
             methods{std::move(methods)},
-            assocFunctions{std::move(assocFunctions)} {}
+            assocFunctions{std::move(assocFunctions)},
+            type{type} {}
     ~StructStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {

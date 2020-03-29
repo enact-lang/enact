@@ -1,9 +1,9 @@
-#include "h/Parser.h"
+#include "h/Context.h"
 #include "h/Token.h"
 #include "h/Chunk.h"
-#include "h/Enact.h"
 
-Parser::Parser(std::string source) : m_source{std::move(source)}, m_scanner{m_source} {}
+Parser::Parser(Context &context) : m_context{context} {
+}
 
 const ParseRule& Parser::getParseRule(TokenType type) {
     return m_parseRules[(size_t)type];
@@ -287,7 +287,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     expect(TokenType::END, "Expected 'end' at end of struct declaration.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_unique<StructStmt>(name, traits, std::move(fields), std::move(methods), std::move(assocFunctions));
+    return std::make_unique<StructStmt>(name, traits, std::move(fields), std::move(methods), std::move(assocFunctions),nullptr);
 }
 
 std::unique_ptr<Stmt> Parser::traitDeclaration() {
@@ -543,19 +543,20 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
+    m_scanner = Scanner{m_context.source};
     advance();
-    std::vector<std::unique_ptr<Stmt>> statements{};
 
+    std::vector<std::unique_ptr<Stmt>> ast{};
     while (!isAtEnd()) {
         std::unique_ptr<Stmt> stmt = declaration();
-        if (stmt) statements.push_back(std::move(stmt));
+        if (stmt) ast.push_back(std::move(stmt));
     }
 
-    return statements;
+    return ast;
 }
 
 Parser::ParseError Parser::errorAt(const Token &token, const std::string &message) {
-    Enact::reportErrorAt(token, message);
+    m_context.reportErrorAt(token, message);
     m_hadError = true;
     return ParseError{};
 }
@@ -575,7 +576,7 @@ void Parser::advance() {
         m_current = m_scanner.scanToken();
         if (m_current.type != TokenType::ERROR) break;
 
-        Enact::reportErrorAt(m_current, m_current.lexeme);
+        m_context.reportErrorAt(m_current, m_current.lexeme);
     }
 }
 

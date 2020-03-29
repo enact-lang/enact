@@ -1,17 +1,38 @@
-#include "h/Compiler.h"
+#include "h/Context.h"
 #include "h/Object.h"
-#include "h/Enact.h"
 #include "h/Natives.h"
-#include "h/GC.h"
 
-Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {
-    GC::setCompiler(this);
+Compiler::Compiler(Context& context, Compiler* enclosing) :
+        m_context{context},
+        m_enclosing{enclosing} {
 }
 
-void Compiler::init(FunctionKind functionKind, Type functionType, const std::string& name) {
+FunctionObject* Compiler::compileProgram(std::vector<std::unique_ptr<Stmt>> ast) {
+    startProgram();
+    compile(std::move(ast));
+    endProgram();
+    return m_currentFunction;
+}
+
+FunctionObject* Compiler::compilePart(std::vector<std::unique_ptr<Stmt>> ast) {
+    compile(std::move(ast));
+    endPart();
+    return m_currentFunction;
+}
+
+void Compiler::startRepl() {
+    startProgram();
+}
+
+FunctionObject* Compiler::endRepl() {
+    endProgram();
+    return m_currentFunction;
+}
+
+void Compiler::start(FunctionKind functionKind, Type functionType, const std::string& name) {
     m_hadError = false;
 
-    m_currentFunction = GC::allocateObject<FunctionObject>(
+    m_currentFunction = m_context.gc.allocateObject<FunctionObject>(
             functionType,
             Chunk(),
             name
@@ -24,24 +45,25 @@ void Compiler::init(FunctionKind functionKind, Type functionType, const std::str
     beginScope();
 
     addLocal(Token{TokenType::IDENTIFIER, "", 0, 0});
-
-    if (functionKind == FunctionKind::SCRIPT) {
-        defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
-                     &Natives::print);
-        defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
-                     &Natives::put);
-        defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
-                     &Natives::dis);
-    }
 }
 
-FunctionObject* Compiler::end() {
-    if (m_currentFunction->getType()->as<FunctionType>()->getReturnType()->isNothing()) {
-        emitByte(OpCode::NIL);
-        emitByte(OpCode::RETURN);
-    }
-    GC::setCompiler(nullptr);
-    return m_currentFunction;
+void Compiler::startProgram() {
+    start(
+            FunctionKind::SCRIPT,
+            std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}),
+            ""
+    );
+
+    defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                 &Natives::print);
+    defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                 &Natives::put);
+    defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+                 &Natives::dis);
+}
+
+void Compiler::startFunction(FunctionStmt& function) {
+    start(FunctionKind::FUNCTION, function.type, function.name.lexeme);
 }
 
 void Compiler::compile(std::vector<std::unique_ptr<Stmt>> ast) {
@@ -54,13 +76,29 @@ void Compiler::compile(Stmt& stmt) {
     try {
         stmt.accept(this);
     } catch (CompileError& error) {
-        Enact::reportErrorAt(error.getToken(), error.getMessage());
+        m_context.reportErrorAt(error.getToken(), error.getMessage());
         m_hadError = true;
     }
 }
 
 void Compiler::compile(Expr& expr) {
     expr.accept(this);
+}
+
+void Compiler::endProgram() {
+    emitByte(OpCode::NIL);
+    emitByte(OpCode::RETURN);
+}
+
+void Compiler::endPart() {
+    emitByte(OpCode::PAUSE);
+}
+
+void Compiler::endFunction() {
+    if (m_currentFunction->getType()->as<FunctionType>()->getReturnType()->isNothing()) {
+        emitByte(OpCode::NIL);
+        emitByte(OpCode::RETURN);
+    }
 }
 
 void Compiler::visitBlockStmt(BlockStmt &stmt) {
@@ -129,8 +167,8 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
     addLocal(stmt.name);
     m_locals.back().initialized = true;
 
-    Compiler compiler{this};
-    compiler.init(FunctionKind::FUNCTION, stmt.type, stmt.name.lexeme);
+    Compiler& compiler = m_context.pushCompiler();
+    compiler.startFunction(stmt);
 
     for (const Param& param : stmt.params) {
         compiler.addLocal(param.name);
@@ -138,7 +176,8 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
     }
 
     compiler.compile(std::move(stmt.body));
-    FunctionObject* function = compiler.end();
+    compiler.endFunction();
+    FunctionObject* function = compiler.m_currentFunction;
 
     uint32_t constantIndex = currentChunk().addConstant(Value{function});
     if (constantIndex < UINT8_MAX) {
@@ -158,6 +197,8 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
             emitLong(compiler.m_upvalues[i].index);
         }
     }
+
+    m_context.popCompiler();
 }
 
 void Compiler::visitGivenStmt(GivenStmt &stmt) {
@@ -240,7 +281,25 @@ void Compiler::visitReturnStmt(ReturnStmt &stmt) {
 }
 
 void Compiler::visitStructStmt(StructStmt &stmt) {
-    throw errorAt(stmt.name, "Not implemented.");
+    addLocal(stmt.name);
+    m_locals.back().initialized = true;
+
+    auto* name = m_context.gc.allocateObject<StringObject>(stmt.name.lexeme);
+    uint32_t nameConstant = currentChunk().addConstant(Value{name});
+
+    std::unique_ptr<Typename> typeName = std::make_unique<BasicTypename>(stmt.name);
+    auto* type = m_context.gc.allocateObject<TypeObject>(stmt.type);
+    uint32_t typeConstant = currentChunk().addConstant(Value{type});
+
+    if (nameConstant <= UINT8_MAX && typeConstant <= UINT8_MAX) {
+        emitByte(OpCode::STRUCT);
+        emitByte(nameConstant);
+        emitByte(typeConstant);
+    } else {
+        emitByte(OpCode::STRUCT_LONG);
+        emitLong(nameConstant);
+        emitLong(typeConstant);
+    }
 }
 
 void Compiler::visitTraitStmt(TraitStmt &stmt) {
@@ -306,7 +365,7 @@ void Compiler::visitArrayExpr(ArrayExpr &expr) {
 
     uint32_t length = expr.value.size();
 
-    auto* type = GC::allocateObject<TypeObject>(expr.getType());
+    auto* type = m_context.gc.allocateObject<TypeObject>(expr.getType());
     uint32_t typeConstant = currentChunk().addConstant(Value{type});
 
     if (length <= UINT8_MAX && typeConstant <= UINT8_MAX) {
@@ -450,7 +509,7 @@ void Compiler::visitNilExpr(NilExpr &expr) {
 }
 
 void Compiler::visitStringExpr(StringExpr &expr) {
-    Object* string = GC::allocateObject<StringObject>(expr.value);
+    Object* string = m_context.gc.allocateObject<StringObject>(expr.value);
     emitConstant(Value{string});
 }
 
@@ -610,7 +669,7 @@ uint32_t Compiler::resolveUpvalue(const Token &name) {
 }
 
 void Compiler::defineNative(std::string name, Type functionType, NativeFn function) {
-    Object* native = GC::allocateObject<NativeObject>(functionType, function);
+    Object* native = m_context.gc.allocateObject<NativeObject>(functionType, function);
     emitConstant(Value{native});
 
     addLocal(Token{TokenType::IDENTIFIER, name, 0, 0});

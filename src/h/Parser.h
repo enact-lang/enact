@@ -12,6 +12,8 @@
 
 #include "../ast/Stmt.h"
 
+class Context;
+
 enum class Precedence {
     NONE,
     ASSIGNMENT,  // =
@@ -39,35 +41,15 @@ struct ParseRule {
 
 class Parser {
 private:
-    class ParseError : public std::runtime_error {
-    public:
-        ParseError() : std::runtime_error{"Uncaught ParseError: Internal"} {}
-    };
+    Context& m_context;
 
-    std::string m_source;
-    Scanner m_scanner;
+    Scanner m_scanner{""};
+
+    Token m_previous{};
+    Token m_current{};
 
     bool m_hadError = false;
-    bool m_panicMode = false;
 
-    Token m_previous;
-    Token m_current;
-
-    void advance();
-    void undoAdvance();
-    void ignoreNewline();
-    bool check(TokenType expected);
-    bool consume(TokenType expected);
-    bool consumeSeparator();
-    void expect(TokenType type, const std::string &message);
-    void expectSeparator(const std::string &message);
-    bool isAtEnd();
-    
-    ParseError errorAt(const Token &token, const std::string &message);
-    ParseError errorAtCurrent(const std::string &message);
-    ParseError error(const std::string &message);
-
-    const ParseRule& getParseRule(TokenType type);
     std::unique_ptr<Expr> parsePrecedence(Precedence precedence);
 
     std::unique_ptr<Expr> expression();
@@ -89,6 +71,59 @@ private:
     std::unique_ptr<Expr> field(std::unique_ptr<Expr> object);
     std::unique_ptr<Expr> ternary(std::unique_ptr<Expr> condition);
 
+    // Declarations
+    std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true);
+    std::unique_ptr<Stmt> structDeclaration();
+    std::unique_ptr<Stmt> traitDeclaration();
+    std::unique_ptr<Stmt> variableDeclaration(bool isConst, bool mustExpectSeparator = true);
+
+    // Statements
+    std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> blockStatement();
+    std::unique_ptr<Stmt> ifStatement();
+    std::unique_ptr<Stmt> whileStatement();
+    std::unique_ptr<Stmt> forStatement();
+    std::unique_ptr<Stmt> eachStatement();
+    std::unique_ptr<Stmt> givenStatement();
+    std::unique_ptr<Stmt> returnStatement();
+    std::unique_ptr<Stmt> breakStatement();
+    std::unique_ptr<Stmt> continueStatement();
+    std::unique_ptr<Stmt> expressionStatement();
+
+    void advance();
+    void undoAdvance();
+    bool check(TokenType expected);
+    bool consume(TokenType expected);
+    bool consumeSeparator();
+    void expect(TokenType type, const std::string &message);
+    void expectSeparator(const std::string &message);
+    bool isAtEnd();
+
+    std::unique_ptr<const Typename> expectTypename(bool emptyAllowed = false);
+    std::unique_ptr<const Typename> expectFunctionTypename();
+
+    class ParseError : public std::runtime_error {
+    public:
+        ParseError() : std::runtime_error{"Uncaught ParseError: Internal"} {}
+    };
+
+    ParseError errorAt(const Token &token, const std::string &message);
+    ParseError errorAtCurrent(const std::string &message);
+    ParseError error(const std::string &message);
+
+    void synchronise();
+
+public:
+    Parser(Context& context);
+    ~Parser() = default;
+
+    std::vector<std::unique_ptr<Stmt>> parse();
+
+    bool hadError();
+
+private:
+    const ParseRule& getParseRule(TokenType type);
     std::array<ParseRule, (size_t)TokenType::MAX> m_parseRules = {
             ParseRule{&Parser::grouping,   &Parser::call,    Precedence::CALL}, // LEFT_PAREN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RIGHT_PAREN
@@ -148,36 +183,6 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // ERROR
             ParseRule{nullptr,               nullptr,            Precedence::NONE} // ENDFILE
     };
-
-    // Declarations
-    std::unique_ptr<Stmt> declaration();
-    std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true);
-    std::unique_ptr<Stmt> structDeclaration();
-    std::unique_ptr<Stmt> traitDeclaration();
-    std::unique_ptr<Stmt> variableDeclaration(bool isConst, bool mustExpectSeparator = true);
-
-    // Statements
-    std::unique_ptr<Stmt> statement();
-    std::unique_ptr<Stmt> blockStatement();
-    std::unique_ptr<Stmt> ifStatement();
-    std::unique_ptr<Stmt> whileStatement();
-    std::unique_ptr<Stmt> forStatement();
-    std::unique_ptr<Stmt> eachStatement();
-    std::unique_ptr<Stmt> givenStatement();
-    std::unique_ptr<Stmt> returnStatement();
-    std::unique_ptr<Stmt> breakStatement();
-    std::unique_ptr<Stmt> continueStatement();
-    std::unique_ptr<Stmt> expressionStatement();
-
-    std::unique_ptr<const Typename> expectTypename(bool emptyAllowed = false);
-    std::unique_ptr<const Typename> expectFunctionTypename();
-
-    void synchronise();
-
-public:
-    explicit Parser(std::string source);
-    std::vector<std::unique_ptr<Stmt>> parse();
-    bool hadError();
 };
 
 

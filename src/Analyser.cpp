@@ -403,14 +403,14 @@ void Analyser::visitAssignExpr(AssignExpr &expr) {
     analyse(*expr.target);
     analyse(*expr.value);
 
+    auto& name = expr.target->name;
+    if (lookUpVariable(name).isConst) {
+        throw errorAt(name, "Cannot assign to constant variable.");
+    }
+
     if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
         throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.target->getType()->toString() +
                                  "' with value of type '" + expr.value->getType()->toString() + "'.");
-    }
-
-    auto name = expr.target->name;
-    if (lookUpVariable(name).isConst) {
-        throw errorAt(name, "Cannot assign to constant variable.");
     }
 }
 
@@ -724,7 +724,7 @@ Type Analyser::lookUpType(const Typename& name) {
             }
             break;
         case Typename::Kind::ARRAY: {
-            auto arrName = dynamic_cast<const ArrayTypename&>(name);
+            auto arrName = static_cast<const ArrayTypename&>(name);
             return std::make_shared<ArrayType>(lookUpType(arrName.elementTypename()));
         }
         case Typename::Kind::FUNCTION: {

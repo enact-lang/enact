@@ -73,10 +73,10 @@ bool TypeBase::looselyEquals(const TypeBase &type) const {
         return this->as<ArrayType>()->getElementType()->looselyEquals(*type.as<ArrayType>()->getElementType());
     }
     if (this->isTrait() && type.isStruct()) {
-        return type.as<StructType>()->getTrait(*this) != std::nullopt;
+        return type.as<StructType>()->hasTrait(*this);
     }
     if (type.isTrait() && this->isStruct()) {
-        return this->as<StructType>()->getTrait(type) != std::nullopt;
+        return this->as<StructType>()->hasTrait(*this);
     }
 
     return this->isDynamic() || type.isDynamic() || (this->isInt() && type.isNumeric()) || *this == type;
@@ -240,7 +240,7 @@ std::unique_ptr<Typename> FunctionType::toTypename() const {
     return std::make_unique<FunctionTypename>(m_returnType->toTypename(), std::move(argumentTypenames));
 }
 
-TraitType::TraitType(std::string name, std::unordered_map<std::string, Type> methods) :
+TraitType::TraitType(std::string name, InsertionOrderMap<std::string, Type> methods) :
         TypeBase{TypeKind::TRAIT},
         m_name{name},
         m_methods{methods} {}
@@ -249,107 +249,90 @@ const std::string& TraitType::getName() const {
     return m_name;
 }
 
-const std::unordered_map<std::string, Type>& TraitType::getMethods() const {
+const InsertionOrderMap<std::string, Type>& TraitType::getMethods() const {
     return m_methods;
 }
 
 std::optional<Type> TraitType::getMethod(const std::string &name) const {
-    if (m_methods.count(name) > 0) {
-        return std::make_optional(m_methods.at(name));
-    }
-
-    return {};
+    return m_methods.at(name);
 }
 
 std::unique_ptr<Typename> TraitType::toTypename() const {
     return std::make_unique<BasicTypename>(m_name, Token{TokenType::IDENTIFIER, m_name, 0, 0});
 }
 
-StructType::StructType(std::string name, std::vector<Type> traits,
-                       std::unordered_map<std::string, Type> fields,
-                       std::unordered_map<std::string, Type> methods,
-                       std::unordered_map<std::string, Type> assocFunctions) :
+StructType::StructType(std::string name, std::vector<std::shared_ptr<const TraitType>> traits, InsertionOrderMap<std::string, Type> properties) :
         TypeBase{TypeKind::STRUCT},
         m_name{name},
         m_traits{traits},
-        m_fields{fields},
-        m_methods{methods},
-        m_assocFunctions{assocFunctions} {}
+        m_properties{properties} {
+}
 
 const std::string& StructType::getName() const {
     return m_name;
 }
 
-const std::vector<Type>& StructType::getTraits() const {
+const std::vector<std::shared_ptr<const TraitType>>& StructType::getTraits() const {
     return m_traits;
 }
 
-const std::unordered_map<std::string, Type>& StructType::getFields() const {
-    return m_fields;
-}
-
-const std::unordered_map<std::string, Type>& StructType::getMethods() const {
-    return m_methods;
-}
-
-const std::unordered_map<std::string, Type>& StructType::getAssocFunctions() const {
-    return m_assocFunctions;
-}
-
-std::optional<Type> StructType::getTrait(const TypeBase& trait) const {
-    for (const Type& myTrait : m_traits) {
-        if (*myTrait == trait) return myTrait;
+bool StructType::hasTrait(const TypeBase& trait) const {
+    for (auto& myTrait : m_traits) {
+        if (myTrait->looselyEquals(trait)) return true;
     }
-    return {};
+
+    return false;
 }
 
-std::optional<Type> StructType::getField(const std::string &name) const {
-    if (m_fields.count(name) > 0) {
-        return std::make_optional(m_fields.at(name));
-    }
-    return {};
-}
-
-std::optional<Type> StructType::getMethod(const std::string &name) const {
-    if (m_methods.count(name) > 0) {
-        return std::make_optional(m_methods.at(name));
+std::optional<size_t> StructType::findTrait(const TypeBase &trait) const {
+    size_t index = 0;
+    for (auto& myTrait : m_traits) {
+        if (myTrait->looselyEquals(trait)) return index;
+        ++index;
     }
 
     return {};
 }
 
-std::optional<Type> StructType::getFieldOrMethod(const std::string &name) const {
-    if (std::optional<Type> type; type = getField(name)) {
-        return type;
-    }
-    return getMethod(name);
+const InsertionOrderMap<std::string, Type>& StructType::getProperties() const {
+    return m_properties;
 }
 
-std::optional<Type> StructType::getAssocFunction(const std::string &name) const {
-    if (m_assocFunctions.count(name) > 0) {
-        return std::make_optional(m_assocFunctions.at(name));
-    }
-    return {};
+std::optional<Type> StructType::getProperty(const std::string &name) const {
+    return m_properties.at(name);
+}
+
+std::optional<size_t> StructType::findProperty(const std::string &name) const {
+    return m_properties.find(name);
 }
 
 std::unique_ptr<Typename> StructType::toTypename() const {
     return std::make_unique<BasicTypename>(m_name, Token{TokenType::IDENTIFIER, m_name, 0, 0});
 }
 
-ConstructorType::ConstructorType(StructType structType) :
+ConstructorType::ConstructorType(std::shared_ptr<const StructType> structType, InsertionOrderMap<std::string, Type> assocProperties) :
         TypeBase{TypeKind::CONSTRUCTOR},
         m_structType{structType},
-        m_functionType{FunctionType(std::make_shared<StructType>(structType), getMapValues(structType.getFields()))} {
+        m_assocProperties{assocProperties} {
 }
 
-const StructType &ConstructorType::getStructType() const {
+std::shared_ptr<const StructType> ConstructorType::getStructType() const {
     return m_structType;
 }
 
-const FunctionType &ConstructorType::getFunctionType() const {
-    return m_functionType;
+const InsertionOrderMap<std::string, Type>& ConstructorType::getAssocProperties() const {
+    return m_assocProperties;
+}
+
+std::optional<Type> ConstructorType::getAssocProperty(const std::string &name) const {
+    return m_assocProperties.at(name);
+}
+
+std::optional<size_t> ConstructorType::findAssocProperty(const std::string &name) const {
+    return m_assocProperties.find(name);
 }
 
 std::unique_ptr<Typename> ConstructorType::toTypename() const {
-    return m_functionType.toTypename();
+    std::string name = m_structType->toString() + "()";
+    return std::make_unique<BasicTypename>(name, Token{TokenType::IDENTIFIER, name, 0, 0});
 }

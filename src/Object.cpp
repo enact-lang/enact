@@ -197,15 +197,34 @@ size_t ClosureObject::size() const {
     return sizeof(ClosureObject);
 }
 
-StructObject::StructObject(std::string name, Type type) : Object{ObjectType::STRUCT}, m_name{name}, m_type{type} {
+StructObject::StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<Value> assocProperties) :
+        Object{ObjectType::STRUCT},
+        m_constructorType{constructorType},
+        m_assocProperties{assocProperties} {
+}
+
+const std::string& StructObject::getName() const {
+    return m_constructorType->getStructType()->getName();
+}
+
+Value& StructObject::assocProperty(uint32_t index) {
+    return m_assocProperties[index];
+}
+
+std::optional<std::reference_wrapper<Value>> StructObject::assocPropertyNamed(const std::string &name) {
+    if (std::optional<size_t> index = m_constructorType->findAssocProperty(name)) {
+        return m_assocProperties[*index];
+    }
+    
+    return {};
 }
 
 std::string StructObject::toString() const {
-    return "<constructor " + m_name + ">";
+    return "<" + m_constructorType->toString() + " constructor>";
 }
 
 Type StructObject::getType() const {
-    return std::make_shared<ConstructorType>(*m_type->as<StructType>());
+    return m_constructorType;
 }
 
 StructObject* StructObject::clone() const {
@@ -214,6 +233,41 @@ StructObject* StructObject::clone() const {
 
 size_t StructObject::size() const {
     return sizeof(StructObject);
+}
+
+InstanceObject::InstanceObject(StructObject *struct_) :
+        Object{ObjectType::INSTANCE},
+        m_struct{struct_},
+        m_properties{struct_->getType()->as<ConstructorType>()->getStructType()->getProperties().length()} {
+}
+
+Value &InstanceObject::property(uint32_t index) {
+    return m_properties[index];
+}
+
+std::optional<std::reference_wrapper<Value>> InstanceObject::propertyNamed(const std::string &name) {
+    auto structType = getType()->as<StructType>();
+    if (std::optional<size_t> index = structType->findProperty(name)) {
+        return m_properties[*index];
+    }
+
+    return {};
+}
+
+std::string InstanceObject::toString() const {
+    return "<" + getType()->toString() + " instance>";
+}
+
+Type InstanceObject::getType() const {
+    return Type();
+}
+
+StructObject *InstanceObject::clone() const {
+    return nullptr;
+}
+
+size_t InstanceObject::size() const {
+    return 0;
 }
 
 FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :

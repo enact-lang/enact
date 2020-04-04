@@ -424,16 +424,28 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::STRUCT: {
                 const std::string& name = READ_CONSTANT().asObject()->as<StringObject>()->asStdString();
-                Type type = READ_CONSTANT().asObject()->as<TypeObject>()->getContainedType();
-                auto* struct_ = m_context.gc.allocateObject<StructObject>(name, type);
+                std::shared_ptr<const ConstructorType> type{
+                    READ_CONSTANT()
+                        .asObject()
+                        ->as<TypeObject>()
+                        ->getContainedType()
+                        ->as<ConstructorType>()
+                };
+                auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::vector<Value>{});
 
                 push(Value{struct_});
                 break;
             }
             case OpCode::STRUCT_LONG: {
                 const std::string& name = READ_CONSTANT_LONG().asObject()->as<StringObject>()->asStdString();
-                Type type = READ_CONSTANT_LONG().asObject()->as<TypeObject>()->getContainedType();
-                auto* struct_ = m_context.gc.allocateObject<StructObject>(name, type);
+                std::shared_ptr<const ConstructorType> type{
+                    READ_CONSTANT_LONG()
+                        .asObject()
+                        ->as<TypeObject>()
+                        ->getContainedType()
+                        ->as<ConstructorType>()
+                };
+                auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::vector<Value>{});
 
                 push(Value{struct_});
                 break;

@@ -1,22 +1,14 @@
 #ifndef ENACT_TYPE_H
 #define ENACT_TYPE_H
 
+#include "InsertionOrderMap.h"
 #include "Token.h"
 #include "Typename.h"
 #include <vector>
-#include <unordered_map>
 #include <optional>
-
-/*#define INT_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::INT)
-#define FLOAT_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::FLOAT)
-#define BOOL_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::BOOL)
-#define STRING_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::STRING)
-#define DYNAMIC_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::DYNAMIC)
-#define NOTHING_TYPE std::make_shared<PrimitiveType>(PrimitiveKind::NOTHING)*/
 
 // Forward declarations from "../ast/Stmt.h":
 class FunctionStmt;
-struct NamedType;
 
 // The type tree used to give expressions types.
 // Here's what it looks like:
@@ -33,7 +25,7 @@ struct NamedType;
 class TypeBase;
 
 // Type is just a managed pointer to TypeBase that allows for polymorphism.
-typedef std::shared_ptr<TypeBase> Type;
+typedef std::shared_ptr<const TypeBase> Type;
 
 extern const Type INT_TYPE;
 extern const Type FLOAT_TYPE;
@@ -157,21 +149,17 @@ public:
     std::unique_ptr<Typename> toTypename() const override;
 };
 
-
-// These two user-defined types (traits and structs) must store
-// a pointer to their original declaration AST node.
-
 // Trait types
 class TraitType : public TypeBase {
     std::string m_name;
-    std::unordered_map<std::string, Type> m_methods;
+    InsertionOrderMap<std::string, Type> m_methods;
 public:
-    TraitType(std::string name, std::unordered_map<std::string, Type> methods);
+    TraitType(std::string name, InsertionOrderMap<std::string, Type> methods);
     ~TraitType() override = default;
 
     const std::string& getName() const;
 
-    const std::unordered_map<std::string, Type>& getMethods() const;
+    const InsertionOrderMap<std::string, Type>& getMethods() const;
     std::optional<Type> getMethod(const std::string& name) const;
 
     std::unique_ptr<Typename> toTypename() const override;
@@ -180,45 +168,40 @@ public:
 // Struct types
 class StructType : public TypeBase {
     std::string m_name;
-    std::vector<Type> m_traits;
-
-    std::unordered_map<std::string, Type> m_fields;
-    std::unordered_map<std::string, Type> m_methods;
-    std::unordered_map<std::string, Type> m_assocFunctions;
+    std::vector<std::shared_ptr<const TraitType>> m_traits;
+    InsertionOrderMap<std::string, Type> m_properties;
 
 public:
-    StructType(std::string name, std::vector<Type> traits, std::unordered_map<std::string, Type> fields,
-               std::unordered_map<std::string, Type> methods, std::unordered_map<std::string, Type> assocFunctions);
+    StructType(std::string name, std::vector<std::shared_ptr<const TraitType>> traits, InsertionOrderMap<std::string, Type> properties);
     ~StructType() override = default;
 
     const std::string& getName() const;
 
-    const std::vector<Type>& getTraits() const;
-    const std::unordered_map<std::string, Type>& getFields() const;
-    const std::unordered_map<std::string, Type>& getMethods() const;
-    const std::unordered_map<std::string, Type>& getAssocFunctions() const;
+    const std::vector<std::shared_ptr<const TraitType>>& getTraits() const;
+    bool hasTrait(const TypeBase& trait) const;
+    std::optional<size_t> findTrait(const TypeBase& trait) const;
 
-    std::optional<Type> getTrait(const TypeBase& trait) const;
-
-    std::optional<Type> getField(const std::string& name) const;
-    std::optional<Type> getMethod(const std::string& name) const;
-    std::optional<Type> getFieldOrMethod(const std::string& name) const;
-
-    std::optional<Type> getAssocFunction(const std::string& name) const;
+    const InsertionOrderMap<std::string, Type>& getProperties() const;
+    std::optional<Type> getProperty(const std::string& name) const;
+    std::optional<size_t> findProperty(const std::string& name) const;
 
     std::unique_ptr<Typename> toTypename() const override;
 };
 
 // Struct constructor types
 class ConstructorType : public TypeBase {
-    StructType m_structType;
-    FunctionType m_functionType;
+    std::shared_ptr<const StructType> m_structType;
+    InsertionOrderMap<std::string, Type> m_assocProperties;
+
 public:
-    ConstructorType(StructType structType);
+    ConstructorType(std::shared_ptr<const StructType> structType, InsertionOrderMap<std::string, Type> assocProperties);
     ~ConstructorType() override = default;
 
-    const StructType& getStructType() const;
-    const FunctionType& getFunctionType() const;
+    std::shared_ptr<const StructType> getStructType() const;
+
+    const InsertionOrderMap<std::string, Type>& getAssocProperties() const;
+    std::optional<Type> getAssocProperty(const std::string& name) const;
+    std::optional<size_t> findAssocProperty(const std::string& name) const;
 
     std::unique_ptr<Typename> toTypename() const override;
 };

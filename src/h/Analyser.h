@@ -4,8 +4,6 @@
 #include "../ast/Stmt.h"
 #include "Type.h"
 
-#include <unordered_map>
-
 class Context;
 
 // Walks the AST and assigns a Type to each node.

@@ -12,6 +12,7 @@ enum class ObjectType {
     UPVALUE,
     CLOSURE,
     STRUCT,
+    INSTANCE,
     FUNCTION,
     NATIVE,
     TYPE
@@ -22,6 +23,7 @@ class ArrayObject;
 class UpvalueObject;
 class ClosureObject;
 class StructObject;
+class InstanceObject;
 class FunctionObject;
 class NativeObject;
 class TypeObject;
@@ -78,6 +80,8 @@ inline bool Object::is() const {
         return m_type == ObjectType::STRUCT;
     } else if (std::is_same_v<T, FunctionObject>) {
         return m_type == ObjectType::FUNCTION;
+    } else if (std::is_same_v<T, InstanceObject>) {
+        return m_type == ObjectType::INSTANCE;
     } else if (std::is_same_v<T, NativeObject>) {
         return m_type == ObjectType::NATIVE;
     } else if (std::is_same_v<T, TypeObject>) {
@@ -187,12 +191,36 @@ public:
 };
 
 class StructObject : public Object {
-    std::string m_name{};
-    Type m_type{nullptr};
+    std::vector<Value> m_assocProperties;
+    std::shared_ptr<const ConstructorType> m_constructorType;
 
 public:
-    StructObject(std::string name, Type type);
+    StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<Value> assocProperties);
     ~StructObject() override = default;
+
+    const std::string& getName() const;
+
+    Value& assocProperty(uint32_t index);
+    std::optional<std::reference_wrapper<Value>> assocPropertyNamed(const std::string& name);
+
+    std::string toString() const override;
+    Type getType() const override;
+    StructObject* clone() const override;
+    size_t size() const override;
+};
+
+class InstanceObject : public Object {
+    StructObject* m_struct;
+    std::vector<Value> m_properties;
+
+public:
+    explicit InstanceObject(StructObject* struct_);
+    ~InstanceObject() override = default;
+
+    StructObject* getStruct();
+
+    Value& property(uint32_t index);
+    std::optional<std::reference_wrapper<Value>> propertyNamed(const std::string& name);
 
     std::string toString() const override;
     Type getType() const override;

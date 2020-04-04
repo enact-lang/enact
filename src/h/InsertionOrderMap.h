@@ -73,7 +73,7 @@ public:
     }
 
     void erase(size_t index) {
-        m_map.erase(m_insertionOrder[index]);
+        m_map.erase(m_insertionOrder[index].get());
         m_insertionOrder.erase(index);
     }
 
@@ -92,19 +92,23 @@ public:
     }
 
     std::optional<std::reference_wrapper<ValueType>> at(const KeyType& key) {
-        return (contains(key) ? std::ref(m_map[key]) : std::nullopt);
+        if (contains(key)) return m_map.at(key);
+        return {};
     }
 
     std::optional<std::reference_wrapper<const ValueType>> at(const KeyType& key) const {
-        return (contains(key) ? std::make_optional(std::cref(m_map.at(key))) : std::nullopt);
+        if (contains(key)) return m_map.at(key);
+        return {};
     }
 
     std::optional<std::reference_wrapper<ValueType>> atIndex(size_t index) {
-        return (index < length() ? std::ref(m_map[m_insertionOrder[index]]) : std::nullopt);
+        if (index < length()) return m_map.at(m_insertionOrder[index].get());
+        return {};
     }
 
     std::optional<std::reference_wrapper<const ValueType>> atIndex(size_t index) const {
-        return (index < length() ? std::cref(m_map[m_insertionOrder[index]]) : std::nullopt);
+        if (index < length()) return m_map.at(m_insertionOrder[index].get());
+        return {};
     }
 
     std::optional<size_t> find(const KeyType& key) const {

@@ -529,7 +529,36 @@ void Compiler::visitNilExpr(NilExpr &expr) {
 }
 
 void Compiler::visitSetExpr(SetExpr& expr) {
-    throw errorAt(expr.oper, "Not implemented.");
+    compile(*expr.value);
+
+    compile(*expr.target->object);
+    auto objectType = expr.target->object->getType();
+
+    OpCode byteOp;
+    OpCode longOp;
+    uint32_t index;
+
+    if (objectType->isStruct()) {
+        const auto* structType = objectType->as<StructType>();
+
+        byteOp = OpCode::SET_PROPERTY;
+        longOp = OpCode::SET_PROPERTY_LONG;
+        index = *structType->findProperty(expr.target->name.lexeme);
+    } else if (objectType->isConstructor()) {
+        throw errorAt(expr.oper, "Not implemented!");
+    } else if (objectType->isTrait()) {
+        throw errorAt(expr.oper, "Not implemented!");
+    } else {
+        throw errorAt(expr.oper, "Only structs and traits have properties.");
+    }
+
+    if (index <= UINT8_MAX) {
+        emitByte(byteOp);
+        emitByte(static_cast<uint8_t>(index));
+    } else {
+        emitByte(longOp);
+        emitLong(index);
+    }
 }
 
 void Compiler::visitStringExpr(StringExpr &expr) {

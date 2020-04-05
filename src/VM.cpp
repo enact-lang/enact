@@ -430,7 +430,6 @@ InterpretResult VM::run(FunctionObject* function) {
             }
 
             case OpCode::STRUCT: {
-                const std::string& name = READ_CONSTANT().asObject()->as<StringObject>()->asStdString();
                 std::shared_ptr<const ConstructorType> type{
                     READ_CONSTANT()
                         .asObject()
@@ -444,7 +443,6 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
             case OpCode::STRUCT_LONG: {
-                const std::string& name = READ_CONSTANT_LONG().asObject()->as<StringObject>()->asStdString();
                 std::shared_ptr<const ConstructorType> type{
                     READ_CONSTANT_LONG()
                         .asObject()

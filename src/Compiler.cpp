@@ -284,20 +284,14 @@ void Compiler::visitStructStmt(StructStmt &stmt) {
     addLocal(stmt.name);
     m_locals.back().initialized = true;
 
-    auto* name = m_context.gc.allocateObject<StringObject>(stmt.name.lexeme);
-    uint32_t nameConstant = currentChunk().addConstant(Value{name});
-
-    std::unique_ptr<Typename> typeName = std::make_unique<BasicTypename>(stmt.name);
     auto* type = m_context.gc.allocateObject<TypeObject>(stmt.constructorType);
     uint32_t typeConstant = currentChunk().addConstant(Value{type});
 
-    if (nameConstant <= UINT8_MAX && typeConstant <= UINT8_MAX) {
+    if (typeConstant <= UINT8_MAX) {
         emitByte(OpCode::STRUCT);
-        emitByte(nameConstant);
         emitByte(typeConstant);
     } else {
         emitByte(OpCode::STRUCT_LONG);
-        emitLong(nameConstant);
         emitLong(typeConstant);
     }
 }

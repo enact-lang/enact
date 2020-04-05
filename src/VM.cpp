@@ -383,9 +383,11 @@ InterpretResult VM::run(FunctionObject* function) {
                     auto* struct_ = callee->as<StructObject>();
                     auto* instance = m_context.gc.allocateObject<InstanceObject>(
                             struct_,
-                            std::vector<Value>{});
+                            std::move(std::vector<Value>{m_stack.end() - argCount, m_stack.end()}));
 
-                    m_stack[m_stack.size() - argCount - 1] = Value{instance};
+                    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
+
+                    push(Value{instance});
                 } else {
                     NativeFn native = callee->as<NativeObject>()->getFunction();
                     Value result = native(argCount, &m_stack.back() - argCount + 1);

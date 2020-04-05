@@ -235,10 +235,10 @@ size_t StructObject::size() const {
     return sizeof(StructObject);
 }
 
-InstanceObject::InstanceObject(StructObject *struct_, std::vector<Value, std::allocator<Value>> vector) :
+InstanceObject::InstanceObject(StructObject *struct_, std::vector<Value> properties) :
         Object{ObjectType::INSTANCE},
         m_struct{struct_},
-        m_properties{struct_->getType()->as<ConstructorType>()->getStructType()->getProperties().length()} {
+        m_properties{std::move(properties)} {
 }
 
 Value &InstanceObject::property(uint32_t index) {

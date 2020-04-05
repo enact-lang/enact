@@ -472,7 +472,33 @@ void Compiler::visitFloatExpr(FloatExpr &expr) {
 }
 
 void Compiler::visitGetExpr(GetExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
+    compile(*expr.object);
+
+    OpCode byteOp;
+    OpCode longOp;
+    uint32_t index;
+
+    if (expr.object->getType()->isStruct()) {
+        const auto* structType = expr.object->getType()->as<StructType>();
+
+        byteOp = OpCode::GET_PROPERTY;
+        longOp = OpCode::GET_PROPERTY_LONG;
+        index = *structType->findProperty(expr.name.lexeme);
+    } else if (expr.object->getType()->isConstructor()) {
+        throw errorAt(expr.oper, "Not implemented!");
+    } else if (expr.object->getType()->isTrait()) {
+        throw errorAt(expr.oper, "Not implemented!");
+    } else {
+        throw errorAt(expr.oper, "Only structs and traits have properties.");
+    }
+
+    if (index <= UINT8_MAX) {
+        emitByte(byteOp);
+        emitByte(static_cast<uint8_t>(index));
+    } else {
+        emitByte(longOp);
+        emitLong(index);
+    }
 }
 
 void Compiler::visitIntegerExpr(IntegerExpr &expr) {

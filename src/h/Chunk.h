@@ -56,6 +56,12 @@ enum class OpCode : uint8_t {
     SET_UPVALUE,
     SET_UPVALUE_LONG,
 
+    SET_PROPERTY,
+    SET_PROPERTY_LONG,
+
+    GET_PROPERTY,
+    GET_PROPERTY_LONG,
+
     JUMP,
     JUMP_IF_TRUE,
     JUMP_IF_FALSE,

@@ -121,6 +121,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_LOCAL:
         case OpCode::GET_UPVALUE:
         case OpCode::SET_UPVALUE:
+        case OpCode::GET_PROPERTY:
+        case OpCode::SET_PROPERTY:
         case OpCode::CALL: {
             std::string str;
             std::tie(str, index) = disassembleByte(index);
@@ -144,7 +146,9 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::GET_LOCAL_LONG:
         case OpCode::SET_LOCAL_LONG:
         case OpCode::GET_UPVALUE_LONG:
-        case OpCode::SET_UPVALUE_LONG: {
+        case OpCode::SET_UPVALUE_LONG:
+        case OpCode::GET_PROPERTY_LONG:
+        case OpCode::SET_PROPERTY_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLong(index);
             s << str;
@@ -414,6 +418,10 @@ std::string opCodeToString(OpCode code) {
         case OpCode::GET_UPVALUE_LONG: return "GET_UPVALUE_LONG";
         case OpCode::SET_UPVALUE: return "SET_UPVALUE";
         case OpCode::SET_UPVALUE_LONG: return "SET_UPVALUE_LONG";
+        case OpCode::GET_PROPERTY: return "GET_PROPERTY";
+        case OpCode::GET_PROPERTY_LONG: return "GET_PROPERTY_LONG";
+        case OpCode::SET_PROPERTY: return "SET_PROPERTY";
+        case OpCode::SET_PROPERTY_LONG: return "SET_PROPERTY_LONG";
         case OpCode::JUMP: return "JUMP";
         case OpCode::JUMP_IF_TRUE: return "JUMP_IF_TRUE";
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";

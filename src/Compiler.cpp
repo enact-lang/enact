@@ -502,6 +502,10 @@ void Compiler::visitNilExpr(NilExpr &expr) {
     emitByte(OpCode::NIL);
 }
 
+void Compiler::visitSetExpr(SetExpr& expr) {
+    throw errorAt(expr.oper, "Not implemented.");
+}
+
 void Compiler::visitStringExpr(StringExpr &expr) {
     Object* string = m_context.gc.allocateObject<StringObject>(expr.value);
     emitConstant(Value{string});

@@ -507,7 +507,7 @@ void Analyser::visitCallExpr(CallExpr &expr) {
         returnType = functionType->getReturnType();
         paramTypes = functionType->getArgumentTypes();
     } else {
-        throw errorAt(expr.paren, "Only functions can be called.");
+        throw errorAt(expr.paren, "Only functions or constructors can be called.");
     }
 
     // Do we have the correct amount of arguments?
@@ -544,7 +544,7 @@ void Analyser::visitGetExpr(GetExpr &expr) {
             return;
         }
 
-        throw errorAt(expr.oper, "Struct type '" + type->getName() + "' does not have a property named '" +
+        throw errorAt(expr.name, "Struct type '" + type->getName() + "' does not have a property named '" +
                                  expr.name.lexeme + "'.");
     } else if (objectType->isTrait()) {
         auto type = objectType->as<TraitType>();
@@ -554,7 +554,7 @@ void Analyser::visitGetExpr(GetExpr &expr) {
             return;
         }
 
-        throw errorAt(expr.oper, "Trait type '" + type->getName() + "' does not have a method named '" +
+        throw errorAt(expr.name, "Trait type '" + type->getName() + "' does not have a method named '" +
                                  expr.name.lexeme + "'.");
 
     } else if (objectType->isConstructor()) {
@@ -565,13 +565,13 @@ void Analyser::visitGetExpr(GetExpr &expr) {
             return;
         }
 
-        throw errorAt(expr.oper, "Struct type '" + type->getStructType()->getName() + "' does not have an associated function named '" +
+        throw errorAt(expr.name, "Struct type '" + type->getStructType()->getName() + "' does not have an associated function named '" +
                                  expr.name.lexeme + "'.");
     } else if (objectType->isDynamic()) {
         // We'll have to check at runtime.
         expr.setType(objectType);
     } else {
-        throw errorAt(expr.oper, "Only structs, traits and types have fields.");
+        throw errorAt(expr.name, "Only structs, traits and types have fields.");
     }
 }
 
@@ -596,6 +596,19 @@ void Analyser::visitLogicalExpr(LogicalExpr &expr) {
 
 void Analyser::visitNilExpr(NilExpr &expr) {
     expr.setType(m_types["nothing"]);
+}
+
+void Analyser::visitSetExpr(SetExpr& expr) {
+    analyse(*expr.target);
+    analyse(*expr.value);
+
+    if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
+        throw errorAt(expr.oper, "Cannot assign value of type '" + expr.value->getType()->toString()
+                + "' to property '" + expr.target->name.lexeme + "' of type '" + expr.value->getType()->toString()
+                + "'.");
+    }
+
+    expr.setType(expr.value->getType());
 }
 
 void Analyser::visitStringExpr(StringExpr &expr) {

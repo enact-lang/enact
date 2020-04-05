@@ -156,7 +156,10 @@ std::unique_ptr<Expr> Parser::assignment(std::unique_ptr<Expr> target) {
         };
         return std::make_unique<AllotExpr>(std::move(subscriptTarget), std::move(value), oper);
     } else if (typeid(*target) == typeid(GetExpr)) {
-        throw errorAt(oper, "Not implemented.");
+        auto getTarget = std::unique_ptr<GetExpr>{
+                static_cast<GetExpr*>(target.release())
+        };
+        return std::make_unique<SetExpr>(std::move(getTarget), std::move(value), oper);
     }
 
     throw errorAt(oper, "Invalid assignment target.");

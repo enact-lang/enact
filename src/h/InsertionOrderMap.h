@@ -2,6 +2,7 @@
 #define ENACT_INSERTIONORDERMAP_H
 
 #include <unordered_map>
+#include <iostream>
 
 template <class KeyType, class ValueType>
 class InsertionOrderMapIter;
@@ -15,7 +16,7 @@ class InsertionOrderMap {
     friend class InsertionOrderMapConstIter<KeyType, ValueType>;
 
     std::unordered_map<KeyType, ValueType> m_map{};
-    std::vector<std::reference_wrapper<const KeyType>> m_insertionOrder{};
+    std::vector<KeyType> m_insertionOrder{};
 
 public:
     /* Constructors */
@@ -69,11 +70,11 @@ public:
     /* Insertion and removal */
     void insert(const std::pair<KeyType, ValueType>& value) {
         m_map.insert(value);
-        m_insertionOrder.push_back(std::cref((*m_map.find(value.first)).first));
+        m_insertionOrder.push_back(value.first);
     }
 
     void erase(size_t index) {
-        m_map.erase(m_insertionOrder[index].get());
+        m_map.erase(m_insertionOrder[index]);
         m_insertionOrder.erase(index);
     }
 
@@ -102,19 +103,19 @@ public:
     }
 
     std::optional<std::reference_wrapper<ValueType>> atIndex(size_t index) {
-        if (index < length()) return m_map.at(m_insertionOrder[index].get());
+        if (index < length()) return m_map[m_insertionOrder[index]];
         return {};
     }
 
     std::optional<std::reference_wrapper<const ValueType>> atIndex(size_t index) const {
-        if (index < length()) return m_map.at(m_insertionOrder[index].get());
+        if (index < length()) return m_map[m_insertionOrder[index]];
         return {};
     }
 
     std::optional<size_t> find(const KeyType& key) const {
         size_t index = 0;
         for (const auto& myKeyType : m_insertionOrder) {
-            if (myKeyType.get() == key) return index;
+            if (myKeyType == key) return index;
             ++index;
         }
 
@@ -180,7 +181,7 @@ public:
     }
 
     std::pair<const KeyType, ValueType>& operator*() {
-        return *m_map.m_map.find(m_map.m_insertionOrder[m_index].get());
+        return *m_map.m_map.find(m_map.m_insertionOrder[m_index]);
     }
 
     InsertionOrderMapIter& operator++() {
@@ -222,7 +223,7 @@ public:
     }
 
     const std::pair<const KeyType, ValueType>& operator*() {
-        return *m_map.m_map.find(m_map.m_insertionOrder[m_index].get());
+        return *m_map.m_map.find(m_map.m_insertionOrder[m_index]);
     };
 
     InsertionOrderMapConstIter& operator++() {

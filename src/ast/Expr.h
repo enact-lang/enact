@@ -38,6 +38,7 @@ class GetExpr;
 class IntegerExpr;
 class LogicalExpr;
 class NilExpr;
+class SetExpr;
 class StringExpr;
 class SubscriptExpr;
 class TernaryExpr;
@@ -59,6 +60,7 @@ public:
     virtual R visitIntegerExpr(IntegerExpr& expr) = 0;
     virtual R visitLogicalExpr(LogicalExpr& expr) = 0;
     virtual R visitNilExpr(NilExpr& expr) = 0;
+    virtual R visitSetExpr(SetExpr& expr) = 0;
     virtual R visitStringExpr(StringExpr& expr) = 0;
     virtual R visitSubscriptExpr(SubscriptExpr& expr) = 0;
     virtual R visitTernaryExpr(TernaryExpr& expr) = 0;
@@ -289,6 +291,27 @@ public:
 
     void accept(ExprVisitor<void> *visitor) override {
         return visitor->visitNilExpr(*this);
+    }
+};
+
+class SetExpr : public Expr {
+public:
+    std::unique_ptr<GetExpr> target;
+    std::unique_ptr<Expr> value;
+    Token oper;
+
+    SetExpr(std::unique_ptr<GetExpr> target,std::unique_ptr<Expr> value,Token oper) :
+            target{std::move(target)},
+            value{std::move(value)},
+            oper{oper} {}
+    ~SetExpr() override = default;
+
+    std::string accept(ExprVisitor<std::string> *visitor) override {
+        return visitor->visitSetExpr(*this);
+    }
+
+    void accept(ExprVisitor<void> *visitor) override {
+        return visitor->visitSetExpr(*this);
     }
 };
 

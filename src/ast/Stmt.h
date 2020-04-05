@@ -263,7 +263,7 @@ public:
     std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
     std::shared_ptr<const ConstructorType> constructorType;
 
-    StructStmt(Token name, std::vector<Token> traits, std::vector<Field>&& fields, std::vector<std::unique_ptr<FunctionStmt>> methods, std::vector<std::unique_ptr<FunctionStmt>> assocFunctions, std::shared_ptr<const ConstructorType> type) :
+    StructStmt(Token name, std::vector<Token> traits, std::vector<Field>&& fields, std::vector<std::unique_ptr<FunctionStmt>> methods, std::vector<std::unique_ptr<FunctionStmt>> assocFunctions, std::shared_ptr<const ConstructorType> constructorType) :
             name{name},
             traits{traits},
             fields{std::move(fields)},

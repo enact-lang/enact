@@ -220,7 +220,7 @@ std::optional<std::reference_wrapper<Value>> StructObject::assocPropertyNamed(co
 }
 
 std::string StructObject::toString() const {
-    return "<" + m_constructorType->toString() + " constructor>";
+    return "<struct " + m_constructorType->toString() + ">";
 }
 
 Type StructObject::getType() const {
@@ -235,7 +235,7 @@ size_t StructObject::size() const {
     return sizeof(StructObject);
 }
 
-InstanceObject::InstanceObject(StructObject *struct_) :
+InstanceObject::InstanceObject(StructObject *struct_, std::vector<Value, std::allocator<Value>> vector) :
         Object{ObjectType::INSTANCE},
         m_struct{struct_},
         m_properties{struct_->getType()->as<ConstructorType>()->getStructType()->getProperties().length()} {
@@ -259,7 +259,7 @@ std::string InstanceObject::toString() const {
 }
 
 Type InstanceObject::getType() const {
-    return Type();
+    return m_struct->getType()->as<ConstructorType>()->getStructType();
 }
 
 StructObject *InstanceObject::clone() const {

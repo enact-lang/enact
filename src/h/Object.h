@@ -214,7 +214,7 @@ class InstanceObject : public Object {
     std::vector<Value> m_properties;
 
 public:
-    explicit InstanceObject(StructObject* struct_);
+    explicit InstanceObject(StructObject *struct_, std::vector<Value, std::allocator<Value>> vector);
     ~InstanceObject() override = default;
 
     StructObject* getStruct();

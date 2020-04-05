@@ -288,7 +288,7 @@ void Compiler::visitStructStmt(StructStmt &stmt) {
     uint32_t nameConstant = currentChunk().addConstant(Value{name});
 
     std::unique_ptr<Typename> typeName = std::make_unique<BasicTypename>(stmt.name);
-    auto* type = m_context.gc.allocateObject<TypeObject>(stmt.type);
+    auto* type = m_context.gc.allocateObject<TypeObject>(stmt.constructorType);
     uint32_t typeConstant = currentChunk().addConstant(Value{type});
 
     if (nameConstant <= UINT8_MAX && typeConstant <= UINT8_MAX) {

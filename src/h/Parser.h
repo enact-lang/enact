@@ -73,7 +73,7 @@ private:
 
     // Declarations
     std::unique_ptr<Stmt> declaration();
-    std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true);
+    std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true, bool isMut = false);
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> traitDeclaration();
     std::unique_ptr<Stmt> variableDeclaration(bool isConst, bool mustExpectSeparator = true);
@@ -170,6 +170,7 @@ private:
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IF
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IN
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // IS
+            ParseRule{nullptr,    nullptr,            Precedence::NONE}, // MUT
             ParseRule{&Parser::literal,    nullptr,            Precedence::NONE}, // NIL
             ParseRule{nullptr,               &Parser::binary,            Precedence::OR}, // OR
             ParseRule{nullptr,               nullptr,            Precedence::NONE}, // RETURN

@@ -260,31 +260,23 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
 
     auto thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, properties);
     m_types.insert(std::make_pair(stmt.name.lexeme, thisType));
-    stmt.type = thisType;
 
     // Now, create a constructor for the struct.
-    Variable constructorType{std::make_shared<ConstructorType>(thisType, assocFunctions)};
-    declareVariable(stmt.name.lexeme, constructorType);
+    auto constructorType = std::make_shared<const ConstructorType>(thisType, assocFunctions);
+    stmt.constructorType = constructorType;
 
-    // We now need to analyse all of the code inside the methods.
-    // First, we'll begin the struct scope:
-    beginScope();
+    declareVariable(stmt.name.lexeme, Variable{constructorType, true});
 
-    // Next, we'll declare all properties:
-    for (const auto& property : properties) {
-        declareVariable(property.first, Variable{property.second, false});
-    }
-
-    // And "this":
-    declareVariable("this", Variable{thisType, false});
 
     // Now we can analyse the methods:
     for (auto& method : stmt.methods) {
-        analyse(*method);
-    }
+        beginScope();
 
-    // End the struct scope.
-    endScope();
+        declareVariable("self", Variable{thisType, !method->isMut});
+        analyse(*method);
+
+        endScope();
+    }
 
     // Look at the assoc functions (remember, they are outside of the struct scope):
     for (auto& function : stmt.assocFunctions) {

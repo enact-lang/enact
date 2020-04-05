@@ -196,7 +196,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
+std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody, bool isMut) {
     expect(TokenType::IDENTIFIER, "Expected function name.");
     Token name = m_previous;
 
@@ -218,7 +218,7 @@ std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
     std::vector<std::unique_ptr<Stmt>> body;
 
     if (!mustParseBody && consumeSeparator()) {
-        return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr);
+        return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr, isMut);
     }
 
     expect(TokenType::COLON, "Expected ':' before function body.");
@@ -232,7 +232,7 @@ std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
 
     expectSeparator("Expected newline or ';' after function declaration.");
 
-    return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr);
+    return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr, isMut);
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -267,21 +267,27 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
             fields.push_back(Field{fieldName, std::move(fieldType)});
 
             expectSeparator("Expected newline or ';' after field declaration.");
-        } else if (consume(TokenType::FUN)) {
-            // Method declaration
-            auto method = std::unique_ptr<FunctionStmt>{
-                    static_cast<FunctionStmt*>(functionDeclaration().release())
-            };
-            methods.push_back(std::move(method));
-        } else if (consume(TokenType::ASSOC)) {
+            continue;
+        }
+
+        if (consume(TokenType::ASSOC)) {
             // Associated function declaration
             auto function = std::unique_ptr<FunctionStmt>{
                     static_cast<FunctionStmt*>(functionDeclaration().release())
             };
             assocFunctions.push_back(std::move(function));
-        } else {
-            throw errorAtCurrent("Expected field or method declaration.");
+            continue;
         }
+
+        bool isMut = consume(TokenType::MUT);
+        // We've exhausted all other possibilities, so we must consume a method declaration or else it's an error.
+        expect(TokenType::FUN, "Expected field or method declaration.");
+
+        // Parse method body
+        auto method = std::unique_ptr<FunctionStmt>{
+            static_cast<FunctionStmt*>(functionDeclaration(true, isMut).release())
+        };
+        methods.push_back(std::move(method));
     }
 
     expect(TokenType::END, "Expected 'end' at end of struct declaration.");

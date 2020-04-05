@@ -338,6 +338,13 @@ InterpretResult VM::run(FunctionObject* function) {
                 if (callee->is<ClosureObject>()) {
                     call(callee->as<ClosureObject>());
                     frame = &m_frames[m_frameCount - 1];
+                } else if (callee->is<StructObject>()) {
+                    auto* struct_ = callee->as<StructObject>();
+                    auto* instance = m_context.gc.allocateObject<InstanceObject>(
+                            struct_,
+                            std::vector<Value>{});
+
+                    m_stack[m_stack.size() - argCount - 1] = Value{instance};
                 } else {
                     NativeFn native = callee->as<NativeObject>()->getFunction();
                     Value result = native(argCount, &m_stack.back() - argCount + 1);

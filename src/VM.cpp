@@ -305,6 +305,47 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
 
+            case OpCode::GET_PROPERTY: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint8_t index = READ_BYTE();
+                push(instance->property(index));
+
+                break;
+            }
+            case OpCode::GET_PROPERTY_LONG: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = READ_LONG();
+                push(instance->property(index));
+
+                break;
+            }
+            case OpCode::SET_PROPERTY: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint8_t index = READ_BYTE();
+                instance->property(index) = peek(0);
+
+                break;
+            }
+            case OpCode::SET_PROPERTY_LONG: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = READ_LONG();
+                instance->property(index) = peek(0);
+
+                break;
+            }
+
             case OpCode::JUMP: {
                 uint16_t jumpSize = READ_SHORT();
                 frame->ip += jumpSize;

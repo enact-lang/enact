@@ -307,6 +307,99 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
 
+            case OpCode::GET_PROPERTY_DYNAMIC: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                const std::string& name = READ_CONSTANT()
+                        .asObject()
+                        ->as<StringObject>()
+                        ->asStdString();
+
+                std::optional<std::reference_wrapper<Value>> property;
+                if (!(property = instance->propertyNamed(name))) {
+                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                            "' does not have a field named '" + name + "'.");
+                }
+
+                push(*property);
+                break;
+            }
+            case OpCode::GET_PROPERTY_DYNAMIC_LONG: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                const std::string& name = READ_CONSTANT_LONG()
+                        .asObject()
+                        ->as<StringObject>()
+                        ->asStdString();
+
+                std::optional<std::reference_wrapper<Value>> property;
+                if (!(property = instance->propertyNamed(name))) {
+                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                       "' does not have a field named '" + name + "'.");
+                }
+
+                push(*property);
+                break;
+            }
+            case OpCode::SET_PROPERTY_DYNAMIC: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                const std::string& name = READ_CONSTANT()
+                        .asObject()
+                        ->as<StringObject>()
+                        ->asStdString();
+
+                std::optional<std::reference_wrapper<Value>> maybeProperty;
+                if (!(maybeProperty = instance->propertyNamed(name))) {
+                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                       "' does not have a property named '" + name + "'.");
+                }
+
+                Value& property = maybeProperty.value().get();
+                Value value = peek(0);
+
+                if (!property.getType()->looselyEquals(*value.getType())) {
+                    throw runtimeError("Cannot assign a value of type '" + value.getType()->toString() +
+                            "' to property '" + name + "' of type '" + property.getType()->toString() + "'.");
+                }
+
+                property = peek(0);
+                break;
+            }
+            case OpCode::SET_PROPERTY_DYNAMIC_LONG: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                const std::string& name = READ_CONSTANT_LONG()
+                        .asObject()
+                        ->as<StringObject>()
+                        ->asStdString();
+
+                std::optional<std::reference_wrapper<Value>> maybeProperty;
+                if (!(maybeProperty = instance->propertyNamed(name))) {
+                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                       "' does not have a property named '" + name + "'.");
+                }
+
+                Value& property = maybeProperty.value().get();
+                Value value = peek(0);
+
+                if (!property.getType()->looselyEquals(*value.getType())) {
+                    throw runtimeError("Cannot assign a value of type '" + value.getType()->toString() +
+                                       "' to property '" + name + "' of type '" + property.getType()->toString() + "'.");
+                }
+
+                property = peek(0);
+                break;
+            }
+
             case OpCode::JUMP: {
                 uint16_t jumpSize = READ_SHORT();
                 frame->ip += jumpSize;

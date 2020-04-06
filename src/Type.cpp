@@ -206,7 +206,7 @@ std::unique_ptr<Typename> PrimitiveType::toTypename() const {
         case PrimitiveKind::INT: name = "int"; break;
         case PrimitiveKind::FLOAT: name = "float"; break;
         case PrimitiveKind::BOOL: name = "bool"; break;
-        case PrimitiveKind::STRING: name = "string"; break;
+        case PrimitiveKind::STRING: name = "String"; break;
         case PrimitiveKind::DYNAMIC: name = "any"; break;
         case PrimitiveKind::NOTHING: name = "nothing"; break;
     }

@@ -15,7 +15,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
             std::pair("int", INT_TYPE),
             std::pair("float", FLOAT_TYPE),
             std::pair("bool", BOOL_TYPE),
-            std::pair("string", STRING_TYPE),
+            std::pair("String", STRING_TYPE),
             std::pair("any", DYNAMIC_TYPE),
             std::pair("nothing", NOTHING_TYPE),
     };

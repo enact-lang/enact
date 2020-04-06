@@ -15,11 +15,11 @@ std::vector<std::unique_ptr<Stmt>> Analyser::analyse(std::vector<std::unique_ptr
 
         declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
         declareVariable("print",
-                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, true), true});
         declareVariable("put",
-                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, true), true});
         declareVariable("dis",
-                        Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+                        Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, true), true});
     }
 
     for (auto &stmt : ast) {
@@ -447,7 +447,7 @@ void Analyser::visitBinaryExpr(BinaryExpr &expr) {
             }
 
             if (left->isString() && right->isString()) {
-                expr.setType(m_types["string"]);
+                expr.setType(m_types["String"]);
             } else if (left->isFloat() || right->isFloat()) {
                 expr.setType(m_types["float"]);
             } else if (left->isInt() && right->isInt()) {
@@ -612,7 +612,7 @@ void Analyser::visitSetExpr(SetExpr& expr) {
 }
 
 void Analyser::visitStringExpr(StringExpr &expr) {
-    expr.setType(m_types["string"]);
+    expr.setType(m_types["String"]);
 }
 
 void Analyser::visitSubscriptExpr(SubscriptExpr &expr) {
@@ -733,11 +733,11 @@ Type Analyser::lookUpType(const Typename& name) {
             }
             break;
         case Typename::Kind::ARRAY: {
-            auto arrName = static_cast<const ArrayTypename&>(name);
+            const auto& arrName = static_cast<const ArrayTypename&>(name);
             return std::make_shared<ArrayType>(lookUpType(arrName.elementTypename()));
         }
         case Typename::Kind::FUNCTION: {
-            auto funName = static_cast<const FunctionTypename&>(name);
+            const auto& funName = static_cast<const FunctionTypename&>(name);
 
             std::vector<Type> argTypes{};
             for (const auto& argName : funName.argumentTypenames()) {
@@ -747,7 +747,7 @@ Type Analyser::lookUpType(const Typename& name) {
             return std::make_shared<FunctionType>(lookUpType(funName.returnTypename()), std::move(argTypes));
         }
         case Typename::Kind::CONSTRUCTOR: {
-            auto conName = static_cast<const ConstructorTypename&>(name);
+            const auto& conName = static_cast<const ConstructorTypename&>(name);
             return lookUpVariable(conName.structTypename().where()).type;
         }
     }

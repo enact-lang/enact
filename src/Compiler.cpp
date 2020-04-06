@@ -498,6 +498,12 @@ void Compiler::visitGetExpr(GetExpr &expr) {
         throw errorAt(expr.oper, "Not implemented!");
     } else if (expr.object->getType()->isTrait()) {
         throw errorAt(expr.oper, "Not implemented!");
+    } else if (expr.object->getType()->isDynamic()) {
+        byteOp = OpCode::GET_PROPERTY_DYNAMIC;
+        longOp = OpCode::GET_PROPERTY_DYNAMIC_LONG;
+
+        auto* name = m_context.gc.allocateObject<StringObject>(expr.name.lexeme);
+        index = currentChunk().addConstant(Value{name});
     } else {
         throw errorAt(expr.oper, "Only structs and traits have properties.");
     }

@@ -308,10 +308,10 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::GET_PROPERTY_DYNAMIC: {
-                Value value = peek(0);
-                if (!value.isObject() && !value.asObject()->is<InstanceObject>()) {
+                Value maybeInstance = peek(0);
+                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
                     throw runtimeError("Only instances and constructors have properties, not a value of type '" +
-                                       value.getType()->toString() + "'.");
+                                       maybeInstance.getType()->toString() + "'.");
                 }
 
                 auto* instance = pop()
@@ -333,10 +333,10 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
             case OpCode::GET_PROPERTY_DYNAMIC_LONG: {
-                Value value = peek(0);
-                if (!value.isObject() && !value.asObject()->is<InstanceObject>()) {
+                Value maybeInstance = peek(0);
+                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
                     throw runtimeError("Only instances and constructors have properties, not a value of type '" +
-                                       value.getType()->toString() + "'.");
+                                       maybeInstance.getType()->toString() + "'.");
                 }
 
                 auto* instance = pop()
@@ -358,10 +358,10 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
             case OpCode::SET_PROPERTY_DYNAMIC: {
-                Value value = peek(0);
-                if (!value.isObject() && !value.asObject()->is<InstanceObject>()) {
+                Value maybeInstance = peek(0);
+                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
                     throw runtimeError("Only instances and constructors have properties, not a value of type '" +
-                            value.getType()->toString() + "'.");
+                            maybeInstance.getType()->toString() + "'.");
                 }
 
                 auto* instance = pop()
@@ -391,10 +391,10 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
             case OpCode::SET_PROPERTY_DYNAMIC_LONG: {
-                Value value = peek(0);
-                if (!value.isObject() && !value.asObject()->is<InstanceObject>()) {
+                Value maybeInstance = peek(0);
+                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
                     throw runtimeError("Only instances and constructors have properties, not a value of type '" +
-                                       value.getType()->toString() + "'.");
+                                       maybeInstance.getType()->toString() + "'.");
                 }
 
                 auto* instance = pop()

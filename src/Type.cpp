@@ -58,6 +58,12 @@ bool TypeBase::operator==(const TypeBase &type) const {
 
             return left->getName() == right->getName();
         }
+        case TypeKind::CONSTRUCTOR: {
+            auto left = this->as<ConstructorType>();
+            auto right = type.as<ConstructorType>();
+
+            return *left->getStructType() == *right->getStructType();
+        }
 
             // Unreachable
         default: return false;
@@ -219,10 +225,11 @@ std::unique_ptr<Typename> ArrayType::toTypename() const {
     return std::make_unique<ArrayTypename>(m_elementType->toTypename());
 }
 
-FunctionType::FunctionType(Type returnType, std::vector<Type> argumentTypes) :
+FunctionType::FunctionType(Type returnType, std::vector<Type> argumentTypes, bool isNative) :
         TypeBase{TypeKind::FUNCTION},
         m_returnType{returnType},
-        m_argumentTypes{argumentTypes} {}
+        m_argumentTypes{argumentTypes},
+        m_isNative{isNative} {}
 
 const Type FunctionType::getReturnType() const {
     return m_returnType;
@@ -230,6 +237,10 @@ const Type FunctionType::getReturnType() const {
 
 const std::vector<Type>& FunctionType::getArgumentTypes() const {
     return m_argumentTypes;
+}
+
+bool FunctionType::isNative() const {
+    return m_isNative;
 }
 
 std::unique_ptr<Typename> FunctionType::toTypename() const {
@@ -333,6 +344,7 @@ std::optional<size_t> ConstructorType::findAssocProperty(const std::string &name
 }
 
 std::unique_ptr<Typename> ConstructorType::toTypename() const {
-    std::string name = m_structType->toString() + "()";
-    return std::make_unique<BasicTypename>(name, Token{TokenType::IDENTIFIER, name, 0, 0});
+    std::string name = m_structType->toString();
+    return std::make_unique<ConstructorTypename>(
+            std::make_unique<BasicTypename>(name, Token{TokenType::IDENTIFIER, name, 0, 0}));
 }

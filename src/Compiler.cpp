@@ -449,21 +449,31 @@ void Compiler::visitBooleanExpr(BooleanExpr &expr) {
 void Compiler::visitCallExpr(CallExpr &expr) {
     compile(*expr.callee);
 
-    bool needRuntimeCheck = expr.callee->getType()->isDynamic();
+    OpCode callOp;
 
-    for (int i = 0; i < expr.arguments.size(); ++i) {
-        compile(*expr.arguments[i]);
-        if (expr.arguments[i]->getType()->isDynamic()) {
-            needRuntimeCheck = true;
+    Type calleeType = expr.callee->getType();
+
+    if (calleeType->isFunction()) {
+        if (!calleeType->as<FunctionType>()->isNative()) {
+            callOp = OpCode::CALL_FUNCTION;
+        } else {
+            callOp = OpCode::CALL_NATIVE;
+        }
+    } else if (expr.callee->getType()->isConstructor()) {
+        callOp = OpCode::CALL_CONSTRUCTOR;
+    } else {
+        callOp = OpCode::CALL_DYNAMIC;
+    }
+
+    for (const auto& argument : expr.arguments) {
+        compile(*argument);
+
+        if (argument->getType()->isDynamic()) {
+            callOp = OpCode::CALL_DYNAMIC;
         }
     }
 
-    if (needRuntimeCheck) {
-        emitByte(OpCode::CHECK_CALLABLE);
-        emitByte(expr.arguments.size());
-    }
-
-    emitByte(OpCode::CALL);
+    emitByte(callOp);
     emitByte(static_cast<uint8_t>(expr.arguments.size()));
 }
 

@@ -116,14 +116,16 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
         // Byte instructions
         case OpCode::ARRAY:
-        case OpCode::CHECK_CALLABLE:
         case OpCode::GET_LOCAL:
         case OpCode::SET_LOCAL:
         case OpCode::GET_UPVALUE:
         case OpCode::SET_UPVALUE:
         case OpCode::GET_PROPERTY:
         case OpCode::SET_PROPERTY:
-        case OpCode::CALL: {
+        case OpCode::CALL_FUNCTION:
+        case OpCode::CALL_CONSTRUCTOR:
+        case OpCode::CALL_NATIVE:
+        case OpCode::CALL_DYNAMIC: {
             std::string str;
             std::tie(str, index) = disassembleByte(index);
             s << str;
@@ -390,7 +392,6 @@ std::string opCodeToString(OpCode code) {
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
         case OpCode::CHECK_REFERENCE: return "CHECK_REFERENCE";
-        case OpCode::CHECK_CALLABLE: return "CHECK_CALLABLE";
         case OpCode::CHECK_INDEXABLE: return "CHECK_INDEXABLE";
         case OpCode::CHECK_ALLOTABLE: return "CHECK_ALLOTABLE";
         case OpCode::CHECK_TYPE: return "CHECK_TYPE";
@@ -426,7 +427,10 @@ std::string opCodeToString(OpCode code) {
         case OpCode::JUMP_IF_TRUE: return "JUMP_IF_TRUE";
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
         case OpCode::LOOP: return "LOOP";
-        case OpCode::CALL: return "CALL";
+        case OpCode::CALL_FUNCTION: return "CALL_FUNCTION";
+        case OpCode::CALL_CONSTRUCTOR: return "CALL_CONSTRUCTOR";
+        case OpCode::CALL_NATIVE: return "CALL_NATIVE";
+        case OpCode::CALL_DYNAMIC: return "CALL_DYNAMIC";
         case OpCode::CLOSURE: return "CLOSURE";
         case OpCode::CLOSURE_LONG: return "CLOSURE_LONG";
         case OpCode::CLOSE_UPVALUE: return "CLOSE_UPVALUE";

@@ -632,6 +632,11 @@ std::unique_ptr<const Typename> Parser::expectTypename(bool emptyAllowed) {
 
     bool isEnclosed = consume(TokenType::LEFT_PAREN);
 
+    if (consume(TokenType::STRUCT)) {
+        expect(TokenType::IDENTIFIER, "Expected struct name to complete constructor typename.");
+        return std::make_unique<ConstructorTypename>(std::make_unique<BasicTypename>(m_previous));
+    }
+
     if (consume(TokenType::FUN)) {
         typeName = expectFunctionTypename();
     } else if (consume(TokenType::IDENTIFIER)) {

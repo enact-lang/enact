@@ -746,6 +746,10 @@ Type Analyser::lookUpType(const Typename& name) {
 
             return std::make_shared<FunctionType>(lookUpType(funName.returnTypename()), std::move(argTypes));
         }
+        case Typename::Kind::CONSTRUCTOR: {
+            auto conName = static_cast<const ConstructorTypename&>(name);
+            return lookUpVariable(conName.structTypename().where()).type;
+        }
     }
 
     throw errorAt(name.where(), "Undefined type '" + name.name() + "'.");

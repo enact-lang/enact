@@ -4,7 +4,17 @@
 VM::VM(Context& context) : m_context{context} {
 }
 
-InterpretResult VM::run(FunctionObject* function) {
+InterpretResult VM::run(FunctionObject *function) {
+    try {
+        executionLoop(function);
+    } catch (const RuntimeError& error) {
+        return InterpretResult::RUNTIME_ERROR;
+    }
+
+    return InterpretResult::OK;
+}
+
+void VM::executionLoop(FunctionObject* function) {
     CallFrame* frame;
 
     push(Value{function});
@@ -75,84 +85,40 @@ InterpretResult VM::run(FunctionObject* function) {
             case OpCode::CHECK_INT: {
                 Value value = peek(0);
                 if (!value.getType()->isInt()) {
-                    runtimeError("Expected a value of type 'int', but got a value of type '"
+                    throw runtimeError("Expected a value of type 'int', but got a value of type '"
                                  + value.getType()->toString() + "' instead.");
-
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_NUMERIC: {
                 Value value = peek(0);
                 if (!value.getType()->isNumeric()) {
-                    runtimeError("Expected a value of type 'int' or 'float', but got a value of type '"
+                    throw runtimeError("Expected a value of type 'int' or 'float', but got a value of type '"
                             + value.getType()->toString() + "' instead.");
-
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_BOOL: {
                 Value value = peek(0);
                 if (!value.getType()->isBool()) {
-                    runtimeError("Expected a value of type 'bool', but got a value of type '"
+                    throw runtimeError("Expected a value of type 'bool', but got a value of type '"
                             + value.getType()->toString() + "' instead.");
-
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_REFERENCE: {
                 Value value = peek(0);
                 if (value.getType()->isPrimitive()) {
-                    runtimeError("Only reference types can be copied, not a value of type '"
+                    throw runtimeError("Only reference types can be copied, not a value of type '"
                                  + value.getType()->toString() + "'.");
-
-                    return InterpretResult::RUNTIME_ERROR;
-                }
-                break;
-            }
-            case OpCode::CHECK_CALLABLE: {
-                uint8_t argCount = READ_BYTE();
-
-                Value functionValue = peek(argCount);
-                if (!functionValue.getType()->isFunction()) {
-                    runtimeError("Only functions can be called, not a value of type '"
-                            + functionValue.getType()->toString() + ".");
-                    return InterpretResult::RUNTIME_ERROR;
-                }
-
-                const FunctionType* functionType = functionValue.getType()->as<FunctionType>();
-
-                uint8_t paramCount = functionType->getArgumentTypes().size();
-                if (argCount != paramCount) {
-                    std::stringstream s;
-                    s << "Expected " << static_cast<size_t>(paramCount) << " arguments to function, but got " <<
-                            static_cast<size_t>(argCount) << ".";
-                    runtimeError(s.str());
-                    return InterpretResult::RUNTIME_ERROR;
-                }
-
-                for (uint8_t i = 0; i < argCount; ++i) {
-                    Type shouldBe = functionType->getArgumentTypes()[i];
-                    Type argumentType = peek(i).getType();
-                    if (!argumentType->looselyEquals(*shouldBe)) {
-                        std::stringstream s;
-                        s << "Expected argument " << static_cast<size_t>(i) + 1 << " to be of type '" <<
-                            shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
-                            "' instead.";
-                        runtimeError(s.str());
-                        return InterpretResult::RUNTIME_ERROR;
-                    }
                 }
                 break;
             }
             case OpCode::CHECK_INDEXABLE: {
                 Value array = peek(0);
                 if (!array.getType()->isArray()) {
-                    runtimeError("Expected an array, but got a value of type '" + array.getType()->toString() +
+                    throw runtimeError("Expected an array, but got a value of type '" + array.getType()->toString() +
                             "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
@@ -161,9 +127,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 Type valueType = peek(1).getType();
 
                 if (!valueType->looselyEquals(*shouldBe)) {
-                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                    throw runtimeError("Expected a value of type '" + shouldBe->toString() +
                         "' to assign in array, but got a value of type '" + valueType->toString() + "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
@@ -171,9 +136,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 Type shouldBe = READ_CONSTANT().asObject()->getType();
                 Value value = peek(0);
                 if (!shouldBe->looselyEquals(*value.getType())) {
-                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                    throw runtimeError("Expected a value of type '" + shouldBe->toString() +
                             "' but got a value of type '" + value.getType()->toString() + "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
@@ -181,9 +145,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 Type shouldBe = READ_CONSTANT_LONG().asObject()->getType();
                 Value value = peek(0);
                 if (!shouldBe->looselyEquals(*value.getType())) {
-                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                    throw runtimeError("Expected a value of type '" + shouldBe->toString() +
                                  "' but got a value of type '" + value.getType()->toString() + "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
@@ -246,9 +209,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 ArrayObject* array = pop().asObject()->as<ArrayObject>();
 
                 if (index >= array->length()) {
-                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                    throw runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
                              + "length '" + std::to_string(array->asVector().size()) + "'.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
 
                 push(array->at(index));
@@ -260,9 +222,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 Value newValue = peek(0);
 
                 if (index >= array->length()) {
-                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                    throw runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
                                  + "length '" + std::to_string(array->asVector().size()) + "'.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
 
                 array->at(index) = newValue;
@@ -372,29 +333,64 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
 
-            case OpCode::CALL: {
+            case OpCode::CALL_FUNCTION: {
                 uint8_t argCount = READ_BYTE();
-                Object* callee = peek(argCount).asObject();
+                auto* closure = peek(argCount)
+                        .asObject()
+                        ->as<ClosureObject>();
+
+                callFunction(closure, argCount);
+                frame = &m_frames[m_frameCount - 1];
+                break;
+            }
+
+            case OpCode::CALL_CONSTRUCTOR: {
+                uint8_t argCount = READ_BYTE();
+                auto* struct_ = peek(argCount)
+                        .asObject()
+                        ->as<StructObject>();
+
+                callConstructor(struct_, argCount);
+                break;
+            }
+
+            case OpCode::CALL_NATIVE: {
+                uint8_t argCount = READ_BYTE();
+                auto* native = peek(argCount)
+                        .asObject()
+                        ->as<NativeObject>();
+
+                callNative(native, argCount);
+                break;
+            }
+
+            case OpCode::CALL_DYNAMIC: {
+                uint8_t argCount = READ_BYTE();
+                Value calleeValue = peek(argCount);
+
+                if (!calleeValue.isObject()) {
+                    throw runtimeError("Only functions and constructors can be called, not a value of type '"
+                                 + calleeValue.getType()->toString() + ".");
+                }
+
+                Object* callee = calleeValue.asObject();
 
                 if (callee->is<ClosureObject>()) {
-                    call(callee->as<ClosureObject>());
+                    checkFunctionCallable(callee->getType()->as<FunctionType>(), argCount);
+                    callFunction(callee->as<ClosureObject>(), argCount);
+
+                    // TODO: incorporate this in callFunction()
                     frame = &m_frames[m_frameCount - 1];
                 } else if (callee->is<StructObject>()) {
-                    auto* struct_ = callee->as<StructObject>();
-                    auto* instance = m_context.gc.allocateObject<InstanceObject>(
-                            struct_,
-                            std::move(std::vector<Value>{m_stack.end() - argCount, m_stack.end()}));
-
-                    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
-
-                    push(Value{instance});
+                    checkConstructorCallable(callee->getType()->as<ConstructorType>(), argCount);
+                    callConstructor(callee->as<StructObject>(), argCount);
+                } else if (callee->is<NativeObject>()) {
+                    // Native functions are of a regular FunctionType
+                    checkFunctionCallable(callee->getType()->as<FunctionType>(), argCount);
+                    callNative(callee->as<NativeObject>(), argCount);
                 } else {
-                    NativeFn native = callee->as<NativeObject>()->getFunction();
-                    Value result = native(argCount, &m_stack.back() - argCount + 1);
-
-                    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
-
-                    push(result);
+                    throw runtimeError("Only functions and constructors can be called, not a value of type '"
+                                 + callee->getType()->toString() + ".");
                 }
                 break;
             }
@@ -462,7 +458,7 @@ InterpretResult VM::run(FunctionObject* function) {
                 m_frameCount--;
                 if (m_frameCount == 0) {
                     pop();
-                    return InterpretResult::OK;
+                    return;
                 }
 
                 m_stack.erase(m_stack.begin() + frame->slotsBegin, m_stack.end());
@@ -501,7 +497,8 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::PAUSE: {
                 m_pc = frame->ip - function->getChunk().getCode().data();
-                return InterpretResult::OK;
+                m_frameCount--;
+                return;
             }
         }
 
@@ -512,6 +509,88 @@ InterpretResult VM::run(FunctionObject* function) {
         #undef READ_CONSTANT_LONG
 
         #undef NUMERIC_OP
+    }
+}
+
+inline void VM::callFunction(ClosureObject* closure, uint8_t argCount) {
+    if (m_frameCount == FRAMES_MAX) {
+        throw runtimeError("Stack overflow.");
+    }
+
+    CallFrame* frame = &m_frames[m_frameCount++];
+    frame->closure = closure;
+    frame->ip = closure->getFunction()->getChunk().getCode().data();
+
+    frame->slotsBegin = m_stack.size() - argCount - 1;
+}
+
+inline void VM::callConstructor(StructObject *struct_, uint8_t argCount) {
+    auto* instance = m_context.gc.allocateObject<InstanceObject>(
+            struct_,
+            std::move(std::vector<Value>{m_stack.end() - argCount, m_stack.end()}));
+
+    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
+
+    push(Value{instance});
+}
+
+inline void VM::callNative(NativeObject *native, uint8_t argCount) {
+    NativeFn fn = native->getFunction();
+
+    Value result = fn(argCount, &m_stack.back() - argCount + 1);
+    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
+
+    push(result);
+}
+
+inline void VM::checkFunctionCallable(const FunctionType *type, uint8_t argCount) {
+    const std::vector<Type>& paramTypes = type->getArgumentTypes();
+
+    if (argCount != paramTypes.size()) {
+        std::stringstream s;
+        s << "Expected " << paramTypes.size() << " arguments to function, but got " <<
+          static_cast<size_t>(argCount) << ".";
+        throw runtimeError(s.str());
+    }
+
+    for (uint8_t i = argCount; i-- > 0;) {
+        Type shouldBe = paramTypes[paramTypes.size() - 1 - i];
+        Type argumentType = peek(i).getType();
+
+        if (!argumentType->looselyEquals(*shouldBe)) {
+            std::stringstream s;
+            s << "Expected argument " << paramTypes.size() - static_cast<size_t>(i) << " to be of type '" <<
+              shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
+              "' instead.";
+            throw runtimeError(s.str());
+        }
+    }
+}
+
+inline void VM::checkConstructorCallable(const ConstructorType *type, uint8_t argCount) {
+    std::vector<std::reference_wrapper<const Type>> paramTypes = type
+            ->getStructType()
+            ->getProperties()
+            .values();
+
+    if (argCount != paramTypes.size()) {
+        std::stringstream s;
+        s << "Expected " << paramTypes.size() << " arguments to constructor, but got " <<
+          static_cast<size_t>(argCount) << ".";
+        throw runtimeError(s.str());
+    }
+
+    for (uint8_t i = argCount; i-- > 0;) {
+        Type shouldBe = paramTypes[paramTypes.size() - 1 - i];
+        Type argumentType = peek(i).getType();
+
+        if (!argumentType->looselyEquals(*shouldBe)) {
+            std::stringstream s;
+            s << "Expected argument " << paramTypes.size() - static_cast<size_t>(i) << " to be of type '" <<
+              shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
+              "' instead.";
+            throw runtimeError(s.str());
+        }
     }
 }
 
@@ -528,19 +607,6 @@ Value VM::pop() {
 
 Value VM::peek(size_t depth) {
     return m_stack[m_stack.size() - 1 - depth];
-}
-
-void VM::call(ClosureObject* closure) {
-    if (m_frameCount == FRAMES_MAX) {
-        runtimeError("Stack overflow.");
-    }
-
-    CallFrame* frame = &m_frames[m_frameCount++];
-    frame->closure = closure;
-    frame->ip = closure->getFunction()->getChunk().getCode().data();
-
-    uint8_t paramCount = closure->getFunction()->getType()->as<FunctionType>()->getArgumentTypes().size();
-    frame->slotsBegin = m_stack.size() - paramCount - 1;
 }
 
 UpvalueObject* VM::captureUpvalue(uint32_t location) {
@@ -574,7 +640,7 @@ void VM::closeUpvalues(uint32_t last) {
     }
 }
 
-void VM::runtimeError(const std::string& msg) {
+VM::RuntimeError VM::runtimeError(const std::string& msg) {
     CallFrame* frame = &m_frames[m_frameCount - 1];
     size_t instruction = frame->ip - frame->closure->getFunction()->getChunk().getCode().data();
     line_t line = frame->closure->getFunction()->getChunk().getLine(instruction);
@@ -600,4 +666,5 @@ void VM::runtimeError(const std::string& msg) {
         }
     }
 
+    return RuntimeError{};
 }

@@ -17,7 +17,6 @@ enum class OpCode : uint8_t {
     CHECK_NUMERIC,
     CHECK_BOOL,
     CHECK_REFERENCE,
-    CHECK_CALLABLE,
     CHECK_INDEXABLE,
     CHECK_ALLOTABLE,
     CHECK_TYPE,
@@ -68,7 +67,10 @@ enum class OpCode : uint8_t {
   
     LOOP,
 
-    CALL,
+    CALL_FUNCTION,
+    CALL_CONSTRUCTOR,
+    CALL_NATIVE,
+    CALL_DYNAMIC,
 
     CLOSURE,
     CLOSURE_LONG,

@@ -160,11 +160,11 @@ public:
     }
 
     std::vector<std::reference_wrapper<const ValueType>> values() const {
-        std::vector<std::reference_wrapper<ValueType>> values;
+        std::vector<std::reference_wrapper<const ValueType>> values;
         std::transform(
                 m_insertionOrder.begin(), m_insertionOrder.end(),
                 std::back_inserter(values),
-                [this](const auto& key) { return std::cref(m_map[key]); });
+                [this](const auto& key) { return std::cref(m_map.at(key)); });
         return values;
     }
 };

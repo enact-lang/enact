@@ -9,7 +9,8 @@ public:
     enum class Kind {
         BASIC,
         ARRAY,
-        FUNCTION
+        FUNCTION,
+        CONSTRUCTOR
     };
 
     virtual ~Typename() = default;
@@ -68,6 +69,23 @@ public:
 
     const Typename& returnTypename() const;
     const std::vector<std::unique_ptr<const Typename>>& argumentTypenames() const;
+
+    Kind kind() const override;
+    const std::string& name() const override;
+    const Token& where() const override;
+};
+
+class ConstructorTypename : public Typename {
+    std::unique_ptr<const Typename> m_structTypename;
+    std::string m_name;
+
+public:
+    explicit ConstructorTypename(std::unique_ptr<const Typename> structTypename);
+    ConstructorTypename(const ConstructorTypename& typeName);
+
+    std::unique_ptr<Typename> clone() const override;
+
+    const Typename& structTypename() const;
 
     Kind kind() const override;
     const std::string& name() const override;

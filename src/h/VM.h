@@ -33,22 +33,34 @@ class VM {
 
     size_t m_pc = 0;
 
+    void executionLoop(FunctionObject* function);
+
 public:
     explicit VM(Context& context);
 
     InterpretResult run(FunctionObject* function);
-    InterpretResult step();
+
+    inline void callFunction(ClosureObject* closure, uint8_t argCount);
+    inline void callConstructor(StructObject* struct_, uint8_t argCount);
+    inline void callNative(NativeObject* native, uint8_t argCount);
+
+    inline void checkFunctionCallable(const FunctionType* type, uint8_t argCount);
+    inline void checkConstructorCallable(const ConstructorType* type, uint8_t argCount);
 
     void push(Value value);
     Value pop();
     Value peek(size_t depth);
 
-    void call(ClosureObject* closure);
-
     UpvalueObject* captureUpvalue(uint32_t location);
     void closeUpvalues(uint32_t last);
 
-    void runtimeError(const std::string& msg);
+private:
+    class RuntimeError : public std::runtime_error {
+    public:
+        RuntimeError() : std::runtime_error{"Fatal (internal):\n    VM::RuntimeError was left uncaught.\nThis is a COMPILER BUG, please report it at https://github.com/enact-lang/enact."} {}
+    };
+
+    RuntimeError runtimeError(const std::string& msg);
 };
 
 #endif //ENACT_VM_H

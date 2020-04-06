@@ -220,7 +220,7 @@ std::optional<std::reference_wrapper<Value>> StructObject::assocPropertyNamed(co
 }
 
 std::string StructObject::toString() const {
-    return "<struct " + m_constructorType->toString() + ">";
+    return "<" + m_constructorType->toString() + ">";
 }
 
 Type StructObject::getType() const {

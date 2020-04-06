@@ -61,6 +61,12 @@ enum class OpCode : uint8_t {
     GET_PROPERTY,
     GET_PROPERTY_LONG,
 
+    SET_PROPERTY_DYNAMIC,
+    SET_PROPERTY_DYNAMIC_LONG,
+
+    GET_PROPERTY_DYNAMIC,
+    GET_PROPERTY_DYNAMIC_LONG,
+
     JUMP,
     JUMP_IF_TRUE,
     JUMP_IF_FALSE,
@@ -88,6 +94,8 @@ enum class OpCode : uint8_t {
 std::string opCodeToString(OpCode code);
 
 class Chunk {
+    static constexpr size_t MAX_INSTRUCTION_NAME_LENGTH = 26;
+
     std::vector<uint8_t> m_code;
     std::vector<Value> m_constants;
 

@@ -159,7 +159,9 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
         // Constant instructions
         case OpCode::CONSTANT:
-        case OpCode::CHECK_TYPE: {
+        case OpCode::CHECK_TYPE:
+        case OpCode::GET_PROPERTY_DYNAMIC:
+        case OpCode::SET_PROPERTY_DYNAMIC: {
             std::string str;
             std::tie(str, index) = disassembleConstant(index);
             s << str;
@@ -168,7 +170,9 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
         // Long constant instructions
         case OpCode::CONSTANT_LONG:
-        case OpCode::CHECK_TYPE_LONG: {
+        case OpCode::CHECK_TYPE_LONG:
+        case OpCode::GET_PROPERTY_DYNAMIC_LONG:
+        case OpCode::SET_PROPERTY_DYNAMIC_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLongConstant(index);
             s << str;
@@ -195,7 +199,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::CLOSURE: {
             std::ios_base::fmtflags f( s.flags() );
 
-            s << std::left << std::setw(16) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
+            s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
             s.flags(f);
 
             size_t constant = m_code[++index];
@@ -225,7 +229,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::CLOSURE_LONG: {
             std::ios_base::fmtflags f( s.flags() );
 
-            s << std::left << std::setw(16) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
+            s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
             s.flags(f);
 
             size_t constant =  m_code[index + 1] |
@@ -270,7 +274,7 @@ std::pair<std::string, size_t> Chunk::disassembleByte(size_t index) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     // Output the byte argument
@@ -284,7 +288,7 @@ std::pair<std::string, size_t> Chunk::disassembleShort(size_t index) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     // Output the long argument
@@ -298,7 +302,7 @@ std::pair<std::string, size_t> Chunk::disassembleLong(size_t index) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     // Output the long argument
@@ -312,7 +316,7 @@ std::pair<std::string, size_t> Chunk::disassembleConstant(size_t index, size_t a
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     for (size_t i = argCount; i <= argCount; ++i) {
@@ -329,7 +333,7 @@ std::pair<std::string, size_t> Chunk::disassembleLongConstant(size_t index, size
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     for (size_t i = argCount; i <= argCount; ++i) {
@@ -423,6 +427,10 @@ std::string opCodeToString(OpCode code) {
         case OpCode::GET_PROPERTY_LONG: return "GET_PROPERTY_LONG";
         case OpCode::SET_PROPERTY: return "SET_PROPERTY";
         case OpCode::SET_PROPERTY_LONG: return "SET_PROPERTY_LONG";
+        case OpCode::GET_PROPERTY_DYNAMIC: return "GET_PROPERTY_DYNAMIC";
+        case OpCode::GET_PROPERTY_DYNAMIC_LONG: return "GET_PROPERTY_DYNAMIC_LONG";
+        case OpCode::SET_PROPERTY_DYNAMIC: return "SET_PROPERTY_DYNAMIC";
+        case OpCode::SET_PROPERTY_DYNAMIC_LONG: return "SET_PROPERTY_DYNAMIC_LONG";
         case OpCode::JUMP: return "JUMP";
         case OpCode::JUMP_IF_TRUE: return "JUMP_IF_TRUE";
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";

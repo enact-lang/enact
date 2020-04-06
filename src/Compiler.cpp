@@ -483,22 +483,23 @@ void Compiler::visitFloatExpr(FloatExpr &expr) {
 
 void Compiler::visitGetExpr(GetExpr &expr) {
     compile(*expr.object);
+    Type objectType = expr.object->getType();
 
     OpCode byteOp;
     OpCode longOp;
     uint32_t index;
 
-    if (expr.object->getType()->isStruct()) {
-        const auto* structType = expr.object->getType()->as<StructType>();
+    if (objectType->isStruct()) {
+        const auto* structType = objectType->as<StructType>();
 
         byteOp = OpCode::GET_PROPERTY;
         longOp = OpCode::GET_PROPERTY_LONG;
         index = *structType->findProperty(expr.name.lexeme);
-    } else if (expr.object->getType()->isConstructor()) {
+    } else if (objectType->isConstructor()) {
         throw errorAt(expr.oper, "Not implemented!");
-    } else if (expr.object->getType()->isTrait()) {
+    } else if (objectType->isTrait()) {
         throw errorAt(expr.oper, "Not implemented!");
-    } else if (expr.object->getType()->isDynamic()) {
+    } else if (objectType->isDynamic()) {
         byteOp = OpCode::GET_PROPERTY_DYNAMIC;
         longOp = OpCode::GET_PROPERTY_DYNAMIC_LONG;
 

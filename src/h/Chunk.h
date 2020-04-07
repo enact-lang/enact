@@ -108,6 +108,11 @@ class Chunk {
     std::pair<std::string, size_t> disassembleConstant(size_t index, size_t argCount = 1) const;
     std::pair<std::string, size_t> disassembleLongConstant(size_t index, size_t argCount = 1) const;
 
+    std::pair<std::string, size_t> disassembleClosure(size_t index, bool isLong) const;
+    std::pair<std::string, size_t> disassembleStruct(size_t index, bool isLong) const;
+
+    std::pair<std::string, size_t> disassembleClosureArgs(size_t index, bool isLong) const;
+
 public:
     Chunk() = default;
 

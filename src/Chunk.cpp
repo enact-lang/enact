@@ -179,85 +179,33 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
             break;
         }
 
-        // Two-argument constant instructions
+        // Struct instructions
         case OpCode::STRUCT: {
             std::string str;
-            std::tie(str, index) = disassembleConstant(index, 2);
+            std::tie(str, index) = disassembleStruct(index, false);
             s << str;
             break;
         }
 
-        // Two-argument long constant instructions
+        // Long struct instructions
         case OpCode::STRUCT_LONG: {
             std::string str;
-            std::tie(str, index) = disassembleLongConstant(index);
+            std::tie(str, index) = disassembleStruct(index, true);
             s << str;
             break;
         }
 
         // Closure instructions
         case OpCode::CLOSURE: {
-            std::ios_base::fmtflags f( s.flags() );
-
-            s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
-            s.flags(f);
-
-            size_t constant = m_code[++index];
-
-            s << " " << constant << " (";
-            s << m_constants[constant] << ")\n";
-
-            FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
-            for (int j = 0; j < function->getUpvalueCount(); j++) {
-                uint8_t isLocal = m_code[++index];
-                uint32_t i;
-                if (j < UINT8_MAX) {
-                    i = m_code[++index];
-                } else {
-                    i = m_code[index + 1] |
-                        (m_code[index + 2] << 8) |
-                        (m_code[index + 3] << 16);
-                    index += 3;
-                }
-                s << std::setfill('0') << std::setw(4) << index - 2;
-                s.flags(f);
-                s << "      |                  " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
-            }
-            ++index;
+            std::string str{};
+            std::tie(str, index) = disassembleClosure(index, false);
+            s << str;
             break;
         }
         case OpCode::CLOSURE_LONG: {
-            std::ios_base::fmtflags f( s.flags() );
-
-            s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
-            s.flags(f);
-
-            size_t constant =  m_code[index + 1] |
-                               (m_code[index + 2] << 8) |
-                               (m_code[index + 3] << 16);
-
-            index += 3;
-
-            s << " " << constant << " (";
-            s << m_constants[constant] << ")\n";
-
-            FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
-            for (int j = 0; j < function->getUpvalueCount(); j++) {
-                uint8_t isLocal = m_code[++index];
-                uint32_t i;
-                if (j < UINT8_MAX) {
-                    i = m_code[++index];
-                } else {
-                    i = m_code[index + 1] |
-                        (m_code[index + 2] << 8) |
-                        (m_code[index + 3] << 16);
-                    index += 3;
-                }
-                s << std::setfill('0') << std::setw(4) << index - 2;
-                s.flags(f);
-                s << "      |                     " << (isLocal ? "local" : "upvalue") << " " << index << "\n";
-            }
-            ++index;
+            std::string str{};
+            std::tie(str, index) = disassembleClosure(index, true);
+            s << str;
             break;
         }
     }
@@ -348,6 +296,110 @@ std::pair<std::string, size_t> Chunk::disassembleLongConstant(size_t index, size
     }
 
     return {s.str(), ++index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleClosure(size_t index, bool isLong) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s.flags(f);
+
+    std::string tmp;
+    std::tie(tmp, index) = disassembleClosureArgs(index, isLong);
+    s << tmp;
+
+    return {s.str(), index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleStruct(size_t index, bool isLong) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s.flags(f);
+
+    size_t constant;
+    if (isLong) {
+        constant = m_code[index + 1] |
+                    (m_code[index + 2] << 8) |
+                    (m_code[index + 3] << 16);
+        index += 3;
+    } else {
+        constant = m_code[++index];
+    }
+
+    s << " " << constant << " (";
+    s << m_constants[constant] << ")\n";
+
+    std::shared_ptr<const ConstructorType> type{
+            m_constants[constant]
+                    .asObject()
+                    ->as<TypeObject>()
+                    ->getContainedType()
+                    ->as<ConstructorType>()
+    };
+
+    uint32_t methodCount = type
+            ->getStructType()
+            ->getMethods()
+            .length();
+
+    for (uint32_t i = 0; i < methodCount; ++i) {
+        std::string methodName = type->getStructType()->getMethods().keys()[i];
+        s << "\n    | method '" << methodName << "'\n";
+        disassembleClosureArgs(index, isLong);
+    }
+
+    uint32_t assocCount = type
+            ->getAssocProperties()
+            .length();
+
+    for (uint32_t i = 0; i < assocCount; ++i) {
+        std::string assocName = type->getAssocProperties().keys()[i];
+        s << "\n    | assoc '" << assocName << "'\n";
+        disassembleClosureArgs(index, isLong);
+    }
+
+    return {s.str(), ++index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleClosureArgs(size_t index, bool isLong) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    size_t constant;
+    if (isLong) {
+        constant = m_code[index + 1] |
+            (m_code[index + 2] << 8) |
+            (m_code[index + 3] << 16);
+        index += 3;
+    } else {
+        constant = m_code[++index];
+    }
+
+    s << " " << constant << " (";
+    s << m_constants[constant] << ")\n";
+
+    auto* function = m_constants[constant].asObject()->as<FunctionObject>();
+    for (int j = 0; j < function->getUpvalueCount(); j++) {
+        uint8_t isLocal = m_code[++index];
+        uint32_t i;
+        if (j < UINT8_MAX) {
+            i = m_code[++index];
+        } else {
+            i = m_code[index + 1] |
+                (m_code[index + 2] << 8) |
+                (m_code[index + 3] << 16);
+            index += 3;
+        }
+        s << std::setfill('0') << std::setw(4) << index - 2;
+        s.flags(f);
+        s << "      |                  " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
+    }
+    ++index;
+
+    return {s.str(), index};
 }
 
 line_t Chunk::getLine(size_t index) const {

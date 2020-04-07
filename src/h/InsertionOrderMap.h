@@ -146,7 +146,7 @@ public:
         std::transform(
                 m_insertionOrder.begin(), m_insertionOrder.end(),
                 std::back_inserter(keys),
-                [](const auto& key) { return std::cref(key.get()); });
+                [](const auto& key) { return std::cref(key); });
         return keys;
     }
 

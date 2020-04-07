@@ -172,10 +172,15 @@ public:
 class StructType : public TypeBase {
     std::string m_name;
     std::vector<std::shared_ptr<const TraitType>> m_traits;
-    InsertionOrderMap<std::string, Type> m_properties;
+    InsertionOrderMap<std::string, Type> m_fields;
+    InsertionOrderMap<std::string, Type> m_methods;
 
 public:
-    StructType(std::string name, std::vector<std::shared_ptr<const TraitType>> traits, InsertionOrderMap<std::string, Type> properties);
+    StructType(
+            std::string name,
+            std::vector<std::shared_ptr<const TraitType>> traits,
+            InsertionOrderMap<std::string, Type> fields,
+            InsertionOrderMap<std::string, Type> methods);
     ~StructType() override = default;
 
     const std::string& getName() const;
@@ -184,9 +189,15 @@ public:
     bool hasTrait(const TypeBase& trait) const;
     std::optional<size_t> findTrait(const TypeBase& trait) const;
 
-    const InsertionOrderMap<std::string, Type>& getProperties() const;
     std::optional<Type> getProperty(const std::string& name) const;
-    std::optional<size_t> findProperty(const std::string& name) const;
+
+    const InsertionOrderMap<std::string, Type>& getFields() const;
+    std::optional<Type> getField(const std::string& name) const;
+    std::optional<size_t> findField(const std::string& name) const;
+
+    const InsertionOrderMap<std::string, Type>& getMethods() const;
+    std::optional<Type> getMethod(const std::string& name) const;
+    std::optional<size_t> findMethod(const std::string& name) const;
 
     std::unique_ptr<Typename> toTypename() const override;
 };

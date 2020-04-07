@@ -494,7 +494,7 @@ void Compiler::visitGetExpr(GetExpr &expr) {
 
         byteOp = OpCode::GET_PROPERTY;
         longOp = OpCode::GET_PROPERTY_LONG;
-        index = *structType->findProperty(expr.name.lexeme);
+        index = *structType->findField(expr.name.lexeme);
     } else if (objectType->isConstructor()) {
         throw errorAt(expr.oper, "Not implemented!");
     } else if (objectType->isTrait()) {
@@ -560,7 +560,7 @@ void Compiler::visitSetExpr(SetExpr& expr) {
 
         byteOp = OpCode::SET_PROPERTY;
         longOp = OpCode::SET_PROPERTY_LONG;
-        index = *structType->findProperty(expr.target->name.lexeme);
+        index = *structType->findField(expr.target->name.lexeme);
     } else if (objectType->isConstructor()) {
         throw errorAt(expr.oper, "Not implemented!");
     } else if (objectType->isTrait()) {

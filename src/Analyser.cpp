@@ -200,35 +200,35 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     }
 
     // In the AST, fields are represented as a name paired with a type (Field).
-    // We must now find the types that the typenames are referring to, and create
-    // NamedTypes containing them.
-    InsertionOrderMap<std::string, Type> properties{};
+    // We must now find the types that the typenames are referring to, keeping
+    // track of them in an insertion order map to make things easier for the
+    // Compiler.
+    InsertionOrderMap<std::string, Type> fields{};
     for (const Field& field : stmt.fields) {
         // Check if the field has the same name as another field
-        if (properties.count(field.name.lexeme) > 0) {
+        if (fields.count(field.name.lexeme) > 0) {
             throw errorAt(field.name, "Struct field '" + field.name.lexeme +
                                       "' cannot have the same name as another field.");
         }
 
         if (m_types.count(field.typeName->name()) > 0) {
-            properties.insert(std::pair(field.name.lexeme, m_types[field.typeName->name()]));
+            fields.insert(std::pair(field.name.lexeme, m_types[field.typeName->name()]));
         } else {
-            throw errorAt(field.name, "Undeclared field type '" + field.typeName->name() + "'.");
+            throw errorAt(field.name, "Undeclared type '" + field.typeName->name() + "' of field.");
         }
     }
 
-    // Fields must be kept separate from methods, so we can declare the constructor
-    // properly.
-    InsertionOrderMap<std::string, Type> fieldsOnly{properties};
-
+    // Methods aren't just fields with a function value, as they are bound to an object (self).
+    // As such, they need to be treated differently from fields and kept separate.
+    InsertionOrderMap<std::string, Type> methods;
     for (auto& method : stmt.methods) {
         // Check if the method has the same name as a field
-        if (properties.count(method->name.lexeme) > 0) {
+        if (fields.contains(method->name.lexeme) || methods.contains(method->name.lexeme)) {
             throw errorAt(method->name, "Struct method '" + method->name.lexeme +
                                         "' cannot have the same name as another field or method.");
         }
 
-        properties.insert(std::pair(method->name.lexeme, getFunctionType(*method)));
+        methods.insert(std::pair(method->name.lexeme, getFunctionType(*method)));
     }
 
     // Check that the traits are satisfied now
@@ -237,9 +237,10 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
         for (const auto& requiredMethod : traitType->getMethods()) {
             bool found = false;
 
-            for (const auto& property : properties) {
-                if (property.first == requiredMethod.first
-                        && property.second->looselyEquals(*requiredMethod.second)) {
+            for (const auto& method : methods) {
+                if (method.first == requiredMethod.first
+                        && method.second->looselyEquals(*requiredMethod.second)) {
+                    found = true;
                     break;
                 }
             }
@@ -251,14 +252,14 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
         }
     }
 
-    // Assoc functions must be kept separate from the fields, as they are called on
-    // the type rather than an instance of the type.
+    // Assoc functions must again be kept separate from the other kinds of properties,
+    // as they are called on the type rather than an instance of the type.
     InsertionOrderMap<std::string, Type> assocFunctions;
     for (auto& function : stmt.assocFunctions) {
         assocFunctions.insert(std::pair(function->name.lexeme, getFunctionType(*function)));
     }
 
-    auto thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, properties);
+    auto thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods);
     m_types.insert(std::make_pair(stmt.name.lexeme, thisType));
 
     // Now, create a constructor for the struct.
@@ -266,7 +267,6 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     stmt.constructorType = constructorType;
 
     declareVariable(stmt.name.lexeme, Variable{constructorType, true});
-
 
     // Now we can analyse the methods:
     for (auto& method : stmt.methods) {
@@ -498,7 +498,7 @@ void Analyser::visitCallExpr(CallExpr &expr) {
         auto constructorType = calleeType->as<ConstructorType>();
 
         returnType = constructorType->getStructType();
-        for (const auto& property : constructorType->getStructType()->getProperties()) {
+        for (const auto& property : constructorType->getStructType()->getFields()) {
             paramTypes.push_back(property.second);
         }
     } else if (calleeType->isFunction()) {

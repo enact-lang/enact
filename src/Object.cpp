@@ -247,7 +247,7 @@ Value &InstanceObject::property(uint32_t index) {
 
 std::optional<std::reference_wrapper<Value>> InstanceObject::propertyNamed(const std::string &name) {
     auto structType = getType()->as<StructType>();
-    if (std::optional<size_t> index = structType->findProperty(name)) {
+    if (std::optional<size_t> index = structType->findField(name)) {
         return m_properties[*index];
     }
 

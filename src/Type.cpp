@@ -272,11 +272,16 @@ std::unique_ptr<Typename> TraitType::toTypename() const {
     return std::make_unique<BasicTypename>(m_name, Token{TokenType::IDENTIFIER, m_name, 0, 0});
 }
 
-StructType::StructType(std::string name, std::vector<std::shared_ptr<const TraitType>> traits, InsertionOrderMap<std::string, Type> properties) :
-        TypeBase{TypeKind::STRUCT},
-        m_name{name},
-        m_traits{traits},
-        m_properties{properties} {
+StructType::StructType(
+        std::string name,
+        std::vector<std::shared_ptr<const TraitType>> traits,
+        InsertionOrderMap<std::string, Type> fields,
+        InsertionOrderMap<std::string, Type> methods) :
+            TypeBase{TypeKind::STRUCT},
+            m_name{std::move(name)},
+            m_traits{std::move(traits)},
+            m_fields{std::move(fields)},
+            m_methods{std::move(methods)} {
 }
 
 const std::string& StructType::getName() const {
@@ -305,16 +310,36 @@ std::optional<size_t> StructType::findTrait(const TypeBase &trait) const {
     return {};
 }
 
-const InsertionOrderMap<std::string, Type>& StructType::getProperties() const {
-    return m_properties;
-}
-
 std::optional<Type> StructType::getProperty(const std::string &name) const {
-    return m_properties.at(name);
+    if (auto field = getField(name)) {
+        return field;
+    }
+
+    return getMethod(name);
 }
 
-std::optional<size_t> StructType::findProperty(const std::string &name) const {
-    return m_properties.find(name);
+const InsertionOrderMap<std::string, Type>& StructType::getFields() const {
+    return m_fields;
+}
+
+std::optional<Type> StructType::getField(const std::string& name) const {
+    return m_fields.at(name);
+}
+
+std::optional<size_t> StructType::findField(const std::string& name) const {
+    return m_fields.find(name);
+}
+
+const InsertionOrderMap<std::string, Type>& StructType::getMethods() const {
+    return m_methods;
+}
+
+std::optional<Type> StructType::getMethod(const std::string& name) const {
+    return m_methods.at(name);
+}
+
+std::optional<size_t> StructType::findMethod(const std::string& name) const {
+    return m_methods.find(name);
 }
 
 std::unique_ptr<Typename> StructType::toTypename() const {

@@ -687,7 +687,7 @@ inline void VM::checkFunctionCallable(const FunctionType *type, uint8_t argCount
 inline void VM::checkConstructorCallable(const ConstructorType *type, uint8_t argCount) {
     std::vector<std::reference_wrapper<const Type>> paramTypes = type
             ->getStructType()
-            ->getProperties()
+            ->getFields()
             .values();
 
     if (argCount != paramTypes.size()) {

@@ -1,5 +1,7 @@
 #include <sstream>
 #include "h/Context.h"
+#include "h/VM.h"
+
 
 VM::VM(Context& context) : m_context{context} {
 }
@@ -15,27 +17,20 @@ InterpretResult VM::run(FunctionObject *function) {
 }
 
 void VM::executionLoop(FunctionObject* function) {
-    CallFrame* frame;
-
     push(Value{function});
 
-    frame = &m_frames[m_frameCount++];
-    frame->closure = m_context.gc.allocateObject<ClosureObject>(function);
+    m_frame = &m_frames[m_frameCount++];
+    m_frame->closure = m_context.gc.allocateObject<ClosureObject>(function);
     pop();
     if (m_pc == 0) {
-        push(Value{frame->closure});
+        push(Value{m_frame->closure});
     } else {
-        m_stack[0] = Value{frame->closure};
+        m_stack[0] = Value{m_frame->closure};
     }
-    frame->ip = function->getChunk().getCode().data() + m_pc;
-    frame->slotsBegin = 0;
+    m_frame->ip = function->getChunk().getCode().data() + m_pc;
+    m_frame->slotsBegin = 0;
 
     for (;;) {
-        #define READ_BYTE() (*frame->ip++)
-        #define READ_SHORT() (static_cast<uint16_t>(READ_BYTE() | (READ_BYTE() << 8)))
-        #define READ_LONG() (static_cast<uint32_t>(READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)))
-        #define READ_CONSTANT() ((frame->closure->getFunction()->getChunk().getConstants())[READ_BYTE()])
-        #define READ_CONSTANT_LONG() ((frame->closure->getFunction()->getChunk().getConstants())[READ_LONG()])
         #define NUMERIC_OP(op) \
             do { \
                 Value b = pop(); \
@@ -58,22 +53,22 @@ void VM::executionLoop(FunctionObject* function) {
             }
             std::cout << "\n";
 
-            std::cout << frame->closure->getFunction()->getChunk()
+            std::cout << m_frame->closure->getFunction()->getChunk()
                     .disassembleInstruction(
-                            frame->ip - frame->closure->getFunction()->getChunk().getCode().data()).first;
+                            m_frame->ip - m_frame->closure->getFunction()->getChunk().getCode().data()).first;
         }
 
-        Value* slots = &m_stack[frame->slotsBegin];
+        Value* slots = &m_stack[m_frame->slotsBegin];
 
-        switch (static_cast<OpCode>(READ_BYTE())) {
+        switch (static_cast<OpCode>(readByte())) {
             case OpCode::CONSTANT: {
-                Value constant = READ_CONSTANT();
+                Value constant = readConstant();
                 push(constant);
                 break;
             }
 
             case OpCode::CONSTANT_LONG: {
-                Value constant = READ_CONSTANT_LONG();
+                Value constant = readConstantLong();
                 push(constant);
                 break;
             }
@@ -133,7 +128,7 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
             case OpCode::CHECK_TYPE: {
-                Type shouldBe = READ_CONSTANT().asObject()->getType();
+                Type shouldBe = readConstant().asObject()->getType();
                 Value value = peek(0);
                 if (!shouldBe->looselyEquals(*value.getType())) {
                     throw runtimeError("Expected a value of type '" + shouldBe->toString() +
@@ -142,7 +137,7 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
             case OpCode::CHECK_TYPE_LONG: {
-                Type shouldBe = READ_CONSTANT_LONG().asObject()->getType();
+                Type shouldBe = readConstantLong().asObject()->getType();
                 Value value = peek(0);
                 if (!shouldBe->looselyEquals(*value.getType())) {
                     throw runtimeError("Expected a value of type '" + shouldBe->toString() +
@@ -180,8 +175,8 @@ void VM::executionLoop(FunctionObject* function) {
 
 
             case OpCode::ARRAY: {
-                uint8_t length = READ_BYTE();
-                Type type = READ_CONSTANT().asObject()->as<TypeObject>()->getContainedType();
+                uint8_t length = readByte();
+                Type type = readConstant().asObject()->as<TypeObject>()->getContainedType();
                 auto* array = m_context.gc.allocateObject<ArrayObject>(length, type);
                 if (length != 0) {
                     for (uint8_t i = length; i-- > 0;) {
@@ -192,8 +187,8 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
             case OpCode::ARRAY_LONG: {
-                uint32_t length = READ_LONG();
-                Type type = READ_CONSTANT_LONG().asObject()->as<TypeObject>()->getContainedType();
+                uint32_t length = readLong();
+                Type type = readConstantLong().asObject()->as<TypeObject>()->getContainedType();
                 auto* array = m_context.gc.allocateObject<ArrayObject>(length, type);
                 if (length != 0) {
                     for (uint32_t i = length; i-- > 0;) {
@@ -232,23 +227,23 @@ void VM::executionLoop(FunctionObject* function) {
 
             case OpCode::POP: pop(); break;
 
-            case OpCode::GET_LOCAL: push(slots[READ_BYTE()]); break;
-            case OpCode::GET_LOCAL_LONG: push(slots[READ_LONG()]); break;
+            case OpCode::GET_LOCAL: push(slots[readByte()]); break;
+            case OpCode::GET_LOCAL_LONG: push(slots[readLong()]); break;
 
-            case OpCode::SET_LOCAL: slots[READ_BYTE()] = peek(0); break;
-            case OpCode::SET_LOCAL_LONG: slots[READ_LONG()] = peek(0); break;
+            case OpCode::SET_LOCAL: slots[readByte()] = peek(0); break;
+            case OpCode::SET_LOCAL_LONG: slots[readLong()] = peek(0); break;
 
             case OpCode::GET_UPVALUE: {
-                uint8_t slot = READ_BYTE();
-                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                uint8_t slot = readByte();
+                UpvalueObject* upvalue = m_frame->closure->getUpvalues()[slot];
                 push(upvalue->isClosed() ?
                         upvalue->getClosed() :
                         m_stack[upvalue->getLocation()]);
                 break;
             }
             case OpCode::GET_UPVALUE_LONG: {
-                uint8_t slot = READ_BYTE();
-                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                uint8_t slot = readByte();
+                UpvalueObject* upvalue = m_frame->closure->getUpvalues()[slot];
                 push(upvalue->isClosed() ?
                       upvalue->getClosed() :
                       m_stack[upvalue->getLocation()]);
@@ -256,13 +251,13 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::SET_UPVALUE: {
-                uint8_t slot = READ_BYTE();
-                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                uint8_t slot = readByte();
+                m_stack[m_frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
                 break;
             }
             case OpCode::SET_UPVALUE_LONG: {
-                uint32_t slot = READ_LONG();
-                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                uint32_t slot = readLong();
+                m_stack[m_frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
                 break;
             }
 
@@ -271,7 +266,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                uint8_t index = READ_BYTE();
+                uint8_t index = readByte();
                 push(instance->property(index));
 
                 break;
@@ -281,7 +276,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                uint32_t index = READ_LONG();
+                uint32_t index = readLong();
                 push(instance->property(index));
 
                 break;
@@ -291,7 +286,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                uint8_t index = READ_BYTE();
+                uint8_t index = readByte();
                 instance->property(index) = peek(0);
 
                 break;
@@ -301,7 +296,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                uint32_t index = READ_LONG();
+                uint32_t index = readLong();
                 instance->property(index) = peek(0);
 
                 break;
@@ -318,7 +313,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                const std::string& name = READ_CONSTANT()
+                const std::string& name = readConstant()
                         .asObject()
                         ->as<StringObject>()
                         ->asStdString();
@@ -343,7 +338,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                const std::string& name = READ_CONSTANT_LONG()
+                const std::string& name = readConstantLong()
                         .asObject()
                         ->as<StringObject>()
                         ->asStdString();
@@ -368,7 +363,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                const std::string& name = READ_CONSTANT()
+                const std::string& name = readConstant()
                         .asObject()
                         ->as<StringObject>()
                         ->asStdString();
@@ -401,7 +396,7 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<InstanceObject>();
 
-                const std::string& name = READ_CONSTANT_LONG()
+                const std::string& name = readConstantLong()
                         .asObject()
                         ->as<StringObject>()
                         ->asStdString();
@@ -425,44 +420,44 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::JUMP: {
-                uint16_t jumpSize = READ_SHORT();
-                frame->ip += jumpSize;
+                uint16_t jumpSize = readShort();
+                m_frame->ip += jumpSize;
                 break;
             }
             case OpCode::JUMP_IF_TRUE: {
-                uint16_t jumpSize = READ_SHORT();
+                uint16_t jumpSize = readShort();
                 if (peek(0).asBool()) {
-                    frame->ip += jumpSize;
+                    m_frame->ip += jumpSize;
                 }
                 break;
             }
             case OpCode::JUMP_IF_FALSE: {
-                uint16_t jumpSize = READ_SHORT();
+                uint16_t jumpSize = readShort();
                 if (!peek(0).asBool()) {
-                    frame->ip += jumpSize;
+                    m_frame->ip += jumpSize;
                 }
                 break;
             }
 
             case OpCode::LOOP: {
-                uint16_t jumpSize = READ_SHORT();
-                frame->ip -= jumpSize;
+                uint16_t jumpSize = readShort();
+                m_frame->ip -= jumpSize;
                 break;
             }
 
             case OpCode::CALL_FUNCTION: {
-                uint8_t argCount = READ_BYTE();
+                uint8_t argCount = readByte();
                 auto* closure = peek(argCount)
                         .asObject()
                         ->as<ClosureObject>();
 
                 callFunction(closure, argCount);
-                frame = &m_frames[m_frameCount - 1];
+                m_frame = &m_frames[m_frameCount - 1];
                 break;
             }
 
             case OpCode::CALL_CONSTRUCTOR: {
-                uint8_t argCount = READ_BYTE();
+                uint8_t argCount = readByte();
                 auto* struct_ = peek(argCount)
                         .asObject()
                         ->as<StructObject>();
@@ -472,7 +467,7 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::CALL_NATIVE: {
-                uint8_t argCount = READ_BYTE();
+                uint8_t argCount = readByte();
                 auto* native = peek(argCount)
                         .asObject()
                         ->as<NativeObject>();
@@ -482,7 +477,7 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::CALL_DYNAMIC: {
-                uint8_t argCount = READ_BYTE();
+                uint8_t argCount = readByte();
                 Value calleeValue = peek(argCount);
 
                 if (!calleeValue.isObject()) {
@@ -497,7 +492,7 @@ void VM::executionLoop(FunctionObject* function) {
                     callFunction(callee->as<ClosureObject>(), argCount);
 
                     // TODO: incorporate this in callFunction()
-                    frame = &m_frames[m_frameCount - 1];
+                    m_frame = &m_frames[m_frameCount - 1];
                 } else if (callee->is<StructObject>()) {
                     checkConstructorCallable(callee->getType()->as<ConstructorType>(), argCount);
                     callConstructor(callee->as<StructObject>(), argCount);
@@ -513,52 +508,14 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::CLOSURE: {
-                FunctionObject* function = READ_CONSTANT().asObject()->as<FunctionObject>();
-                push(Value{function});
-                ClosureObject* closure = m_context.gc.allocateObject<ClosureObject>(function);
-                pop();
-                push(Value{closure});
-
-                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
-                    uint8_t isLocal = READ_BYTE();
-                    uint32_t index;
-                    if (i < UINT8_MAX) {
-                        index = READ_BYTE();
-                    } else {
-                        index = READ_LONG();
-                    }
-
-                    if (isLocal) {
-                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
-                    } else {
-                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
-                    }
-                }
+                FunctionObject* function = readConstant().asObject()->as<FunctionObject>();
+                encloseFunction(function);
                 break;
             }
 
             case OpCode::CLOSURE_LONG: {
-                FunctionObject* function = READ_CONSTANT_LONG().asObject()->as<FunctionObject>();
-                push(Value{function});
-                ClosureObject* closure = m_context.gc.allocateObject<ClosureObject>(function);
-                pop();
-                push(Value{closure});
-
-                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
-                    uint8_t isLocal = READ_BYTE();
-                    uint32_t index;
-                    if (i < UINT8_MAX) {
-                        index = READ_BYTE();
-                    } else {
-                        index = READ_LONG();
-                    }
-
-                    if (isLocal) {
-                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
-                    } else {
-                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
-                    }
-                }
+                FunctionObject* function = readConstantLong().asObject()->as<FunctionObject>();
+                encloseFunction(function);
                 break;
             }
 
@@ -570,7 +527,7 @@ void VM::executionLoop(FunctionObject* function) {
             case OpCode::RETURN: {
                 Value result = pop();
 
-                closeUpvalues(frame->slotsBegin);
+                closeUpvalues(m_frame->slotsBegin);
 
                 m_frameCount--;
                 if (m_frameCount == 0) {
@@ -578,54 +535,44 @@ void VM::executionLoop(FunctionObject* function) {
                     return;
                 }
 
-                m_stack.erase(m_stack.begin() + frame->slotsBegin, m_stack.end());
+                m_stack.erase(m_stack.begin() + m_frame->slotsBegin, m_stack.end());
                 push(result);
 
-                frame = &m_frames[m_frameCount - 1];
+                m_frame = &m_frames[m_frameCount - 1];
                 break;
             }
 
             case OpCode::STRUCT: {
                 std::shared_ptr<const ConstructorType> type{
-                    READ_CONSTANT()
+                        readConstantLong()
                         .asObject()
                         ->as<TypeObject>()
                         ->getContainedType()
                         ->as<ConstructorType>()
                 };
-                auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::vector<Value>{});
 
-                push(Value{struct_});
+                makeConstructor(type);
                 break;
             }
             case OpCode::STRUCT_LONG: {
                 std::shared_ptr<const ConstructorType> type{
-                    READ_CONSTANT_LONG()
+                    readConstantLong()
                         .asObject()
                         ->as<TypeObject>()
                         ->getContainedType()
                         ->as<ConstructorType>()
                 };
-                auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::vector<Value>{});
 
-                push(Value{struct_});
+                makeConstructor(type);
                 break;
             }
 
             case OpCode::PAUSE: {
-                m_pc = frame->ip - function->getChunk().getCode().data();
+                m_pc = m_frame->ip - function->getChunk().getCode().data();
                 m_frameCount--;
                 return;
             }
         }
-
-        #undef READ_BYTE
-        #undef READ_SHORT
-        #undef READ_LONG
-        #undef READ_CONSTANT
-        #undef READ_CONSTANT_LONG
-
-        #undef NUMERIC_OP
     }
 }
 
@@ -709,6 +656,97 @@ inline void VM::checkConstructorCallable(const ConstructorType *type, uint8_t ar
             throw runtimeError(s.str());
         }
     }
+}
+
+inline void VM::encloseFunction(FunctionObject *function) {
+    push(Value{function});
+    auto* closure = m_context.gc.allocateObject<ClosureObject>(function);
+    pop();
+    push(Value{closure});
+
+    for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
+        uint8_t isLocal = readByte();
+        uint32_t index;
+        if (i < UINT8_MAX) {
+            index = readByte();
+        } else {
+            index = readLong();
+        }
+
+        if (isLocal) {
+            closure->getUpvalues()[i] = captureUpvalue(m_frame->slotsBegin + index);
+        } else {
+            closure->getUpvalues()[i] = m_frame->closure->getUpvalues()[i];
+        }
+    }
+}
+
+inline void VM::makeConstructor(std::shared_ptr<const ConstructorType> type) {
+    // Collect methods
+    size_t methodsBeginIndex = m_stack.size();
+    size_t methodCount = type->getStructType()->getMethods().length();
+    for (uint32_t i = 0; i < methodCount; ++i) {
+        auto* function = readConstantLong().asObject()->as<FunctionObject>();
+        encloseFunction(function);
+    }
+
+    // Collect assocs
+    size_t assocsBeginIndex = m_stack.size();
+    size_t assocCount = type->getStructType()->getMethods().length();
+    for (uint32_t i = 0; i < methodCount; ++i) {
+        auto* function = readConstantLong().asObject()->as<FunctionObject>();
+        encloseFunction(function);
+    }
+
+    // Move methods off the stack
+    auto methodsBegin = m_stack.begin() + methodsBeginIndex;
+    auto methodsEnd = m_stack.begin() + methodsBeginIndex + methodCount;
+    std::vector<ClosureObject*> methods{methodCount};
+    for (auto it = methodsBegin; it != methodsEnd; ++it) {
+        methods.push_back(it->asObject()->as<ClosureObject>());
+    }
+
+    // Move assocs off the stack
+    auto assocsBegin = m_stack.begin() + assocsBeginIndex;
+    auto assocsEnd = m_stack.begin() + assocsBeginIndex + assocCount;
+    std::vector<Value> assocs{assocCount};
+    std::move(assocsBegin, assocsEnd, assocs.begin());
+
+    auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::move(methods), std::move(assocs));
+    push(Value{struct_});
+
+    // Erase the moved elements
+    m_stack.erase(methodsBegin, assocsEnd);
+}
+
+inline uint8_t VM::readByte() {
+    return *m_frame->ip++;
+}
+
+inline uint16_t VM::readShort() {
+    return static_cast<uint16_t>(readByte() | (readByte() << 8u));
+}
+
+inline uint32_t VM::readLong() {
+    return static_cast<uint32_t>(readByte() | (readByte() << 8u) | (readByte() << 16u));
+}
+
+inline Value VM::readConstant() {
+    return m_frame
+            ->closure
+            ->getFunction()
+            ->getChunk()
+            .getConstants()
+            [readByte()];
+}
+
+inline Value VM::readConstantLong() {
+    return m_frame
+            ->closure
+            ->getFunction()
+            ->getChunk()
+            .getConstants()
+    [readLong()];
 }
 
 void VM::push(Value value) {

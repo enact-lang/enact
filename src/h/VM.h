@@ -28,6 +28,7 @@ class VM {
 
     std::array<CallFrame, FRAMES_MAX> m_frames{CallFrame{nullptr, nullptr, 0}};
     size_t m_frameCount = 0;
+    CallFrame* m_frame = nullptr;
 
     UpvalueObject* m_openUpvalues = nullptr;
 
@@ -46,6 +47,17 @@ public:
 
     inline void checkFunctionCallable(const FunctionType* type, uint8_t argCount);
     inline void checkConstructorCallable(const ConstructorType* type, uint8_t argCount);
+
+    inline void encloseFunction(FunctionObject* function);
+
+    inline void makeConstructor(std::shared_ptr<const ConstructorType> type);
+
+    inline uint8_t readByte();
+    inline uint16_t readShort();
+    inline uint32_t readLong();
+
+    inline Value readConstant();
+    inline Value readConstantLong();
 
     void push(Value value);
     Value pop();

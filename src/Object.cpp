@@ -197,25 +197,36 @@ size_t ClosureObject::size() const {
     return sizeof(ClosureObject);
 }
 
-StructObject::StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<Value> assocProperties) :
+StructObject::StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<ClosureObject*> methods, std::vector<Value> assocs) :
         Object{ObjectType::STRUCT},
-        m_constructorType{constructorType},
-        m_assocProperties{assocProperties} {
+        m_constructorType{std::move(constructorType)},
+        m_methods{std::move(methods)},
+        m_assocs{std::move(assocs)} {
 }
 
 const std::string& StructObject::getName() const {
     return m_constructorType->getStructType()->getName();
 }
 
-Value& StructObject::assocProperty(uint32_t index) {
-    return m_assocProperties[index];
+ClosureObject* StructObject::method(uint32_t index) {
+    return m_methods[index];
 }
 
-std::optional<std::reference_wrapper<Value>> StructObject::assocPropertyNamed(const std::string &name) {
-    if (std::optional<size_t> index = m_constructorType->findAssocProperty(name)) {
-        return m_assocProperties[*index];
+std::optional<ClosureObject*> StructObject::methodNamed(const std::string& name) {
+    if (auto index = m_constructorType->getStructType()->findMethod(name)) {
+        return m_methods[*index];
     }
-    
+    return {};
+}
+
+Value& StructObject::assoc(uint32_t index) {
+    return m_assocs[index];
+}
+
+std::optional<std::reference_wrapper<Value>> StructObject::assocNamed(const std::string &name) {
+    if (auto index = m_constructorType->findAssocProperty(name)) {
+        return m_assocs[*index];
+    }
     return {};
 }
 

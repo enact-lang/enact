@@ -191,17 +191,21 @@ public:
 };
 
 class StructObject : public Object {
-    std::vector<Value> m_assocProperties;
     std::shared_ptr<const ConstructorType> m_constructorType;
+    std::vector<ClosureObject*> m_methods;
+    std::vector<Value> m_assocs;
 
 public:
-    StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<Value> assocProperties);
+    StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<ClosureObject*> methods, std::vector<Value> assocs);
     ~StructObject() override = default;
 
     const std::string& getName() const;
 
-    Value& assocProperty(uint32_t index);
-    std::optional<std::reference_wrapper<Value>> assocPropertyNamed(const std::string& name);
+    ClosureObject* method(uint32_t index);
+    std::optional<ClosureObject*> methodNamed(const std::string& name);
+
+    Value& assoc(uint32_t index);
+    std::optional<std::reference_wrapper<Value>> assocNamed(const std::string& name);
 
     std::string toString() const override;
     Type getType() const override;

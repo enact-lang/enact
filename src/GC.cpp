@@ -109,8 +109,28 @@ void GC::blackenObject(Object *object) {
     }
 
     switch (object->m_type) {
+        case ObjectType::INSTANCE: {
+            auto* instance = object->as<InstanceObject>();
+            markObject(instance->getStruct());
+            for (Value property : instance->properties()) {
+                markValue(property);
+            }
+            break;
+        }
+
+        case ObjectType::STRUCT: {
+            auto* struct_ = object->as<StructObject>();
+            for (ClosureObject* method : struct_->methods()) {
+                markObject(method);
+            }
+            for (Value assoc : struct_->assocs()) {
+                markValue(assoc);
+            }
+            break;
+        }
+
         case ObjectType::CLOSURE: {
-            auto closure = object->as<ClosureObject>();
+            auto* closure = object->as<ClosureObject>();
             markObject(closure->getFunction());
             for (UpvalueObject* upvalue : closure->getUpvalues()) {
                 markObject(upvalue);

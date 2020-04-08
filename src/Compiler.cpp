@@ -14,14 +14,29 @@ FunctionObject* Compiler::compileProgram(std::vector<std::unique_ptr<Stmt>> ast)
     return m_currentFunction;
 }
 
+FunctionObject* Compiler::compileFunction(FunctionStmt &stmt) {
+    startFunction(stmt);
+
+    for (const Param& param : stmt.params) {
+        addLocal(param.name);
+        m_locals.back().initialized = true;
+    }
+
+    compile(std::move(stmt.body));
+    endFunction();
+
+    return m_currentFunction;
+}
+
+
+void Compiler::startRepl() {
+    startProgram();
+}
+
 FunctionObject* Compiler::compilePart(std::vector<std::unique_ptr<Stmt>> ast) {
     compile(std::move(ast));
     endPart();
     return m_currentFunction;
-}
-
-void Compiler::startRepl() {
-    startProgram();
 }
 
 FunctionObject* Compiler::endRepl() {
@@ -167,18 +182,15 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
     addLocal(stmt.name);
     m_locals.back().initialized = true;
 
+    emitFunction(stmt);
+}
+
+void Compiler::emitFunction(FunctionStmt& stmt) {
+    // Compile the function value
     Compiler& compiler = m_context.pushCompiler();
-    compiler.startFunction(stmt);
+    FunctionObject* function = compiler.compileFunction(stmt);
 
-    for (const Param& param : stmt.params) {
-        compiler.addLocal(param.name);
-        compiler.m_locals.back().initialized = true;
-    }
-
-    compiler.compile(std::move(stmt.body));
-    compiler.endFunction();
-    FunctionObject* function = compiler.m_currentFunction;
-
+    // Push its closure to the stack at runtime
     uint32_t constantIndex = currentChunk().addConstant(Value{function});
     if (constantIndex < UINT8_MAX) {
         emitByte(OpCode::CLOSURE);
@@ -294,6 +306,40 @@ void Compiler::visitStructStmt(StructStmt &stmt) {
         emitByte(OpCode::STRUCT_LONG);
         emitLong(typeConstant);
     }
+
+    for (auto& method : stmt.methods) {
+        emitMemberFunction(*method);
+    }
+
+    for (auto& assoc : stmt.assocFunctions) {
+        emitMemberFunction(*assoc);
+    }
+}
+
+void Compiler::emitMemberFunction(FunctionStmt& stmt) {
+    // Compile the function value
+    Compiler& compiler = m_context.pushCompiler();
+    FunctionObject* function = compiler.compileFunction(stmt);
+
+    // Push its closure to the stack at runtime
+    uint32_t constantIndex = currentChunk().addConstant(Value{function});
+    if (constantIndex < UINT8_MAX) {
+        emitByte(constantIndex);
+    } else {
+        emitLong(constantIndex);
+    }
+
+    for (int i = 0; i < function->getUpvalueCount(); i++) {
+        emitByte(compiler.m_upvalues[i].isLocal ? 1 : 0);
+
+        if (i < UINT8_MAX) {
+            emitByte(static_cast<uint8_t>(compiler.m_upvalues[i].index));
+        } else {
+            emitLong(compiler.m_upvalues[i].index);
+        }
+    }
+
+    m_context.popCompiler();
 }
 
 void Compiler::visitTraitStmt(TraitStmt &stmt) {

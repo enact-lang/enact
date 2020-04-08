@@ -48,6 +48,7 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     void compile(std::vector<std::unique_ptr<Stmt>> ast);
     void compile(Stmt& stmt);
     void compile(Expr& expr);
+    FunctionObject* compileFunction(FunctionStmt& stmt);
 
     void endProgram();
     void endPart();
@@ -74,6 +75,10 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
     size_t emitJump(OpCode jump);
     void patchJump(size_t index, Token where);
     void emitLoop(size_t loopStartIndex, Token where);
+
+    void emitFunction(FunctionStmt& stmt);
+    // Exactly the same as emitFunction except it does not emit the CLOSURE(_LONG) instruction
+    void emitMemberFunction(FunctionStmt& stmt);
 
     Chunk& currentChunk();
   

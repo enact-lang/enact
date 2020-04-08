@@ -1,21 +1,25 @@
 struct Person:
-    name string
+    name String
     age int
+
+    assoc new(name String, age int) Person:
+        return Person(name, age)
+    end
 
     fun printName():
         put("Hello, my name is ")
-        put(self.name)
+        put("{self.name}")
         print("!")
     end
 
     fun printAge():
         put("I am ")
-        put(self.age)
+        put("{self.age}")
         print("years old")
     end
 end
 
 const jim = Person("Jim", 21)
 
-jim.printName()
-jim.printAge()
+//jim.printName()
+//jim.printAge()

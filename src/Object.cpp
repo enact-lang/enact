@@ -208,6 +208,10 @@ const std::string& StructObject::getName() const {
     return m_constructorType->getStructType()->getName();
 }
 
+std::vector<ClosureObject*>& StructObject::methods() {
+    return m_methods;
+}
+
 ClosureObject* StructObject::method(uint32_t index) {
     return m_methods[index];
 }
@@ -217,6 +221,10 @@ std::optional<ClosureObject*> StructObject::methodNamed(const std::string& name)
         return m_methods[*index];
     }
     return {};
+}
+
+std::vector<Value>& StructObject::assocs() {
+    return m_assocs;
 }
 
 Value& StructObject::assoc(uint32_t index) {
@@ -250,6 +258,14 @@ InstanceObject::InstanceObject(StructObject *struct_, std::vector<Value> propert
         Object{ObjectType::INSTANCE},
         m_struct{struct_},
         m_properties{std::move(properties)} {
+}
+
+StructObject* InstanceObject::getStruct() {
+    return m_struct;
+}
+
+std::vector<Value>& InstanceObject::properties() {
+    return m_properties;
 }
 
 Value &InstanceObject::property(uint32_t index) {

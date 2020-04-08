@@ -182,6 +182,8 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
         throw errorAt(stmt.name, "Cannot redeclare type '" + stmt.name.lexeme + "'.");
     }
 
+    m_types.emplace(stmt.name.lexeme, nullptr);
+
     std::vector<std::shared_ptr<const TraitType>> traits;
     for (const Token &traitName : stmt.traits) {
         // Check that the trait has been declared as a type.
@@ -260,7 +262,7 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     }
 
     auto thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods);
-    m_types.insert(std::make_pair(stmt.name.lexeme, thisType));
+    m_types[stmt.name.lexeme] = thisType;
 
     // Now, create a constructor for the struct.
     auto constructorType = std::make_shared<const ConstructorType>(thisType, assocFunctions);

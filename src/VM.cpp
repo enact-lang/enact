@@ -543,25 +543,21 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::STRUCT: {
-                std::shared_ptr<const ConstructorType> type{
-                        readConstantLong()
-                        .asObject()
-                        ->as<TypeObject>()
-                        ->getContainedType()
-                        ->as<ConstructorType>()
-                };
+                auto type = std::static_pointer_cast<const ConstructorType>(
+                        readConstant()
+                            .asObject()
+                            ->as<TypeObject>()
+                            ->getContainedType());
 
                 makeConstructor(type);
                 break;
             }
             case OpCode::STRUCT_LONG: {
-                std::shared_ptr<const ConstructorType> type{
-                    readConstantLong()
-                        .asObject()
-                        ->as<TypeObject>()
-                        ->getContainedType()
-                        ->as<ConstructorType>()
-                };
+                auto type = std::static_pointer_cast<const ConstructorType>(
+                        readConstant()
+                            .asObject()
+                            ->as<TypeObject>()
+                            ->getContainedType());
 
                 makeConstructor(type);
                 break;
@@ -686,15 +682,15 @@ inline void VM::makeConstructor(std::shared_ptr<const ConstructorType> type) {
     size_t methodsBeginIndex = m_stack.size();
     size_t methodCount = type->getStructType()->getMethods().length();
     for (uint32_t i = 0; i < methodCount; ++i) {
-        auto* function = readConstantLong().asObject()->as<FunctionObject>();
+        auto* function = readConstant().asObject()->as<FunctionObject>();
         encloseFunction(function);
     }
 
     // Collect assocs
     size_t assocsBeginIndex = m_stack.size();
-    size_t assocCount = type->getStructType()->getMethods().length();
-    for (uint32_t i = 0; i < methodCount; ++i) {
-        auto* function = readConstantLong().asObject()->as<FunctionObject>();
+    size_t assocCount = type->getAssocProperties().length();
+    for (uint32_t i = 0; i < assocCount; ++i) {
+        auto* function = readConstant().asObject()->as<FunctionObject>();
         encloseFunction(function);
     }
 

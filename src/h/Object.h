@@ -201,9 +201,12 @@ public:
 
     const std::string& getName() const;
 
+    std::vector<ClosureObject*>& methods();
     ClosureObject* method(uint32_t index);
     std::optional<ClosureObject*> methodNamed(const std::string& name);
 
+
+    std::vector<Value>& assocs();
     Value& assoc(uint32_t index);
     std::optional<std::reference_wrapper<Value>> assocNamed(const std::string& name);
 
@@ -223,6 +226,7 @@ public:
 
     StructObject* getStruct();
 
+    std::vector<Value>& properties();
     Value& property(uint32_t index);
     std::optional<std::reference_wrapper<Value>> propertyNamed(const std::string& name);
 

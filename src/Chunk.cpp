@@ -332,13 +332,12 @@ std::pair<std::string, size_t> Chunk::disassembleStruct(size_t index, bool isLon
     s << " " << constant << " (";
     s << m_constants[constant] << ")\n";
 
-    std::shared_ptr<const ConstructorType> type{
+    auto type = std::static_pointer_cast<const ConstructorType>(
             m_constants[constant]
                     .asObject()
                     ->as<TypeObject>()
                     ->getContainedType()
-                    ->as<ConstructorType>()
-    };
+    );
 
     uint32_t methodCount = type
             ->getStructType()
@@ -347,8 +346,11 @@ std::pair<std::string, size_t> Chunk::disassembleStruct(size_t index, bool isLon
 
     for (uint32_t i = 0; i < methodCount; ++i) {
         std::string methodName = type->getStructType()->getMethods().keys()[i];
-        s << "\n    | method '" << methodName << "'\n";
-        disassembleClosureArgs(index, isLong);
+        s << "          | method '" << methodName << "'";
+
+        std::string tmp;
+        std::tie(tmp, index) = disassembleClosureArgs(index, isLong);
+        s << tmp;
     }
 
     uint32_t assocCount = type
@@ -357,7 +359,7 @@ std::pair<std::string, size_t> Chunk::disassembleStruct(size_t index, bool isLon
 
     for (uint32_t i = 0; i < assocCount; ++i) {
         std::string assocName = type->getAssocProperties().keys()[i];
-        s << "\n    | assoc '" << assocName << "'\n";
+        s << "          | assoc '" << assocName << "'\n";
         disassembleClosureArgs(index, isLong);
     }
 
@@ -395,9 +397,8 @@ std::pair<std::string, size_t> Chunk::disassembleClosureArgs(size_t index, bool 
         }
         s << std::setfill('0') << std::setw(4) << index - 2;
         s.flags(f);
-        s << "      |                  " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
+        s << "       | " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
     }
-    ++index;
 
     return {s.str(), index};
 }

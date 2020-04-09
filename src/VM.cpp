@@ -487,6 +487,20 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
 
+            case OpCode::CALL_BOUND_METHOD: {
+                uint8_t argCount = readByte();
+                auto* bound = peek(argCount)
+                        .asObject()
+                        ->as<BoundMethodObject>();
+
+                push(bound->receiver());
+                callFunction(bound->method(), argCount);
+                m_frame = &m_frames[m_frameCount - 1];
+                pop();
+
+                break;
+            }
+
             case OpCode::CALL_CONSTRUCTOR: {
                 uint8_t argCount = readByte();
                 auto* struct_ = peek(argCount)
@@ -524,6 +538,14 @@ void VM::executionLoop(FunctionObject* function) {
 
                     // TODO: incorporate this in callFunction()
                     m_frame = &m_frames[m_frameCount - 1];
+                } else if (callee->is<BoundMethodObject>()) {
+                    auto* bound = callee->as<BoundMethodObject>();
+                    checkFunctionCallable(bound->method()->getType()->as<FunctionType>(), argCount);
+
+                    push(bound->receiver());
+                    callFunction(bound->method(), argCount);
+                    m_frame = &m_frames[m_frameCount - 1];
+                    pop();
                 } else if (callee->is<StructObject>()) {
                     checkConstructorCallable(callee->getType()->as<ConstructorType>(), argCount);
                     callConstructor(callee->as<StructObject>(), argCount);

@@ -109,6 +109,13 @@ void GC::blackenObject(Object *object) {
     }
 
     switch (object->m_type) {
+        case ObjectType::BOUND_METHOD: {
+            auto* boundMethod = object->as<BoundMethodObject>();
+            markValue(boundMethod->receiver());
+            markObject(boundMethod->method());
+            break;
+        }
+
         case ObjectType::INSTANCE: {
             auto* instance = object->as<InstanceObject>();
             markObject(instance->getStruct());

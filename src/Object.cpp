@@ -383,3 +383,33 @@ TypeObject* TypeObject::clone() const {
 size_t TypeObject::size() const {
     return sizeof(TypeObject);
 }
+
+BoundMethodObject::BoundMethodObject(Value receiver, ClosureObject* method) :
+        Object{ObjectType::BOUND_METHOD},
+        m_receiver{receiver},
+        m_method{method} {
+}
+
+Value BoundMethodObject::receiver() {
+    return m_receiver;
+}
+
+ClosureObject* BoundMethodObject::method() {
+    return m_method;
+}
+
+std::string BoundMethodObject::toString() const {
+    return m_method->toString();
+}
+
+Type BoundMethodObject::getType() const {
+    return m_method->getType();
+}
+
+BoundMethodObject* BoundMethodObject::clone() const {
+    return new BoundMethodObject(*this);
+}
+
+size_t BoundMethodObject::size() const {
+    return sizeof(BoundMethodObject);
+}

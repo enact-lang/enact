@@ -13,6 +13,7 @@ enum class ObjectType {
     CLOSURE,
     STRUCT,
     INSTANCE,
+    BOUND_METHOD,
     FUNCTION,
     NATIVE,
     TYPE
@@ -24,6 +25,7 @@ class UpvalueObject;
 class ClosureObject;
 class StructObject;
 class InstanceObject;
+class BoundMethodObject;
 class FunctionObject;
 class NativeObject;
 class TypeObject;
@@ -78,10 +80,12 @@ inline bool Object::is() const {
         return m_type == ObjectType::CLOSURE;
     } else if (std::is_same_v<T, StructObject>) {
         return m_type == ObjectType::STRUCT;
-    } else if (std::is_same_v<T, FunctionObject>) {
-        return m_type == ObjectType::FUNCTION;
     } else if (std::is_same_v<T, InstanceObject>) {
         return m_type == ObjectType::INSTANCE;
+    } else if (std::is_same_v<T, BoundMethodObject>) {
+        return m_type == ObjectType::BOUND_METHOD;
+    } else if (std::is_same_v<T, FunctionObject>) {
+        return m_type == ObjectType::FUNCTION;
     } else if (std::is_same_v<T, NativeObject>) {
         return m_type == ObjectType::NATIVE;
     } else if (std::is_same_v<T, TypeObject>) {
@@ -221,7 +225,7 @@ class InstanceObject : public Object {
     std::vector<Value> m_properties;
 
 public:
-    explicit InstanceObject(StructObject *struct_, std::vector<Value> properties);
+    InstanceObject(StructObject *struct_, std::vector<Value> properties);
     ~InstanceObject() override = default;
 
     StructObject* getStruct();
@@ -233,6 +237,23 @@ public:
     std::string toString() const override;
     Type getType() const override;
     StructObject* clone() const override;
+    size_t size() const override;
+};
+
+class BoundMethodObject : public Object {
+    Value m_receiver;
+    ClosureObject* m_method;
+
+public:
+    BoundMethodObject(Value receiver, ClosureObject* method);
+    ~BoundMethodObject() override = default;
+
+    Value receiver();
+    ClosureObject* method();
+
+    std::string toString() const override;
+    Type getType() const override;
+    BoundMethodObject* clone() const override;
     size_t size() const override;
 };
 

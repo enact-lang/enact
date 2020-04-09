@@ -538,8 +538,8 @@ void Compiler::visitGetExpr(GetExpr &expr) {
     if (objectType->isStruct()) {
         const auto* structType = objectType->as<StructType>();
 
-        byteOp = OpCode::GET_PROPERTY;
-        longOp = OpCode::GET_PROPERTY_LONG;
+        byteOp = OpCode::GET_FIELD;
+        longOp = OpCode::GET_FIELD_LONG;
         index = *structType->findField(expr.name.lexeme);
     } else if (objectType->isConstructor()) {
         throw errorAt(expr.oper, "Not implemented!");
@@ -604,8 +604,8 @@ void Compiler::visitSetExpr(SetExpr& expr) {
     if (objectType->isStruct()) {
         const auto* structType = objectType->as<StructType>();
 
-        byteOp = OpCode::SET_PROPERTY;
-        longOp = OpCode::SET_PROPERTY_LONG;
+        byteOp = OpCode::SET_FIELD;
+        longOp = OpCode::SET_FIELD_LONG;
         index = *structType->findField(expr.target->name.lexeme);
     } else if (objectType->isConstructor()) {
         throw errorAt(expr.oper, "Not implemented!");

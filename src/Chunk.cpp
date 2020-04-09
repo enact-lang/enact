@@ -120,8 +120,9 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_LOCAL:
         case OpCode::GET_UPVALUE:
         case OpCode::SET_UPVALUE:
-        case OpCode::GET_PROPERTY:
-        case OpCode::SET_PROPERTY:
+        case OpCode::GET_FIELD:
+        case OpCode::SET_FIELD:
+        case OpCode::GET_METHOD:
         case OpCode::CALL_FUNCTION:
         case OpCode::CALL_CONSTRUCTOR:
         case OpCode::CALL_NATIVE:
@@ -149,8 +150,9 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_LOCAL_LONG:
         case OpCode::GET_UPVALUE_LONG:
         case OpCode::SET_UPVALUE_LONG:
-        case OpCode::GET_PROPERTY_LONG:
-        case OpCode::SET_PROPERTY_LONG: {
+        case OpCode::GET_FIELD_LONG:
+        case OpCode::SET_FIELD_LONG:
+        case OpCode::GET_METHOD_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLong(index);
             s << str;
@@ -476,10 +478,12 @@ std::string opCodeToString(OpCode code) {
         case OpCode::GET_UPVALUE_LONG: return "GET_UPVALUE_LONG";
         case OpCode::SET_UPVALUE: return "SET_UPVALUE";
         case OpCode::SET_UPVALUE_LONG: return "SET_UPVALUE_LONG";
-        case OpCode::GET_PROPERTY: return "GET_PROPERTY";
-        case OpCode::GET_PROPERTY_LONG: return "GET_PROPERTY_LONG";
-        case OpCode::SET_PROPERTY: return "SET_PROPERTY";
-        case OpCode::SET_PROPERTY_LONG: return "SET_PROPERTY_LONG";
+        case OpCode::GET_FIELD: return "GET_FIELD";
+        case OpCode::GET_FIELD_LONG: return "GET_FIELD_LONG";
+        case OpCode::SET_FIELD: return "SET_FIELD";
+        case OpCode::SET_FIELD_LONG: return "SET_FIELD_LONG";
+        case OpCode::GET_METHOD: return "GET_METHOD";
+        case OpCode::GET_METHOD_LONG: return "GET_METHOD_LONG";
         case OpCode::GET_PROPERTY_DYNAMIC: return "GET_PROPERTY_DYNAMIC";
         case OpCode::GET_PROPERTY_DYNAMIC_LONG: return "GET_PROPERTY_DYNAMIC_LONG";
         case OpCode::SET_PROPERTY_DYNAMIC: return "SET_PROPERTY_DYNAMIC";

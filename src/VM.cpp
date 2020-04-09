@@ -261,7 +261,7 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
 
-            case OpCode::GET_PROPERTY: {
+            case OpCode::GET_FIELD: {
                 auto* instance = pop()
                         .asObject()
                         ->as<InstanceObject>();
@@ -271,7 +271,7 @@ void VM::executionLoop(FunctionObject* function) {
 
                 break;
             }
-            case OpCode::GET_PROPERTY_LONG: {
+            case OpCode::GET_FIELD_LONG: {
                 auto* instance = pop()
                         .asObject()
                         ->as<InstanceObject>();
@@ -281,7 +281,7 @@ void VM::executionLoop(FunctionObject* function) {
 
                 break;
             }
-            case OpCode::SET_PROPERTY: {
+            case OpCode::SET_FIELD: {
                 auto* instance = pop()
                         .asObject()
                         ->as<InstanceObject>();
@@ -291,7 +291,7 @@ void VM::executionLoop(FunctionObject* function) {
 
                 break;
             }
-            case OpCode::SET_PROPERTY_LONG: {
+            case OpCode::SET_FIELD_LONG: {
                 auto* instance = pop()
                         .asObject()
                         ->as<InstanceObject>();

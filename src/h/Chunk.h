@@ -77,6 +77,7 @@ enum class OpCode : uint8_t {
     LOOP,
 
     CALL_FUNCTION,
+    CALL_BOUND_METHOD,
     CALL_CONSTRUCTOR,
     CALL_NATIVE,
     CALL_DYNAMIC,

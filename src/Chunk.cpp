@@ -124,6 +124,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_FIELD:
         case OpCode::GET_METHOD:
         case OpCode::CALL_FUNCTION:
+        case OpCode::CALL_BOUND_METHOD:
         case OpCode::CALL_CONSTRUCTOR:
         case OpCode::CALL_NATIVE:
         case OpCode::CALL_DYNAMIC: {
@@ -493,6 +494,7 @@ std::string opCodeToString(OpCode code) {
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
         case OpCode::LOOP: return "LOOP";
         case OpCode::CALL_FUNCTION: return "CALL_FUNCTION";
+        case OpCode::CALL_BOUND_METHOD: return "CALL_BOUND_METHOD";
         case OpCode::CALL_CONSTRUCTOR: return "CALL_CONSTRUCTOR";
         case OpCode::CALL_NATIVE: return "CALL_NATIVE";
         case OpCode::CALL_DYNAMIC: return "CALL_DYNAMIC";

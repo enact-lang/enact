@@ -254,28 +254,28 @@ size_t StructObject::size() const {
     return sizeof(StructObject);
 }
 
-InstanceObject::InstanceObject(StructObject *struct_, std::vector<Value> properties) :
+InstanceObject::InstanceObject(StructObject *struct_, std::vector<Value> fields) :
         Object{ObjectType::INSTANCE},
         m_struct{struct_},
-        m_properties{std::move(properties)} {
+        m_fields{std::move(fields)} {
 }
 
 StructObject* InstanceObject::getStruct() {
     return m_struct;
 }
 
-std::vector<Value>& InstanceObject::properties() {
-    return m_properties;
+std::vector<Value>& InstanceObject::fields() {
+    return m_fields;
 }
 
-Value &InstanceObject::property(uint32_t index) {
-    return m_properties[index];
+Value &InstanceObject::field(uint32_t index) {
+    return m_fields[index];
 }
 
-std::optional<std::reference_wrapper<Value>> InstanceObject::propertyNamed(const std::string &name) {
+std::optional<std::reference_wrapper<Value>> InstanceObject::fieldNamed(const std::string &name) {
     auto structType = getType()->as<StructType>();
     if (std::optional<size_t> index = structType->findField(name)) {
-        return m_properties[*index];
+        return m_fields[*index];
     }
 
     return {};

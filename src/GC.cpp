@@ -119,8 +119,8 @@ void GC::blackenObject(Object *object) {
         case ObjectType::INSTANCE: {
             auto* instance = object->as<InstanceObject>();
             markObject(instance->getStruct());
-            for (Value property : instance->properties()) {
-                markValue(property);
+            for (Value field : instance->fields()) {
+                markValue(field);
             }
             break;
         }

@@ -267,7 +267,7 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<InstanceObject>();
 
                 uint8_t index = readByte();
-                push(instance->property(index));
+                push(instance->field(index));
 
                 break;
             }
@@ -277,7 +277,7 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<InstanceObject>();
 
                 uint32_t index = readLong();
-                push(instance->property(index));
+                push(instance->field(index));
 
                 break;
             }
@@ -287,7 +287,7 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<InstanceObject>();
 
                 uint8_t index = readByte();
-                instance->property(index) = peek(0);
+                instance->field(index) = peek(0);
 
                 break;
             }
@@ -297,8 +297,37 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<InstanceObject>();
 
                 uint32_t index = readLong();
-                instance->property(index) = peek(0);
+                instance->field(index) = peek(0);
 
+                break;
+            }
+
+            case OpCode::GET_METHOD: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = readByte();
+                ClosureObject* method = instance
+                        ->getStruct()
+                        ->method(index);
+
+                auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, method);
+                push(Value{bound});
+                break;
+            }
+            case OpCode::GET_METHOD_LONG: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = readLong();
+                ClosureObject* method = instance
+                        ->getStruct()
+                        ->method(index);
+
+                auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, method);
+                push(Value{bound});
                 break;
             }
 
@@ -318,13 +347,13 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<StringObject>()
                         ->asStdString();
 
-                std::optional<std::reference_wrapper<Value>> property;
-                if (!(property = instance->propertyNamed(name))) {
+                std::optional<std::reference_wrapper<Value>> field;
+                if (!(field = instance->fieldNamed(name))) {
                     throw runtimeError("Instance of type '" + instance->getType()->toString() +
                             "' does not have a field named '" + name + "'.");
                 }
 
-                push(*property);
+                push(*field);
                 break;
             }
             case OpCode::GET_PROPERTY_DYNAMIC_LONG: {
@@ -343,13 +372,13 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<StringObject>()
                         ->asStdString();
 
-                std::optional<std::reference_wrapper<Value>> property;
-                if (!(property = instance->propertyNamed(name))) {
+                std::optional<std::reference_wrapper<Value>> field;
+                if (!(field = instance->fieldNamed(name))) {
                     throw runtimeError("Instance of type '" + instance->getType()->toString() +
                                        "' does not have a field named '" + name + "'.");
                 }
 
-                push(*property);
+                push(*field);
                 break;
             }
             case OpCode::SET_PROPERTY_DYNAMIC: {
@@ -368,27 +397,27 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<StringObject>()
                         ->asStdString();
 
-                std::optional<std::reference_wrapper<Value>> maybeProperty;
-                if (!(maybeProperty = instance->propertyNamed(name))) {
+                std::optional<std::reference_wrapper<Value>> maybeField;
+                if (!(maybeField = instance->fieldNamed(name))) {
                     throw runtimeError("Instance of type '" + instance->getType()->toString() +
-                                       "' does not have a property named '" + name + "'.");
+                                       "' does not have a field named '" + name + "'.");
                 }
 
-                Value& property = maybeProperty.value().get();
+                Value& field = maybeField.value().get();
                 Value value = peek(0);
 
-                if (!property.getType()->looselyEquals(*value.getType())) {
+                if (!field.getType()->looselyEquals(*value.getType())) {
                     throw runtimeError("Cannot assign a value of type '" + value.getType()->toString() +
-                            "' to property '" + name + "' of type '" + property.getType()->toString() + "'.");
+                            "' to field '" + name + "' of type '" + field.getType()->toString() + "'.");
                 }
 
-                property = peek(0);
+                field = peek(0);
                 break;
             }
             case OpCode::SET_PROPERTY_DYNAMIC_LONG: {
                 Value maybeInstance = peek(0);
                 if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
-                    throw runtimeError("Only instances and constructors have properties, not a value of type '" +
+                    throw runtimeError("Only instances and constructors have fields, not a value of type '" +
                                        maybeInstance.getType()->toString() + "'.");
                 }
 
@@ -401,21 +430,21 @@ void VM::executionLoop(FunctionObject* function) {
                         ->as<StringObject>()
                         ->asStdString();
 
-                std::optional<std::reference_wrapper<Value>> maybeProperty;
-                if (!(maybeProperty = instance->propertyNamed(name))) {
+                std::optional<std::reference_wrapper<Value>> maybeField;
+                if (!(maybeField = instance->fieldNamed(name))) {
                     throw runtimeError("Instance of type '" + instance->getType()->toString() +
-                                       "' does not have a property named '" + name + "'.");
+                                       "' does not have a field named '" + name + "'.");
                 }
 
-                Value& property = maybeProperty.value().get();
+                Value& field = maybeField.value().get();
                 Value value = peek(0);
 
-                if (!property.getType()->looselyEquals(*value.getType())) {
+                if (!field.getType()->looselyEquals(*value.getType())) {
                     throw runtimeError("Cannot assign a value of type '" + value.getType()->toString() +
-                                       "' to property '" + name + "' of type '" + property.getType()->toString() + "'.");
+                                       "' to field '" + name + "' of type '" + field.getType()->toString() + "'.");
                 }
 
-                property = peek(0);
+                field = peek(0);
                 break;
             }
 

@@ -222,17 +222,17 @@ public:
 
 class InstanceObject : public Object {
     StructObject* m_struct;
-    std::vector<Value> m_properties;
+    std::vector<Value> m_fields;
 
 public:
-    InstanceObject(StructObject *struct_, std::vector<Value> properties);
+    InstanceObject(StructObject *struct_, std::vector<Value> fields);
     ~InstanceObject() override = default;
 
     StructObject* getStruct();
 
-    std::vector<Value>& properties();
-    Value& property(uint32_t index);
-    std::optional<std::reference_wrapper<Value>> propertyNamed(const std::string& name);
+    std::vector<Value>& fields();
+    Value& field(uint32_t index);
+    std::optional<std::reference_wrapper<Value>> fieldNamed(const std::string& name);
 
     std::string toString() const override;
     Type getType() const override;

@@ -538,9 +538,18 @@ void Compiler::visitGetExpr(GetExpr &expr) {
     if (objectType->isStruct()) {
         const auto* structType = objectType->as<StructType>();
 
-        byteOp = OpCode::GET_FIELD;
-        longOp = OpCode::GET_FIELD_LONG;
-        index = *structType->findField(expr.name.lexeme);
+        std::optional<size_t> maybeIndex;
+        if ((maybeIndex = structType->findField(expr.name.lexeme))) {
+            byteOp = OpCode::GET_FIELD;
+            longOp = OpCode::GET_FIELD_LONG;
+        } else if ((maybeIndex = structType->findMethod(expr.name.lexeme))) {
+            byteOp = OpCode::GET_METHOD;
+            longOp = OpCode::GET_METHOD_LONG;
+        } else {
+            ENACT_ABORT("Unreachable!");
+        }
+
+        index = *maybeIndex;
     } else if (objectType->isConstructor()) {
         throw errorAt(expr.oper, "Not implemented!");
     } else if (objectType->isTrait()) {

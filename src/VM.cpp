@@ -303,7 +303,7 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::GET_METHOD: {
-                auto* instance = pop()
+                auto* instance = peek(0)
                         .asObject()
                         ->as<InstanceObject>();
 
@@ -313,11 +313,12 @@ void VM::executionLoop(FunctionObject* function) {
                         ->method(index);
 
                 auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, method);
+                pop(); // Pop the instance
                 push(Value{bound});
                 break;
             }
             case OpCode::GET_METHOD_LONG: {
-                auto* instance = pop()
+                auto* instance = peek(0)
                         .asObject()
                         ->as<InstanceObject>();
 
@@ -327,6 +328,7 @@ void VM::executionLoop(FunctionObject* function) {
                         ->method(index);
 
                 auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, method);
+                pop(); // Pop the instance;
                 push(Value{bound});
                 break;
             }
@@ -726,7 +728,7 @@ inline void VM::makeConstructor(std::shared_ptr<const ConstructorType> type) {
     // Move methods off the stack
     auto methodsBegin = m_stack.begin() + methodsBeginIndex;
     auto methodsEnd = m_stack.begin() + methodsBeginIndex + methodCount;
-    std::vector<ClosureObject*> methods{methodCount};
+    std::vector<ClosureObject*> methods{};
     for (auto it = methodsBegin; it != methodsEnd; ++it) {
         methods.push_back(it->asObject()->as<ClosureObject>());
     }
@@ -734,8 +736,7 @@ inline void VM::makeConstructor(std::shared_ptr<const ConstructorType> type) {
     // Move assocs off the stack
     auto assocsBegin = m_stack.begin() + assocsBeginIndex;
     auto assocsEnd = m_stack.begin() + assocsBeginIndex + assocCount;
-    std::vector<Value> assocs{assocCount};
-    std::move(assocsBegin, assocsEnd, assocs.begin());
+    std::vector<Value> assocs{assocsBegin, assocsEnd};
 
     auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::move(methods), std::move(assocs));
     push(Value{struct_});

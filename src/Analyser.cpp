@@ -604,6 +604,10 @@ void Analyser::visitSetExpr(SetExpr& expr) {
     analyse(*expr.target);
     analyse(*expr.value);
 
+    if (expr.target->object->getType()->as<StructType>()->findMethod(expr.target->name.lexeme)) {
+        throw errorAt(expr.oper, "Cannot assign to a struct method.");
+    }
+
     if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
         throw errorAt(expr.oper, "Cannot assign value of type '" + expr.value->getType()->toString()
                 + "' to property '" + expr.target->name.lexeme + "' of type '" + expr.value->getType()->toString()

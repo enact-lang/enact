@@ -69,11 +69,11 @@ void Compiler::startProgram() {
             ""
     );
 
-    defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+    defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true),
                  &Natives::print);
-    defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+    defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true),
                  &Natives::put);
-    defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
+    defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true),
                  &Natives::dis);
 }
 
@@ -308,15 +308,52 @@ void Compiler::visitStructStmt(StructStmt &stmt) {
     }
 
     for (auto& method : stmt.methods) {
-        emitMemberFunction(*method);
+        emitMethod(*method);
     }
 
     for (auto& assoc : stmt.assocFunctions) {
-        emitMemberFunction(*assoc);
+        emitAssoc(*assoc);
     }
 }
 
-void Compiler::emitMemberFunction(FunctionStmt& stmt) {
+void Compiler::emitMethod(FunctionStmt& stmt) {
+    // Compile the function value
+    Compiler& compiler = m_context.pushCompiler();
+    compiler.startFunction(stmt);
+    compiler.addLocal(Token{TokenType::IDENTIFIER, "self", 0, 0});
+    compiler.m_locals.back().initialized = true;
+    for (const Param& param : stmt.params) {
+        compiler.addLocal(param.name);
+        compiler.m_locals.back().initialized = true;
+    }
+
+    compiler.compile(std::move(stmt.body));
+    compiler.endFunction();
+
+    FunctionObject* function = compiler.m_currentFunction;
+
+    // Push its closure to the stack at runtime
+    uint32_t constantIndex = currentChunk().addConstant(Value{function});
+    if (constantIndex < UINT8_MAX) {
+        emitByte(constantIndex);
+    } else {
+        emitLong(constantIndex);
+    }
+
+    for (int i = 0; i < function->getUpvalueCount(); i++) {
+        emitByte(compiler.m_upvalues[i].isLocal ? 1 : 0);
+
+        if (i < UINT8_MAX) {
+            emitByte(static_cast<uint8_t>(compiler.m_upvalues[i].index));
+        } else {
+            emitLong(compiler.m_upvalues[i].index);
+        }
+    }
+
+    m_context.popCompiler();
+}
+
+void Compiler::emitAssoc(FunctionStmt& stmt) {
     // Compile the function value
     Compiler& compiler = m_context.pushCompiler();
     FunctionObject* function = compiler.compileFunction(stmt);
@@ -500,10 +537,12 @@ void Compiler::visitCallExpr(CallExpr &expr) {
     Type calleeType = expr.callee->getType();
 
     if (calleeType->isFunction()) {
-        if (!calleeType->as<FunctionType>()->isNative()) {
-            callOp = OpCode::CALL_FUNCTION;
-        } else {
+        if (calleeType->as<FunctionType>()->isMethod()) {
+            callOp = OpCode::CALL_BOUND_METHOD;
+        } else if (calleeType->as<FunctionType>()->isNative()) {
             callOp = OpCode::CALL_NATIVE;
+        } else {
+            callOp = OpCode::CALL_FUNCTION;
         }
     } else if (expr.callee->getType()->isConstructor()) {
         callOp = OpCode::CALL_CONSTRUCTOR;

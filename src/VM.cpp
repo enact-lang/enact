@@ -493,10 +493,9 @@ void VM::executionLoop(FunctionObject* function) {
                         .asObject()
                         ->as<BoundMethodObject>();
 
-                push(bound->receiver());
                 callFunction(bound->method(), argCount);
                 m_frame = &m_frames[m_frameCount - 1];
-                pop();
+                push(bound->receiver());
 
                 break;
             }
@@ -542,10 +541,9 @@ void VM::executionLoop(FunctionObject* function) {
                     auto* bound = callee->as<BoundMethodObject>();
                     checkFunctionCallable(bound->method()->getType()->as<FunctionType>(), argCount);
 
-                    push(bound->receiver());
                     callFunction(bound->method(), argCount);
                     m_frame = &m_frames[m_frameCount - 1];
-                    pop();
+                    push(bound->receiver());
                 } else if (callee->is<StructObject>()) {
                     checkConstructorCallable(callee->getType()->as<ConstructorType>(), argCount);
                     callConstructor(callee->as<StructObject>(), argCount);

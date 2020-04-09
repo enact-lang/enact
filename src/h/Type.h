@@ -139,14 +139,16 @@ public:
 class FunctionType : public TypeBase {
     Type m_returnType;
     std::vector<Type> m_argumentTypes;
+    bool m_isMethod;
     bool m_isNative;
 public:
-    FunctionType(Type returnType, std::vector<Type> argumentTypes, bool isNative = false);
+    FunctionType(Type returnType, std::vector<Type> argumentTypes, bool isMethod = false, bool isNative = false);
     ~FunctionType() override = default;
 
     const Type getReturnType() const;
     const std::vector<Type>& getArgumentTypes() const;
 
+    bool isMethod() const;
     bool isNative() const;
 
     std::unique_ptr<Typename> toTypename() const override;

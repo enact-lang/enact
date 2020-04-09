@@ -78,7 +78,9 @@ class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
 
     void emitFunction(FunctionStmt& stmt);
     // Exactly the same as emitFunction except it does not emit the CLOSURE(_LONG) instruction
-    void emitMemberFunction(FunctionStmt& stmt);
+    void emitAssoc(FunctionStmt& stmt);
+    // Exactly the same as emitAssoc, except it emits the `self` variable
+    void emitMethod(FunctionStmt& stmt);
 
     Chunk& currentChunk();
   

@@ -8,19 +8,18 @@ struct Person:
 
     fun printName():
         put("Hello, my name is ")
-        put("{self.name}")
+        put(self.name)
         print("!")
     end
 
     fun printAge():
         put("I am ")
-        put("{self.age}")
-        print("years old")
+        put(self.age)
+        print(" years old")
     end
 end
 
 const jim = Person("Jim", 21)
-print(jim.printName)
-print(jim.printAge)
-//jim.printName()
-//jim.printAge()
+
+jim.printName()
+jim.printAge()

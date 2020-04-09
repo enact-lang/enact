@@ -44,7 +44,7 @@ class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
 
     void analyseFunctionBody(FunctionStmt& stmt);
 
-    Type getFunctionType(const FunctionStmt &stmt);
+    Type getFunctionType(const FunctionStmt &stmt, bool isMethod = false, bool isNative = false);
 
     Variable& lookUpVariable(const Token& name);
     void declareVariable(const std::string& name, const Variable& variable);

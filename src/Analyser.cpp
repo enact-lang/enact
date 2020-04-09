@@ -15,11 +15,11 @@ std::vector<std::unique_ptr<Stmt>> Analyser::analyse(std::vector<std::unique_ptr
 
         declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
         declareVariable("print",
-                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, true), true});
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true), true});
         declareVariable("put",
-                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, true), true});
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true), true});
         declareVariable("dis",
-                        Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, true), true});
+                        Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true), true});
     }
 
     for (auto &stmt : ast) {
@@ -230,7 +230,7 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
                                         "' cannot have the same name as another field or method.");
         }
 
-        methods.insert(std::pair(method->name.lexeme, getFunctionType(*method)));
+        methods.insert(std::pair(method->name.lexeme, getFunctionType(*method, true)));
     }
 
     // Check that the traits are satisfied now
@@ -709,7 +709,7 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
     endScope();
 }
 
-Type Analyser::getFunctionType(const FunctionStmt &stmt) {
+Type Analyser::getFunctionType(const FunctionStmt &stmt, bool isMethod, bool isNative) {
     Type returnType;
     if (stmt.returnTypename->name().empty()) {
         returnType = NOTHING_TYPE;
@@ -726,7 +726,7 @@ Type Analyser::getFunctionType(const FunctionStmt &stmt) {
         parameterTypes.push_back(lookUpType(*parameter.typeName));
     }
 
-    return std::make_shared<FunctionType>(returnType, parameterTypes);
+    return std::make_shared<FunctionType>(returnType, parameterTypes, isMethod, isNative);
 }
 
 Type Analyser::lookUpType(const Typename& name) {

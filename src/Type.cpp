@@ -225,10 +225,11 @@ std::unique_ptr<Typename> ArrayType::toTypename() const {
     return std::make_unique<ArrayTypename>(m_elementType->toTypename());
 }
 
-FunctionType::FunctionType(Type returnType, std::vector<Type> argumentTypes, bool isNative) :
+FunctionType::FunctionType(Type returnType, std::vector<Type> argumentTypes, bool isMethod, bool isNative) :
         TypeBase{TypeKind::FUNCTION},
         m_returnType{returnType},
         m_argumentTypes{argumentTypes},
+        m_isMethod{isMethod},
         m_isNative{isNative} {}
 
 const Type FunctionType::getReturnType() const {
@@ -237,6 +238,10 @@ const Type FunctionType::getReturnType() const {
 
 const std::vector<Type>& FunctionType::getArgumentTypes() const {
     return m_argumentTypes;
+}
+
+bool FunctionType::isMethod() const {
+    return m_isMethod;
 }
 
 bool FunctionType::isNative() const {

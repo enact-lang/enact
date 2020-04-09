@@ -23,3 +23,8 @@ const jim = Person("Jim", 21)
 
 jim.printName()
 jim.printAge()
+
+const sam = Person.new("Sam", 99)
+
+sam.printName()
+sam.printAge()

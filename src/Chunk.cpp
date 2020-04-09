@@ -123,6 +123,7 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::GET_FIELD:
         case OpCode::SET_FIELD:
         case OpCode::GET_METHOD:
+        case OpCode::GET_ASSOC:
         case OpCode::CALL_FUNCTION:
         case OpCode::CALL_BOUND_METHOD:
         case OpCode::CALL_CONSTRUCTOR:
@@ -153,7 +154,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_UPVALUE_LONG:
         case OpCode::GET_FIELD_LONG:
         case OpCode::SET_FIELD_LONG:
-        case OpCode::GET_METHOD_LONG: {
+        case OpCode::GET_METHOD_LONG:
+        case OpCode::GET_ASSOC_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLong(index);
             s << str;
@@ -485,6 +487,8 @@ std::string opCodeToString(OpCode code) {
         case OpCode::SET_FIELD_LONG: return "SET_FIELD_LONG";
         case OpCode::GET_METHOD: return "GET_METHOD";
         case OpCode::GET_METHOD_LONG: return "GET_METHOD_LONG";
+        case OpCode::GET_ASSOC: return "GET_ASSOC";
+        case OpCode::GET_ASSOC_LONG: return "GET_ASSOC_LONG";
         case OpCode::GET_PROPERTY_DYNAMIC: return "GET_PROPERTY_DYNAMIC";
         case OpCode::GET_PROPERTY_DYNAMIC_LONG: return "GET_PROPERTY_DYNAMIC_LONG";
         case OpCode::SET_PROPERTY_DYNAMIC: return "SET_PROPERTY_DYNAMIC";

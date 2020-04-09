@@ -64,6 +64,9 @@ enum class OpCode : uint8_t {
     GET_METHOD,
     GET_METHOD_LONG,
 
+    GET_ASSOC,
+    GET_ASSOC_LONG,
+
     GET_PROPERTY_DYNAMIC,
     GET_PROPERTY_DYNAMIC_LONG,
 

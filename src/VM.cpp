@@ -333,6 +333,31 @@ void VM::executionLoop(FunctionObject* function) {
                 break;
             }
 
+            case OpCode::GET_ASSOC: {
+                auto* struct_ = peek(0)
+                        .asObject()
+                        ->as<StructObject>();
+
+                uint32_t index = readByte();
+                Value assoc = struct_->assoc(index);
+
+                pop();
+                push(assoc);
+                break;
+            }
+            case OpCode::GET_ASSOC_LONG: {
+                auto* struct_ = peek(0)
+                        .asObject()
+                        ->as<StructObject>();
+
+                uint32_t index = readLong();
+                Value assoc = struct_->assoc(index);
+
+                pop();
+                push(assoc);
+                break;
+            }
+
             case OpCode::GET_PROPERTY_DYNAMIC: {
                 Value maybeInstance = peek(0);
                 if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {

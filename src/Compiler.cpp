@@ -590,7 +590,11 @@ void Compiler::visitGetExpr(GetExpr &expr) {
 
         index = *maybeIndex;
     } else if (objectType->isConstructor()) {
-        throw errorAt(expr.oper, "Not implemented!");
+        const auto* constructorType = objectType->as<ConstructorType>();
+        index = *constructorType->findAssocProperty(expr.name.lexeme);
+
+        byteOp = OpCode::GET_ASSOC;
+        longOp = OpCode::GET_ASSOC_LONG;
     } else if (objectType->isTrait()) {
         throw errorAt(expr.oper, "Not implemented!");
     } else if (objectType->isDynamic()) {
@@ -655,8 +659,6 @@ void Compiler::visitSetExpr(SetExpr& expr) {
         byteOp = OpCode::SET_FIELD;
         longOp = OpCode::SET_FIELD_LONG;
         index = *structType->findField(expr.target->name.lexeme);
-    } else if (objectType->isConstructor()) {
-        throw errorAt(expr.oper, "Not implemented!");
     } else if (objectType->isTrait()) {
         throw errorAt(expr.oper, "Not implemented!");
     } else if (objectType->isDynamic()) {
@@ -666,6 +668,7 @@ void Compiler::visitSetExpr(SetExpr& expr) {
         auto* name = m_context.gc.allocateObject<StringObject>(expr.target->name.lexeme);
         index = currentChunk().addConstant(Value{name});
     } else {
+        // This should be unreachable.
         throw errorAt(expr.oper, "Only structs and traits have properties.");
     }
 

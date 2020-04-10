@@ -264,6 +264,14 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     auto thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods);
     m_types[stmt.name.lexeme] = thisType;
 
+    for (size_t i = 0; i < stmt.methods.size(); ++i) {
+        methods.atIndex(i)->get() = getFunctionType(*stmt.methods[i], true);
+    }
+
+    for (size_t i = 0; i < stmt.assocFunctions.size(); ++i) {
+        assocFunctions.atIndex(i)->get() = getFunctionType(*stmt.assocFunctions[i]);
+    }
+
     // Now, create a constructor for the struct.
     auto constructorType = std::make_shared<const ConstructorType>(thisType, assocFunctions);
     stmt.constructorType = constructorType;
@@ -272,6 +280,7 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
 
     // Now we can analyse the methods:
     for (auto& method : stmt.methods) {
+        method->type = getFunctionType(*method, true);
         beginScope();
 
         declareVariable("self", Variable{thisType, !method->isMut});
@@ -282,6 +291,7 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
 
     // Look at the assoc functions (remember, they are outside of the struct scope):
     for (auto& function : stmt.assocFunctions) {
+        function->type = getFunctionType(*function);
         analyse(*function);
     }
 }
@@ -604,8 +614,17 @@ void Analyser::visitSetExpr(SetExpr& expr) {
     analyse(*expr.target);
     analyse(*expr.value);
 
-    if (expr.target->object->getType()->as<StructType>()->findMethod(expr.target->name.lexeme)) {
+    Type objectType = expr.target->object->getType();
+    std::string name = expr.target->name.lexeme;
+
+    if (objectType->isStruct()
+            && objectType->as<StructType>()->findMethod(name)) {
         throw errorAt(expr.oper, "Cannot assign to a struct method.");
+    }
+
+    if (objectType->isConstructor()
+            && objectType->as<ConstructorType>()->findAssocProperty(name)) {
+        throw errorAt(expr.oper, "Cannot assign to an assoc method.");
     }
 
     if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {

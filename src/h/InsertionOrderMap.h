@@ -1,6 +1,8 @@
 #ifndef ENACT_INSERTIONORDERMAP_H
 #define ENACT_INSERTIONORDERMAP_H
 
+#include <algorithm>
+#include <functional>
 #include <iostream>
 #include <unordered_map>
 #include <vector>

@@ -1,8 +1,9 @@
 #ifndef ENACT_INSERTIONORDERMAP_H
 #define ENACT_INSERTIONORDERMAP_H
 
-#include <unordered_map>
 #include <iostream>
+#include <unordered_map>
+#include <vector>
 
 template <class KeyType, class ValueType>
 class InsertionOrderMapIter;

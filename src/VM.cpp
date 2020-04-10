@@ -359,92 +359,112 @@ void VM::executionLoop(FunctionObject* function) {
             }
 
             case OpCode::GET_PROPERTY_DYNAMIC: {
-                Value maybeInstance = peek(0);
-                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
+                Value maybeObject = peek(0);
+                if (!maybeObject.isObject()) {
                     throw runtimeError("Only instances and constructors have properties, not a value of type '" +
-                                       maybeInstance.getType()->toString() + "'.");
+                                       maybeObject.getType()->toString() + "'.");
                 }
 
-                auto* instance = pop()
-                        .asObject()
-                        ->as<InstanceObject>();
-
+                Object* object = maybeObject.asObject();
                 const std::string& name = readConstant()
                         .asObject()
                         ->as<StringObject>()
                         ->asStdString();
 
-                std::optional<std::reference_wrapper<Value>> field;
-                if (!(field = instance->fieldNamed(name))) {
-                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
-                            "' does not have a field named '" + name + "'.");
+                if (object->is<InstanceObject>()) {
+                    auto* instance = peek(0)
+                            .asObject()
+                            ->as<InstanceObject>();
+
+                    Value property;
+
+                    if (auto field = instance->fieldNamed(name)) {
+                        property = *field;
+                    } else if (auto method = instance->getStruct()->methodNamed(name)) {
+                        auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, *method);
+                        property = Value{bound};
+                    } else {
+                        throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                           "' does not have a property named '" + name + "'.");
+                    }
+
+                    pop(); // Pop the instance
+                    push(property);
+                } else if (object->is<StructObject>()) {
+                    auto* struct_ = pop()
+                            .asObject()
+                            ->as<StructObject>();
+
+                    std::optional<std::reference_wrapper<Value>> assoc;
+                    if (!(assoc = struct_->assocNamed(name))) {
+                        throw runtimeError("Struct '" + assoc->get().getType()->toString() +
+                                           "' does not have an associated function named '" + name + "'.");
+                    }
+
+                    push(*assoc);
+                } else {
+                    throw runtimeError("Only instances and constructors have properties, not a value of type '" +
+                                       object->getType()->toString() + "'.");
                 }
 
-                push(*field);
                 break;
             }
             case OpCode::GET_PROPERTY_DYNAMIC_LONG: {
-                Value maybeInstance = peek(0);
-                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
+                Value maybeObject = peek(0);
+                if (!maybeObject.isObject()) {
                     throw runtimeError("Only instances and constructors have properties, not a value of type '" +
-                                       maybeInstance.getType()->toString() + "'.");
+                                       maybeObject.getType()->toString() + "'.");
                 }
 
-                auto* instance = pop()
-                        .asObject()
-                        ->as<InstanceObject>();
-
+                Object* object = maybeObject.asObject();
                 const std::string& name = readConstantLong()
                         .asObject()
                         ->as<StringObject>()
                         ->asStdString();
 
-                std::optional<std::reference_wrapper<Value>> field;
-                if (!(field = instance->fieldNamed(name))) {
-                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
-                                       "' does not have a field named '" + name + "'.");
-                }
+                if (object->is<InstanceObject>()) {
+                    auto* instance = peek(0)
+                            .asObject()
+                            ->as<InstanceObject>();
 
-                push(*field);
-                break;
-            }
-            case OpCode::SET_PROPERTY_DYNAMIC: {
-                Value maybeInstance = peek(0);
-                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
+                    Value property;
+
+                    if (auto field = instance->fieldNamed(name)) {
+                        property = *field;
+                    } else if (auto method = instance->getStruct()->methodNamed(name)) {
+                        auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, *method);
+                        property = Value{bound};
+                    } else {
+                        throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                           "' does not have a property named '" + name + "'.");
+                    }
+
+                    pop(); // Pop the instance
+                    push(property);
+                } else if (object->is<StructObject>()) {
+                    auto* struct_ = pop()
+                            .asObject()
+                            ->as<StructObject>();
+
+                    std::optional<std::reference_wrapper<Value>> assoc;
+                    if (!(assoc = struct_->assocNamed(name))) {
+                        throw runtimeError("Struct '" + assoc->get().getType()->toString() +
+                                           "' does not have an associated function named '" + name + "'.");
+                    }
+
+                    push(*assoc);
+                } else {
                     throw runtimeError("Only instances and constructors have properties, not a value of type '" +
-                            maybeInstance.getType()->toString() + "'.");
+                                       object->getType()->toString() + "'.");
                 }
 
-                auto* instance = pop()
-                        .asObject()
-                        ->as<InstanceObject>();
-
-                const std::string& name = readConstant()
-                        .asObject()
-                        ->as<StringObject>()
-                        ->asStdString();
-
-                std::optional<std::reference_wrapper<Value>> maybeField;
-                if (!(maybeField = instance->fieldNamed(name))) {
-                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
-                                       "' does not have a field named '" + name + "'.");
-                }
-
-                Value& field = maybeField.value().get();
-                Value value = peek(0);
-
-                if (!field.getType()->looselyEquals(*value.getType())) {
-                    throw runtimeError("Cannot assign a value of type '" + value.getType()->toString() +
-                            "' to field '" + name + "' of type '" + field.getType()->toString() + "'.");
-                }
-
-                field = peek(0);
                 break;
             }
+
             case OpCode::SET_PROPERTY_DYNAMIC_LONG: {
                 Value maybeInstance = peek(0);
                 if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
-                    throw runtimeError("Only instances and constructors have fields, not a value of type '" +
+                    throw runtimeError("Only instances have assignable fields, not a value of type '" +
                                        maybeInstance.getType()->toString() + "'.");
                 }
 

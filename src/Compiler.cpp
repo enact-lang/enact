@@ -320,12 +320,12 @@ void Compiler::emitMethod(FunctionStmt& stmt) {
     // Compile the function value
     Compiler& compiler = m_context.pushCompiler();
     compiler.startFunction(stmt);
-    compiler.addLocal(Token{TokenType::IDENTIFIER, "self", 0, 0});
-    compiler.m_locals.back().initialized = true;
     for (const Param& param : stmt.params) {
         compiler.addLocal(param.name);
         compiler.m_locals.back().initialized = true;
     }
+    compiler.addLocal(Token{TokenType::IDENTIFIER, "self", 0, 0});
+    compiler.m_locals.back().initialized = true;
 
     compiler.compile(std::move(stmt.body));
     compiler.endFunction();

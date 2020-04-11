@@ -804,10 +804,11 @@ inline void VM::makeConstructor(std::shared_ptr<const ConstructorType> type) {
     std::vector<Value> assocs{assocsBegin, assocsEnd};
 
     auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::move(methods), std::move(assocs));
-    push(Value{struct_});
 
     // Erase the moved elements
     m_stack.erase(methodsBegin, assocsEnd);
+
+    push(Value{struct_});
 }
 
 inline uint8_t VM::readByte() {

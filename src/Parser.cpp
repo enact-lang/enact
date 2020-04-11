@@ -1,9 +1,9 @@
-#include "h/Parser.h"
+#include "h/Context.h"
 #include "h/Token.h"
 #include "h/Chunk.h"
-#include "h/Enact.h"
 
-Parser::Parser(std::string source) : m_source{std::move(source)}, m_scanner{m_source} {}
+Parser::Parser(Context &context) : m_context{context} {
+}
 
 const ParseRule& Parser::getParseRule(TokenType type) {
     return m_parseRules[(size_t)type];
@@ -156,7 +156,10 @@ std::unique_ptr<Expr> Parser::assignment(std::unique_ptr<Expr> target) {
         };
         return std::make_unique<AllotExpr>(std::move(subscriptTarget), std::move(value), oper);
     } else if (typeid(*target) == typeid(GetExpr)) {
-        throw errorAt(oper, "Not implemented.");
+        auto getTarget = std::unique_ptr<GetExpr>{
+                static_cast<GetExpr*>(target.release())
+        };
+        return std::make_unique<SetExpr>(std::move(getTarget), std::move(value), oper);
     }
 
     throw errorAt(oper, "Invalid assignment target.");
@@ -196,7 +199,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
+std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody, bool isMut) {
     expect(TokenType::IDENTIFIER, "Expected function name.");
     Token name = m_previous;
 
@@ -218,7 +221,7 @@ std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
     std::vector<std::unique_ptr<Stmt>> body;
 
     if (!mustParseBody && consumeSeparator()) {
-        return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr);
+        return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr, isMut);
     }
 
     expect(TokenType::COLON, "Expected ':' before function body.");
@@ -232,7 +235,7 @@ std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody) {
 
     expectSeparator("Expected newline or ';' after function declaration.");
 
-    return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr);
+    return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body), nullptr, isMut);
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -267,27 +270,33 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
             fields.push_back(Field{fieldName, std::move(fieldType)});
 
             expectSeparator("Expected newline or ';' after field declaration.");
-        } else if (consume(TokenType::FUN)) {
-            // Method declaration
-            auto method = std::unique_ptr<FunctionStmt>{
-                    static_cast<FunctionStmt*>(functionDeclaration().release())
-            };
-            methods.push_back(std::move(method));
-        } else if (consume(TokenType::ASSOC)) {
+            continue;
+        }
+
+        if (consume(TokenType::ASSOC)) {
             // Associated function declaration
             auto function = std::unique_ptr<FunctionStmt>{
                     static_cast<FunctionStmt*>(functionDeclaration().release())
             };
             assocFunctions.push_back(std::move(function));
-        } else {
-            throw errorAtCurrent("Expected field or method declaration.");
+            continue;
         }
+
+        bool isMut = consume(TokenType::MUT);
+        // We've exhausted all other possibilities, so we must consume a method declaration or else it's an error.
+        expect(TokenType::FUN, "Expected field or method declaration.");
+
+        // Parse method body
+        auto method = std::unique_ptr<FunctionStmt>{
+            static_cast<FunctionStmt*>(functionDeclaration(true, isMut).release())
+        };
+        methods.push_back(std::move(method));
     }
 
     expect(TokenType::END, "Expected 'end' at end of struct declaration.");
     expectSeparator("Expected newline or ';' after 'end'.");
 
-    return std::make_unique<StructStmt>(name, traits, std::move(fields), std::move(methods), std::move(assocFunctions));
+    return std::make_unique<StructStmt>(name, traits, std::move(fields), std::move(methods), std::move(assocFunctions),nullptr);
 }
 
 std::unique_ptr<Stmt> Parser::traitDeclaration() {
@@ -543,19 +552,20 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
+    m_scanner = Scanner{m_context.source};
     advance();
-    std::vector<std::unique_ptr<Stmt>> statements{};
 
+    std::vector<std::unique_ptr<Stmt>> ast{};
     while (!isAtEnd()) {
         std::unique_ptr<Stmt> stmt = declaration();
-        if (stmt) statements.push_back(std::move(stmt));
+        if (stmt) ast.push_back(std::move(stmt));
     }
 
-    return statements;
+    return ast;
 }
 
 Parser::ParseError Parser::errorAt(const Token &token, const std::string &message) {
-    Enact::reportErrorAt(token, message);
+    m_context.reportErrorAt(token, message);
     m_hadError = true;
     return ParseError{};
 }
@@ -575,7 +585,7 @@ void Parser::advance() {
         m_current = m_scanner.scanToken();
         if (m_current.type != TokenType::ERROR) break;
 
-        Enact::reportErrorAt(m_current, m_current.lexeme);
+        m_context.reportErrorAt(m_current, m_current.lexeme);
     }
 }
 
@@ -621,6 +631,11 @@ std::unique_ptr<const Typename> Parser::expectTypename(bool emptyAllowed) {
     std::unique_ptr<const Typename> typeName;
 
     bool isEnclosed = consume(TokenType::LEFT_PAREN);
+
+    if (consume(TokenType::STRUCT)) {
+        expect(TokenType::IDENTIFIER, "Expected struct name to complete constructor typename.");
+        return std::make_unique<ConstructorTypename>(std::make_unique<BasicTypename>(m_previous));
+    }
 
     if (consume(TokenType::FUN)) {
         typeName = expectFunctionTypename();

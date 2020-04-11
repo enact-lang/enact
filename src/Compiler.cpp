@@ -1,17 +1,53 @@
-#include "h/Compiler.h"
+#include "h/Context.h"
 #include "h/Object.h"
-#include "h/Enact.h"
 #include "h/Natives.h"
-#include "h/GC.h"
 
-Compiler::Compiler(Compiler* enclosing) : m_enclosing{enclosing} {
-    GC::setCompiler(this);
+Compiler::Compiler(Context& context, Compiler* enclosing) :
+        m_context{context},
+        m_enclosing{enclosing} {
 }
 
-void Compiler::init(FunctionKind functionKind, Type functionType, const std::string& name) {
+FunctionObject* Compiler::compileProgram(std::vector<std::unique_ptr<Stmt>> ast) {
+    startProgram();
+    compile(std::move(ast));
+    endProgram();
+    return m_currentFunction;
+}
+
+FunctionObject* Compiler::compileFunction(FunctionStmt &stmt) {
+    startFunction(stmt);
+
+    for (const Param& param : stmt.params) {
+        addLocal(param.name);
+        m_locals.back().initialized = true;
+    }
+
+    compile(std::move(stmt.body));
+    endFunction();
+
+    return m_currentFunction;
+}
+
+
+void Compiler::startRepl() {
+    startProgram();
+}
+
+FunctionObject* Compiler::compilePart(std::vector<std::unique_ptr<Stmt>> ast) {
+    compile(std::move(ast));
+    endPart();
+    return m_currentFunction;
+}
+
+FunctionObject* Compiler::endRepl() {
+    endProgram();
+    return m_currentFunction;
+}
+
+void Compiler::start(FunctionKind functionKind, Type functionType, const std::string& name) {
     m_hadError = false;
 
-    m_currentFunction = GC::allocateObject<FunctionObject>(
+    m_currentFunction = m_context.gc.allocateObject<FunctionObject>(
             functionType,
             Chunk(),
             name
@@ -24,24 +60,25 @@ void Compiler::init(FunctionKind functionKind, Type functionType, const std::str
     beginScope();
 
     addLocal(Token{TokenType::IDENTIFIER, "", 0, 0});
-
-    if (functionKind == FunctionKind::SCRIPT) {
-        defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
-                     &Natives::print);
-        defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
-                     &Natives::put);
-        defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}),
-                     &Natives::dis);
-    }
 }
 
-FunctionObject* Compiler::end() {
-    if (m_currentFunction->getType()->as<FunctionType>()->getReturnType()->isNothing()) {
-        emitByte(OpCode::NIL);
-        emitByte(OpCode::RETURN);
-    }
-    GC::setCompiler(nullptr);
-    return m_currentFunction;
+void Compiler::startProgram() {
+    start(
+            FunctionKind::SCRIPT,
+            std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}),
+            ""
+    );
+
+    defineNative("print", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true),
+                 &Natives::print);
+    defineNative("put", std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true),
+                 &Natives::put);
+    defineNative("dis", std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true),
+                 &Natives::dis);
+}
+
+void Compiler::startFunction(FunctionStmt& function) {
+    start(FunctionKind::FUNCTION, function.type, function.name.lexeme);
 }
 
 void Compiler::compile(std::vector<std::unique_ptr<Stmt>> ast) {
@@ -54,13 +91,29 @@ void Compiler::compile(Stmt& stmt) {
     try {
         stmt.accept(this);
     } catch (CompileError& error) {
-        Enact::reportErrorAt(error.getToken(), error.getMessage());
+        m_context.reportErrorAt(error.getToken(), error.getMessage());
         m_hadError = true;
     }
 }
 
 void Compiler::compile(Expr& expr) {
     expr.accept(this);
+}
+
+void Compiler::endProgram() {
+    emitByte(OpCode::NIL);
+    emitByte(OpCode::RETURN);
+}
+
+void Compiler::endPart() {
+    emitByte(OpCode::PAUSE);
+}
+
+void Compiler::endFunction() {
+    if (m_currentFunction->getType()->as<FunctionType>()->getReturnType()->isNothing()) {
+        emitByte(OpCode::NIL);
+        emitByte(OpCode::RETURN);
+    }
 }
 
 void Compiler::visitBlockStmt(BlockStmt &stmt) {
@@ -129,17 +182,15 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
     addLocal(stmt.name);
     m_locals.back().initialized = true;
 
-    Compiler compiler{this};
-    compiler.init(FunctionKind::FUNCTION, stmt.type, stmt.name.lexeme);
+    emitFunction(stmt);
+}
 
-    for (const Param& param : stmt.params) {
-        compiler.addLocal(param.name);
-        compiler.m_locals.back().initialized = true;
-    }
+void Compiler::emitFunction(FunctionStmt& stmt) {
+    // Compile the function value
+    Compiler& compiler = m_context.pushCompiler();
+    FunctionObject* function = compiler.compileFunction(stmt);
 
-    compiler.compile(std::move(stmt.body));
-    FunctionObject* function = compiler.end();
-
+    // Push its closure to the stack at runtime
     uint32_t constantIndex = currentChunk().addConstant(Value{function});
     if (constantIndex < UINT8_MAX) {
         emitByte(OpCode::CLOSURE);
@@ -158,6 +209,8 @@ void Compiler::visitFunctionStmt(FunctionStmt &stmt) {
             emitLong(compiler.m_upvalues[i].index);
         }
     }
+
+    m_context.popCompiler();
 }
 
 void Compiler::visitGivenStmt(GivenStmt &stmt) {
@@ -240,7 +293,90 @@ void Compiler::visitReturnStmt(ReturnStmt &stmt) {
 }
 
 void Compiler::visitStructStmt(StructStmt &stmt) {
-    throw errorAt(stmt.name, "Not implemented.");
+    addLocal(stmt.name);
+    m_locals.back().initialized = true;
+
+    auto* type = m_context.gc.allocateObject<TypeObject>(stmt.constructorType);
+    uint32_t typeConstant = currentChunk().addConstant(Value{type});
+
+    if (typeConstant <= UINT8_MAX) {
+        emitByte(OpCode::STRUCT);
+        emitByte(typeConstant);
+    } else {
+        emitByte(OpCode::STRUCT_LONG);
+        emitLong(typeConstant);
+    }
+
+    for (auto& method : stmt.methods) {
+        emitMethod(*method);
+    }
+
+    for (auto& assoc : stmt.assocFunctions) {
+        emitAssoc(*assoc);
+    }
+}
+
+void Compiler::emitMethod(FunctionStmt& stmt) {
+    // Compile the function value
+    Compiler& compiler = m_context.pushCompiler();
+    compiler.startFunction(stmt);
+    for (const Param& param : stmt.params) {
+        compiler.addLocal(param.name);
+        compiler.m_locals.back().initialized = true;
+    }
+    compiler.addLocal(Token{TokenType::IDENTIFIER, "self", 0, 0});
+    compiler.m_locals.back().initialized = true;
+
+    compiler.compile(std::move(stmt.body));
+    compiler.endFunction();
+
+    FunctionObject* function = compiler.m_currentFunction;
+
+    // Push its closure to the stack at runtime
+    uint32_t constantIndex = currentChunk().addConstant(Value{function});
+    if (constantIndex < UINT8_MAX) {
+        emitByte(constantIndex);
+    } else {
+        emitLong(constantIndex);
+    }
+
+    for (int i = 0; i < function->getUpvalueCount(); i++) {
+        emitByte(compiler.m_upvalues[i].isLocal ? 1 : 0);
+
+        if (i < UINT8_MAX) {
+            emitByte(static_cast<uint8_t>(compiler.m_upvalues[i].index));
+        } else {
+            emitLong(compiler.m_upvalues[i].index);
+        }
+    }
+
+    m_context.popCompiler();
+}
+
+void Compiler::emitAssoc(FunctionStmt& stmt) {
+    // Compile the function value
+    Compiler& compiler = m_context.pushCompiler();
+    FunctionObject* function = compiler.compileFunction(stmt);
+
+    // Push its closure to the stack at runtime
+    uint32_t constantIndex = currentChunk().addConstant(Value{function});
+    if (constantIndex < UINT8_MAX) {
+        emitByte(constantIndex);
+    } else {
+        emitLong(constantIndex);
+    }
+
+    for (int i = 0; i < function->getUpvalueCount(); i++) {
+        emitByte(compiler.m_upvalues[i].isLocal ? 1 : 0);
+
+        if (i < UINT8_MAX) {
+            emitByte(static_cast<uint8_t>(compiler.m_upvalues[i].index));
+        } else {
+            emitLong(compiler.m_upvalues[i].index);
+        }
+    }
+
+    m_context.popCompiler();
 }
 
 void Compiler::visitTraitStmt(TraitStmt &stmt) {
@@ -306,7 +442,7 @@ void Compiler::visitArrayExpr(ArrayExpr &expr) {
 
     uint32_t length = expr.value.size();
 
-    auto* type = GC::allocateObject<TypeObject>(expr.getType());
+    auto* type = m_context.gc.allocateObject<TypeObject>(expr.getType());
     uint32_t typeConstant = currentChunk().addConstant(Value{type});
 
     if (length <= UINT8_MAX && typeConstant <= UINT8_MAX) {
@@ -396,21 +532,33 @@ void Compiler::visitBooleanExpr(BooleanExpr &expr) {
 void Compiler::visitCallExpr(CallExpr &expr) {
     compile(*expr.callee);
 
-    bool needRuntimeCheck = expr.callee->getType()->isDynamic();
+    OpCode callOp;
 
-    for (int i = 0; i < expr.arguments.size(); ++i) {
-        compile(*expr.arguments[i]);
-        if (expr.arguments[i]->getType()->isDynamic()) {
-            needRuntimeCheck = true;
+    Type calleeType = expr.callee->getType();
+
+    if (calleeType->isFunction()) {
+        if (calleeType->as<FunctionType>()->isMethod()) {
+            callOp = OpCode::CALL_BOUND_METHOD;
+        } else if (calleeType->as<FunctionType>()->isNative()) {
+            callOp = OpCode::CALL_NATIVE;
+        } else {
+            callOp = OpCode::CALL_FUNCTION;
+        }
+    } else if (expr.callee->getType()->isConstructor()) {
+        callOp = OpCode::CALL_CONSTRUCTOR;
+    } else {
+        callOp = OpCode::CALL_DYNAMIC;
+    }
+
+    for (const auto& argument : expr.arguments) {
+        compile(*argument);
+
+        if (argument->getType()->isDynamic()) {
+            callOp = OpCode::CALL_DYNAMIC;
         }
     }
 
-    if (needRuntimeCheck) {
-        emitByte(OpCode::CHECK_CALLABLE);
-        emitByte(expr.arguments.size());
-    }
-
-    emitByte(OpCode::CALL);
+    emitByte(callOp);
     emitByte(static_cast<uint8_t>(expr.arguments.size()));
 }
 
@@ -419,7 +567,53 @@ void Compiler::visitFloatExpr(FloatExpr &expr) {
 }
 
 void Compiler::visitGetExpr(GetExpr &expr) {
-    throw errorAt(expr.oper, "Not implemented.");
+    compile(*expr.object);
+    Type objectType = expr.object->getType();
+
+    OpCode byteOp;
+    OpCode longOp;
+    uint32_t index;
+
+    if (objectType->isStruct()) {
+        const auto* structType = objectType->as<StructType>();
+
+        std::optional<size_t> maybeIndex;
+        if ((maybeIndex = structType->findField(expr.name.lexeme))) {
+            byteOp = OpCode::GET_FIELD;
+            longOp = OpCode::GET_FIELD_LONG;
+        } else if ((maybeIndex = structType->findMethod(expr.name.lexeme))) {
+            byteOp = OpCode::GET_METHOD;
+            longOp = OpCode::GET_METHOD_LONG;
+        } else {
+            ENACT_ABORT("Unreachable!");
+        }
+
+        index = *maybeIndex;
+    } else if (objectType->isConstructor()) {
+        const auto* constructorType = objectType->as<ConstructorType>();
+        index = *constructorType->findAssocProperty(expr.name.lexeme);
+
+        byteOp = OpCode::GET_ASSOC;
+        longOp = OpCode::GET_ASSOC_LONG;
+    } else if (objectType->isTrait()) {
+        throw errorAt(expr.oper, "Not implemented!");
+    } else if (objectType->isDynamic()) {
+        byteOp = OpCode::GET_PROPERTY_DYNAMIC;
+        longOp = OpCode::GET_PROPERTY_DYNAMIC_LONG;
+
+        auto* name = m_context.gc.allocateObject<StringObject>(expr.name.lexeme);
+        index = currentChunk().addConstant(Value{name});
+    } else {
+        throw errorAt(expr.oper, "Only structs and traits have properties.");
+    }
+
+    if (index <= UINT8_MAX) {
+        emitByte(byteOp);
+        emitByte(static_cast<uint8_t>(index));
+    } else {
+        emitByte(longOp);
+        emitLong(index);
+    }
 }
 
 void Compiler::visitIntegerExpr(IntegerExpr &expr) {
@@ -449,8 +643,46 @@ void Compiler::visitNilExpr(NilExpr &expr) {
     emitByte(OpCode::NIL);
 }
 
+void Compiler::visitSetExpr(SetExpr& expr) {
+    compile(*expr.value);
+
+    compile(*expr.target->object);
+    auto objectType = expr.target->object->getType();
+
+    OpCode byteOp;
+    OpCode longOp;
+    uint32_t index;
+
+    if (objectType->isStruct()) {
+        const auto* structType = objectType->as<StructType>();
+
+        byteOp = OpCode::SET_FIELD;
+        longOp = OpCode::SET_FIELD_LONG;
+        index = *structType->findField(expr.target->name.lexeme);
+    } else if (objectType->isTrait()) {
+        throw errorAt(expr.oper, "Not implemented!");
+    } else if (objectType->isDynamic()) {
+        byteOp = OpCode::SET_PROPERTY_DYNAMIC;
+        longOp = OpCode::SET_PROPERTY_DYNAMIC_LONG;
+
+        auto* name = m_context.gc.allocateObject<StringObject>(expr.target->name.lexeme);
+        index = currentChunk().addConstant(Value{name});
+    } else {
+        // This should be unreachable.
+        throw errorAt(expr.oper, "Only structs and traits have properties.");
+    }
+
+    if (index <= UINT8_MAX) {
+        emitByte(byteOp);
+        emitByte(static_cast<uint8_t>(index));
+    } else {
+        emitByte(longOp);
+        emitLong(index);
+    }
+}
+
 void Compiler::visitStringExpr(StringExpr &expr) {
-    Object* string = GC::allocateObject<StringObject>(expr.value);
+    Object* string = m_context.gc.allocateObject<StringObject>(expr.value);
     emitConstant(Value{string});
 }
 
@@ -610,7 +842,7 @@ uint32_t Compiler::resolveUpvalue(const Token &name) {
 }
 
 void Compiler::defineNative(std::string name, Type functionType, NativeFn function) {
-    Object* native = GC::allocateObject<NativeObject>(functionType, function);
+    Object* native = m_context.gc.allocateObject<NativeObject>(functionType, function);
     emitConstant(Value{native});
 
     addLocal(Token{TokenType::IDENTIFIER, name, 0, 0});

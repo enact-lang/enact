@@ -17,7 +17,6 @@ enum class OpCode : uint8_t {
     CHECK_NUMERIC,
     CHECK_BOOL,
     CHECK_REFERENCE,
-    CHECK_CALLABLE,
     CHECK_INDEXABLE,
     CHECK_ALLOTABLE,
     CHECK_TYPE,
@@ -56,13 +55,35 @@ enum class OpCode : uint8_t {
     SET_UPVALUE,
     SET_UPVALUE_LONG,
 
+    GET_FIELD,
+    GET_FIELD_LONG,
+
+    SET_FIELD,
+    SET_FIELD_LONG,
+
+    GET_METHOD,
+    GET_METHOD_LONG,
+
+    GET_ASSOC,
+    GET_ASSOC_LONG,
+
+    GET_PROPERTY_DYNAMIC,
+    GET_PROPERTY_DYNAMIC_LONG,
+
+    SET_PROPERTY_DYNAMIC,
+    SET_PROPERTY_DYNAMIC_LONG,
+
     JUMP,
     JUMP_IF_TRUE,
     JUMP_IF_FALSE,
   
     LOOP,
 
-    CALL,
+    CALL_FUNCTION,
+    CALL_BOUND_METHOD,
+    CALL_CONSTRUCTOR,
+    CALL_NATIVE,
+    CALL_DYNAMIC,
 
     CLOSURE,
     CLOSURE_LONG,
@@ -70,11 +91,18 @@ enum class OpCode : uint8_t {
     CLOSE_UPVALUE,
   
     RETURN,
+
+    STRUCT,
+    STRUCT_LONG,
+
+    PAUSE,
 };
 
 std::string opCodeToString(OpCode code);
 
 class Chunk {
+    static constexpr size_t MAX_INSTRUCTION_NAME_LENGTH = 26;
+
     std::vector<uint8_t> m_code;
     std::vector<Value> m_constants;
 
@@ -84,8 +112,13 @@ class Chunk {
     std::pair<std::string, size_t> disassembleByte(size_t index) const;
     std::pair<std::string, size_t> disassembleShort(size_t index) const;
     std::pair<std::string, size_t> disassembleLong(size_t index) const;
-    std::pair<std::string, size_t> disassembleConstant(size_t index) const;
-    std::pair<std::string, size_t> disassembleLongConstant(size_t index) const;
+    std::pair<std::string, size_t> disassembleConstant(size_t index, size_t argCount = 1) const;
+    std::pair<std::string, size_t> disassembleLongConstant(size_t index, size_t argCount = 1) const;
+
+    std::pair<std::string, size_t> disassembleClosure(size_t index, bool isLong) const;
+    std::pair<std::string, size_t> disassembleStruct(size_t index, bool isLong) const;
+
+    std::pair<std::string, size_t> disassembleClosureArgs(size_t index, bool isLong) const;
 
 public:
     Chunk() = default;

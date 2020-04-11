@@ -8,7 +8,7 @@ var float1 = 123.456
 var float2 float = 123.456
 
 var string1 = "enact"
-var string2 string = "enact"
+var string2 String = "enact"
 
 var bool1 = true
 var bool2 bool = true

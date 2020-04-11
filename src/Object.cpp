@@ -63,7 +63,11 @@ Type StringObject::getType() const {
 }
 
 StringObject* StringObject::clone() const {
-    return GC::allocateObject<StringObject>(*this);
+    return new StringObject(*this);
+}
+
+size_t StringObject::size() const {
+    return sizeof(StringObject);
 }
 
 ArrayObject::ArrayObject(Type type) : Object{ObjectType::ARRAY}, m_type{type}, m_vector{} {
@@ -115,7 +119,11 @@ Type ArrayObject::getType() const {
 }
 
 ArrayObject* ArrayObject::clone() const {
-    return GC::allocateObject<ArrayObject>(*this);
+    return new ArrayObject(*this);
+}
+
+size_t ArrayObject::size() const {
+    return sizeof(ArrayObject);
 }
 
 UpvalueObject::UpvalueObject(uint32_t location) : Object{ObjectType::UPVALUE}, m_location{location} {
@@ -155,7 +163,11 @@ Type UpvalueObject::getType() const {
 }
 
 UpvalueObject* UpvalueObject::clone() const {
-    return GC::allocateObject<UpvalueObject>(*this);
+    return new UpvalueObject(*this);
+}
+
+size_t UpvalueObject::size() const {
+    return sizeof(UpvalueObject);
 }
 
 ClosureObject::ClosureObject(FunctionObject *function) : Object{ObjectType::CLOSURE}, m_function{function}, m_upvalues{function->getUpvalueCount()} {
@@ -178,7 +190,111 @@ Type ClosureObject::getType() const {
 }
 
 ClosureObject* ClosureObject::clone() const {
-    return GC::allocateObject<ClosureObject>(*this);
+    return new ClosureObject(*this);
+}
+
+size_t ClosureObject::size() const {
+    return sizeof(ClosureObject);
+}
+
+StructObject::StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<ClosureObject*> methods, std::vector<Value> assocs) :
+        Object{ObjectType::STRUCT},
+        m_constructorType{std::move(constructorType)},
+        m_methods{std::move(methods)},
+        m_assocs{std::move(assocs)} {
+}
+
+const std::string& StructObject::getName() const {
+    return m_constructorType->getStructType()->getName();
+}
+
+std::vector<ClosureObject*>& StructObject::methods() {
+    return m_methods;
+}
+
+ClosureObject* StructObject::method(uint32_t index) {
+    return m_methods[index];
+}
+
+std::optional<ClosureObject*> StructObject::methodNamed(const std::string& name) {
+    if (auto index = m_constructorType->getStructType()->findMethod(name)) {
+        return m_methods[*index];
+    }
+    return {};
+}
+
+std::vector<Value>& StructObject::assocs() {
+    return m_assocs;
+}
+
+Value& StructObject::assoc(uint32_t index) {
+    return m_assocs[index];
+}
+
+std::optional<std::reference_wrapper<Value>> StructObject::assocNamed(const std::string &name) {
+    if (auto index = m_constructorType->findAssocProperty(name)) {
+        return m_assocs[*index];
+    }
+    return {};
+}
+
+std::string StructObject::toString() const {
+    return "<" + m_constructorType->toString() + ">";
+}
+
+Type StructObject::getType() const {
+    return m_constructorType;
+}
+
+StructObject* StructObject::clone() const {
+    return new StructObject(*this);
+}
+
+size_t StructObject::size() const {
+    return sizeof(StructObject);
+}
+
+InstanceObject::InstanceObject(StructObject *struct_, std::vector<Value> fields) :
+        Object{ObjectType::INSTANCE},
+        m_struct{struct_},
+        m_fields{std::move(fields)} {
+}
+
+StructObject* InstanceObject::getStruct() {
+    return m_struct;
+}
+
+std::vector<Value>& InstanceObject::fields() {
+    return m_fields;
+}
+
+Value &InstanceObject::field(uint32_t index) {
+    return m_fields[index];
+}
+
+std::optional<std::reference_wrapper<Value>> InstanceObject::fieldNamed(const std::string &name) {
+    auto structType = getType()->as<StructType>();
+    if (std::optional<size_t> index = structType->findField(name)) {
+        return m_fields[*index];
+    }
+
+    return {};
+}
+
+std::string InstanceObject::toString() const {
+    return "<" + getType()->toString() + " instance>";
+}
+
+Type InstanceObject::getType() const {
+    return m_struct->getType()->as<ConstructorType>()->getStructType();
+}
+
+StructObject *InstanceObject::clone() const {
+    return nullptr;
+}
+
+size_t InstanceObject::size() const {
+    return 0;
 }
 
 FunctionObject::FunctionObject(Type type, Chunk chunk, std::string name) :
@@ -213,7 +329,11 @@ Type FunctionObject::getType() const {
 }
 
 FunctionObject* FunctionObject::clone() const {
-    return GC::allocateObject<FunctionObject>(*this);
+    return new FunctionObject(*this);
+}
+
+size_t FunctionObject::size() const {
+    return sizeof(FunctionObject);
 }
 
 NativeObject::NativeObject(Type type, NativeFn function) : Object{ObjectType::NATIVE}, m_type{type}, m_function{function} {
@@ -234,7 +354,11 @@ Type NativeObject::getType() const {
 }
 
 NativeObject* NativeObject::clone() const {
-    return GC::allocateObject<NativeObject>(*this);
+    return new NativeObject(*this);
+}
+
+size_t NativeObject::size() const {
+    return sizeof(NativeObject);
 }
 
 TypeObject::TypeObject(Type containedType) : Object{ObjectType::TYPE}, m_containedType{containedType} {
@@ -253,5 +377,39 @@ Type TypeObject::getType() const {
 }
 
 TypeObject* TypeObject::clone() const {
-    return GC::allocateObject<TypeObject>(*this);
+    return new TypeObject(*this);
+}
+
+size_t TypeObject::size() const {
+    return sizeof(TypeObject);
+}
+
+BoundMethodObject::BoundMethodObject(Value receiver, ClosureObject* method) :
+        Object{ObjectType::BOUND_METHOD},
+        m_receiver{receiver},
+        m_method{method} {
+}
+
+Value BoundMethodObject::receiver() {
+    return m_receiver;
+}
+
+ClosureObject* BoundMethodObject::method() {
+    return m_method;
+}
+
+std::string BoundMethodObject::toString() const {
+    return m_method->toString();
+}
+
+Type BoundMethodObject::getType() const {
+    return m_method->getType();
+}
+
+BoundMethodObject* BoundMethodObject::clone() const {
+    return new BoundMethodObject(*this);
+}
+
+size_t BoundMethodObject::size() const {
+    return sizeof(BoundMethodObject);
 }

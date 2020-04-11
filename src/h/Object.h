@@ -2,6 +2,7 @@
 #define ENACT_OBJECT_H
 
 #include <string>
+#include "Chunk.h"
 #include "Type.h"
 #include "Value.h"
 
@@ -10,6 +11,9 @@ enum class ObjectType {
     ARRAY,
     UPVALUE,
     CLOSURE,
+    STRUCT,
+    INSTANCE,
+    BOUND_METHOD,
     FUNCTION,
     NATIVE,
     TYPE
@@ -19,6 +23,9 @@ class StringObject;
 class ArrayObject;
 class UpvalueObject;
 class ClosureObject;
+class StructObject;
+class InstanceObject;
+class BoundMethodObject;
 class FunctionObject;
 class NativeObject;
 class TypeObject;
@@ -53,6 +60,7 @@ public:
     virtual std::string toString() const = 0;
     virtual Type getType() const = 0;
     virtual Object* clone() const = 0;
+    virtual size_t size() const = 0;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Object& object);
@@ -70,6 +78,12 @@ inline bool Object::is() const {
         return m_type == ObjectType::UPVALUE;
     } else if (std::is_same_v<T, ClosureObject>) {
         return m_type == ObjectType::CLOSURE;
+    } else if (std::is_same_v<T, StructObject>) {
+        return m_type == ObjectType::STRUCT;
+    } else if (std::is_same_v<T, InstanceObject>) {
+        return m_type == ObjectType::INSTANCE;
+    } else if (std::is_same_v<T, BoundMethodObject>) {
+        return m_type == ObjectType::BOUND_METHOD;
     } else if (std::is_same_v<T, FunctionObject>) {
         return m_type == ObjectType::FUNCTION;
     } else if (std::is_same_v<T, NativeObject>) {
@@ -109,9 +123,8 @@ public:
     std::string toString() const override;
     Type getType() const override;
     StringObject* clone() const override;
+    size_t size() const override;
 };
-
-class Value;
 
 class ArrayObject : public Object {
     std::vector<Value> m_vector;
@@ -136,6 +149,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     ArrayObject* clone() const override;
+    size_t size() const override;
 };
 
 class UpvalueObject : public Object {
@@ -160,6 +174,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     UpvalueObject* clone() const override;
+    size_t size() const override;
 };
 
 class ClosureObject : public Object {
@@ -176,9 +191,71 @@ public:
     std::string toString() const override;
     Type getType() const override;
     ClosureObject* clone() const override;
+    size_t size() const override;
 };
 
-#include "Chunk.h"
+class StructObject : public Object {
+    std::shared_ptr<const ConstructorType> m_constructorType;
+    std::vector<ClosureObject*> m_methods;
+    std::vector<Value> m_assocs;
+
+public:
+    StructObject(std::shared_ptr<const ConstructorType> constructorType, std::vector<ClosureObject*> methods, std::vector<Value> assocs);
+    ~StructObject() override = default;
+
+    const std::string& getName() const;
+
+    std::vector<ClosureObject*>& methods();
+    ClosureObject* method(uint32_t index);
+    std::optional<ClosureObject*> methodNamed(const std::string& name);
+
+
+    std::vector<Value>& assocs();
+    Value& assoc(uint32_t index);
+    std::optional<std::reference_wrapper<Value>> assocNamed(const std::string& name);
+
+    std::string toString() const override;
+    Type getType() const override;
+    StructObject* clone() const override;
+    size_t size() const override;
+};
+
+class InstanceObject : public Object {
+    StructObject* m_struct;
+    std::vector<Value> m_fields;
+
+public:
+    InstanceObject(StructObject *struct_, std::vector<Value> fields);
+    ~InstanceObject() override = default;
+
+    StructObject* getStruct();
+
+    std::vector<Value>& fields();
+    Value& field(uint32_t index);
+    std::optional<std::reference_wrapper<Value>> fieldNamed(const std::string& name);
+
+    std::string toString() const override;
+    Type getType() const override;
+    StructObject* clone() const override;
+    size_t size() const override;
+};
+
+class BoundMethodObject : public Object {
+    Value m_receiver;
+    ClosureObject* m_method;
+
+public:
+    BoundMethodObject(Value receiver, ClosureObject* method);
+    ~BoundMethodObject() override = default;
+
+    Value receiver();
+    ClosureObject* method();
+
+    std::string toString() const override;
+    Type getType() const override;
+    BoundMethodObject* clone() const override;
+    size_t size() const override;
+};
 
 class FunctionObject : public Object {
     Type m_type{nullptr};
@@ -197,6 +274,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     FunctionObject* clone() const override;
+    size_t size() const override;
 };
 
 typedef Value (*NativeFn)(uint8_t argCount, Value* args);
@@ -214,6 +292,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     NativeObject* clone() const override;
+    size_t size() const override;
 };
 
 class TypeObject : public Object {
@@ -228,6 +307,7 @@ public:
     std::string toString() const override;
     Type getType() const override;
     TypeObject* clone() const override;
+    size_t size() const override;
 };
 
 #endif //ENACT_OBJECT_H

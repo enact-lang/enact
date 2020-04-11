@@ -1,0 +1,30 @@
+struct Person:
+    name String
+    age int
+
+    assoc new(name String, age int) Person:
+        return Person(name, age)
+    end
+
+    fun printName():
+        put("Hello, my name is ")
+        put(self.name)
+        print("!")
+    end
+
+    fun printAge():
+        put("I am ")
+        put(self.age)
+        print(" years old")
+    end
+end
+
+const jim = Person("Jim", 21)
+
+jim.printName()
+jim.printAge()
+
+const sam = Person.new("Sam", 99)
+
+sam.printName()
+sam.printAge()

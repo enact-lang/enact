@@ -111,3 +111,33 @@ const std::string& FunctionTypename::name() const {
 const Token& FunctionTypename::where() const {
     return m_returnTypename->where();
 }
+
+ConstructorTypename::ConstructorTypename(std::unique_ptr<const Typename> structTypename) :
+        m_structTypename{std::move(structTypename)},
+        m_name{} {
+    m_name = "struct " + m_structTypename->name();
+}
+
+ConstructorTypename::ConstructorTypename(const ConstructorTypename& typeName) :
+        ConstructorTypename{typeName.m_structTypename->clone()} {
+}
+
+std::unique_ptr<Typename> ConstructorTypename::clone() const {
+    return std::make_unique<ConstructorTypename>(m_structTypename->clone());
+}
+
+const Typename& ConstructorTypename::structTypename() const {
+    return *m_structTypename;
+}
+
+Typename::Kind ConstructorTypename::kind() const {
+    return Kind::CONSTRUCTOR;
+}
+
+const std::string& ConstructorTypename::name() const {
+    return m_name;
+}
+
+const Token& ConstructorTypename::where() const {
+    return m_structTypename->where();
+}

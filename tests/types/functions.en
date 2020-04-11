@@ -1,20 +1,20 @@
-fun test(x int, y float) string:
+fun test(x int, y float) String:
     return "test"
 end
 
 print(test(1, 2))
 
-fun test1(x fun (int, float) string) string:
+fun test1(x fun (int, float) String) String:
     return x(1, 2)
 end
 
 print(test1(test))
 
-fun test2(x fun (fun (int, float) string) string) string:
+fun test2(x fun (fun (int, float) String) String) String:
     return x(test)
 end
 
 print(test2(test1))
 
-var test3 fun(   int,float)    string = test
+var test3 fun(   int,float)    String = test
 print(test3(2, 3))

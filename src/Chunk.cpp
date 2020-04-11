@@ -106,7 +106,8 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::SET_ARRAY_INDEX:
         case OpCode::POP:
         case OpCode::CLOSE_UPVALUE:
-        case OpCode::RETURN: {
+        case OpCode::RETURN:
+        case OpCode::PAUSE: {
             std::string str;
             std::tie(str, index) = disassembleSimple(index);
             s << str;
@@ -115,12 +116,19 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
         // Byte instructions
         case OpCode::ARRAY:
-        case OpCode::CHECK_CALLABLE:
         case OpCode::GET_LOCAL:
         case OpCode::SET_LOCAL:
         case OpCode::GET_UPVALUE:
         case OpCode::SET_UPVALUE:
-        case OpCode::CALL: {
+        case OpCode::GET_FIELD:
+        case OpCode::SET_FIELD:
+        case OpCode::GET_METHOD:
+        case OpCode::GET_ASSOC:
+        case OpCode::CALL_FUNCTION:
+        case OpCode::CALL_BOUND_METHOD:
+        case OpCode::CALL_CONSTRUCTOR:
+        case OpCode::CALL_NATIVE:
+        case OpCode::CALL_DYNAMIC: {
             std::string str;
             std::tie(str, index) = disassembleByte(index);
             s << str;
@@ -143,7 +151,11 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
         case OpCode::GET_LOCAL_LONG:
         case OpCode::SET_LOCAL_LONG:
         case OpCode::GET_UPVALUE_LONG:
-        case OpCode::SET_UPVALUE_LONG: {
+        case OpCode::SET_UPVALUE_LONG:
+        case OpCode::GET_FIELD_LONG:
+        case OpCode::SET_FIELD_LONG:
+        case OpCode::GET_METHOD_LONG:
+        case OpCode::GET_ASSOC_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLong(index);
             s << str;
@@ -152,7 +164,9 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
         // Constant instructions
         case OpCode::CONSTANT:
-        case OpCode::CHECK_TYPE: {
+        case OpCode::CHECK_TYPE:
+        case OpCode::GET_PROPERTY_DYNAMIC:
+        case OpCode::SET_PROPERTY_DYNAMIC: {
             std::string str;
             std::tie(str, index) = disassembleConstant(index);
             s << str;
@@ -161,76 +175,42 @@ std::pair<std::string, size_t> Chunk::disassembleInstruction(size_t index) const
 
         // Long constant instructions
         case OpCode::CONSTANT_LONG:
-        case OpCode::CHECK_TYPE_LONG: {
+        case OpCode::CHECK_TYPE_LONG:
+        case OpCode::GET_PROPERTY_DYNAMIC_LONG:
+        case OpCode::SET_PROPERTY_DYNAMIC_LONG: {
             std::string str;
             std::tie(str, index) = disassembleLongConstant(index);
             s << str;
             break;
         }
 
+        // Struct instructions
+        case OpCode::STRUCT: {
+            std::string str;
+            std::tie(str, index) = disassembleStruct(index, false);
+            s << str;
+            break;
+        }
+
+        // Long struct instructions
+        case OpCode::STRUCT_LONG: {
+            std::string str;
+            std::tie(str, index) = disassembleStruct(index, true);
+            s << str;
+            break;
+        }
+
         // Closure instructions
         case OpCode::CLOSURE: {
-            std::ios_base::fmtflags f( s.flags() );
-
-            s << std::left << std::setw(16) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
-            s.flags(f);
-
-            size_t constant = m_code[++index];
-
-            s << " " << constant << " (";
-            s << m_constants[constant] << ")\n";
-
-            FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
-            for (int j = 0; j < function->getUpvalueCount(); j++) {
-                uint8_t isLocal = m_code[++index];
-                uint32_t i;
-                if (j < UINT8_MAX) {
-                    i = m_code[++index];
-                } else {
-                    i = m_code[index + 1] |
-                        (m_code[index + 2] << 8) |
-                        (m_code[index + 3] << 16);
-                    index += 3;
-                }
-                s << std::setfill('0') << std::setw(4) << index - 2;
-                s.flags(f);
-                s << "      |                  " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
-            }
-            ++index;
+            std::string str{};
+            std::tie(str, index) = disassembleClosure(index, false);
+            s << str;
             break;
         }
         case OpCode::CLOSURE_LONG: {
-            std::ios_base::fmtflags f( s.flags() );
-
-            s << std::left << std::setw(16) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
-            s.flags(f);
-
-            size_t constant =  m_code[index + 1] |
-                               (m_code[index + 2] << 8) |
-                               (m_code[index + 3] << 16);
-
-            index += 3;
-
-            s << " " << constant << " (";
-            s << m_constants[constant] << ")\n";
-
-            FunctionObject* function = m_constants[constant].asObject()->as<FunctionObject>();
-            for (int j = 0; j < function->getUpvalueCount(); j++) {
-                uint8_t isLocal = m_code[++index];
-                uint32_t i;
-                if (j < UINT8_MAX) {
-                    i = m_code[++index];
-                } else {
-                    i = m_code[index + 1] |
-                        (m_code[index + 2] << 8) |
-                        (m_code[index + 3] << 16);
-                    index += 3;
-                }
-                s << std::setfill('0') << std::setw(4) << index - 2;
-                s.flags(f);
-                s << "      |                     " << (isLocal ? "local" : "upvalue") << " " << index << "\n";
-            }
-            ++index;
+            std::string str{};
+            std::tie(str, index) = disassembleClosure(index, true);
+            s << str;
             break;
         }
     }
@@ -247,7 +227,7 @@ std::pair<std::string, size_t> Chunk::disassembleByte(size_t index) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     // Output the byte argument
@@ -261,7 +241,7 @@ std::pair<std::string, size_t> Chunk::disassembleShort(size_t index) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     // Output the long argument
@@ -275,7 +255,7 @@ std::pair<std::string, size_t> Chunk::disassembleLong(size_t index) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
     // Output the long argument
@@ -285,38 +265,147 @@ std::pair<std::string, size_t> Chunk::disassembleLong(size_t index) const {
     return {s.str(), ++index};
 }
 
-std::pair<std::string, size_t> Chunk::disassembleConstant(size_t index) const {
+std::pair<std::string, size_t> Chunk::disassembleConstant(size_t index, size_t argCount) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
-    size_t constant = m_code[++index];
+    for (size_t i = argCount; i <= argCount; ++i) {
+        size_t constant = m_code[++index];
 
-    s << " " << constant << " (";
-    s << m_constants[constant] << ")\n";
+        s << " " << constant << " (";
+        s << m_constants[constant] << ")\n";
+    }
 
     return {s.str(), ++index};
 }
 
-std::pair<std::string, size_t> Chunk::disassembleLongConstant(size_t index) const {
+std::pair<std::string, size_t> Chunk::disassembleLongConstant(size_t index, size_t argCount) const {
     std::stringstream s;
     std::ios_base::fmtflags f( s.flags() );
 
-    s << std::left << std::setw(16) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
     s.flags(f);
 
-    size_t constant =  m_code[index + 1] |
-                       (m_code[index + 2] << 8) |
-                       (m_code[index + 3] << 16);
+    for (size_t i = argCount; i <= argCount; ++i) {
+        size_t constant = m_code[index + 1] |
+                          (m_code[index + 2] << 8) |
+                          (m_code[index + 3] << 16);
 
-    index += 3;
+        index += 3;
+
+        s << " " << constant << " (";
+        s << m_constants[constant] << ")\n";
+    }
+
+    return {s.str(), ++index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleClosure(size_t index, bool isLong) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << std::setfill(' ') << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s.flags(f);
+
+    std::string tmp;
+    std::tie(tmp, index) = disassembleClosureArgs(index, isLong);
+    s << tmp;
+
+    return {s.str(), index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleStruct(size_t index, bool isLong) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    s << std::left << std::setw(MAX_INSTRUCTION_NAME_LENGTH) << opCodeToString(static_cast<OpCode>(m_code[index]));
+    s.flags(f);
+
+    size_t constant;
+    if (isLong) {
+        constant = m_code[index + 1] |
+                    (m_code[index + 2] << 8) |
+                    (m_code[index + 3] << 16);
+        index += 3;
+    } else {
+        constant = m_code[++index];
+    }
 
     s << " " << constant << " (";
     s << m_constants[constant] << ")\n";
 
+    auto type = std::static_pointer_cast<const ConstructorType>(
+            m_constants[constant]
+                    .asObject()
+                    ->as<TypeObject>()
+                    ->getContainedType()
+    );
+
+    uint32_t methodCount = type
+            ->getStructType()
+            ->getMethods()
+            .length();
+
+    for (uint32_t i = 0; i < methodCount; ++i) {
+        std::string methodName = type->getStructType()->getMethods().keys()[i];
+        s << "          | method '" << methodName << "'";
+
+        std::string tmp;
+        std::tie(tmp, index) = disassembleClosureArgs(index, isLong);
+        s << tmp;
+    }
+
+    uint32_t assocCount = type
+            ->getAssocProperties()
+            .length();
+
+    for (uint32_t i = 0; i < assocCount; ++i) {
+        std::string assocName = type->getAssocProperties().keys()[i];
+        s << "          | assoc '" << assocName << "'\n";
+        disassembleClosureArgs(index, isLong);
+    }
+
     return {s.str(), ++index};
+}
+
+std::pair<std::string, size_t> Chunk::disassembleClosureArgs(size_t index, bool isLong) const {
+    std::stringstream s;
+    std::ios_base::fmtflags f( s.flags() );
+
+    size_t constant;
+    if (isLong) {
+        constant = m_code[index + 1] |
+            (m_code[index + 2] << 8) |
+            (m_code[index + 3] << 16);
+        index += 3;
+    } else {
+        constant = m_code[++index];
+    }
+
+    s << " " << constant << " (";
+    s << m_constants[constant] << ")\n";
+
+    auto* function = m_constants[constant].asObject()->as<FunctionObject>();
+    for (int j = 0; j < function->getUpvalueCount(); j++) {
+        uint8_t isLocal = m_code[++index];
+        uint32_t i;
+        if (j < UINT8_MAX) {
+            i = m_code[++index];
+        } else {
+            i = m_code[index + 1] |
+                (m_code[index + 2] << 8) |
+                (m_code[index + 3] << 16);
+            index += 3;
+        }
+        s << std::setfill('0') << std::setw(4) << index - 2;
+        s.flags(f);
+        s << "       | " << (isLocal ? "local" : "upvalue") << " " << i << "\n";
+    }
+
+    return {s.str(), index};
 }
 
 line_t Chunk::getLine(size_t index) const {
@@ -365,7 +454,6 @@ std::string opCodeToString(OpCode code) {
         case OpCode::CHECK_NUMERIC: return "CHECK_NUMERIC";
         case OpCode::CHECK_BOOL: return "CHECK_BOOL";
         case OpCode::CHECK_REFERENCE: return "CHECK_REFERENCE";
-        case OpCode::CHECK_CALLABLE: return "CHECK_CALLABLE";
         case OpCode::CHECK_INDEXABLE: return "CHECK_INDEXABLE";
         case OpCode::CHECK_ALLOTABLE: return "CHECK_ALLOTABLE";
         case OpCode::CHECK_TYPE: return "CHECK_TYPE";
@@ -393,15 +481,34 @@ std::string opCodeToString(OpCode code) {
         case OpCode::GET_UPVALUE_LONG: return "GET_UPVALUE_LONG";
         case OpCode::SET_UPVALUE: return "SET_UPVALUE";
         case OpCode::SET_UPVALUE_LONG: return "SET_UPVALUE_LONG";
+        case OpCode::GET_FIELD: return "GET_FIELD";
+        case OpCode::GET_FIELD_LONG: return "GET_FIELD_LONG";
+        case OpCode::SET_FIELD: return "SET_FIELD";
+        case OpCode::SET_FIELD_LONG: return "SET_FIELD_LONG";
+        case OpCode::GET_METHOD: return "GET_METHOD";
+        case OpCode::GET_METHOD_LONG: return "GET_METHOD_LONG";
+        case OpCode::GET_ASSOC: return "GET_ASSOC";
+        case OpCode::GET_ASSOC_LONG: return "GET_ASSOC_LONG";
+        case OpCode::GET_PROPERTY_DYNAMIC: return "GET_PROPERTY_DYNAMIC";
+        case OpCode::GET_PROPERTY_DYNAMIC_LONG: return "GET_PROPERTY_DYNAMIC_LONG";
+        case OpCode::SET_PROPERTY_DYNAMIC: return "SET_PROPERTY_DYNAMIC";
+        case OpCode::SET_PROPERTY_DYNAMIC_LONG: return "SET_PROPERTY_DYNAMIC_LONG";
         case OpCode::JUMP: return "JUMP";
         case OpCode::JUMP_IF_TRUE: return "JUMP_IF_TRUE";
         case OpCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
         case OpCode::LOOP: return "LOOP";
-        case OpCode::CALL: return "CALL";
+        case OpCode::CALL_FUNCTION: return "CALL_FUNCTION";
+        case OpCode::CALL_BOUND_METHOD: return "CALL_BOUND_METHOD";
+        case OpCode::CALL_CONSTRUCTOR: return "CALL_CONSTRUCTOR";
+        case OpCode::CALL_NATIVE: return "CALL_NATIVE";
+        case OpCode::CALL_DYNAMIC: return "CALL_DYNAMIC";
         case OpCode::CLOSURE: return "CLOSURE";
         case OpCode::CLOSURE_LONG: return "CLOSURE_LONG";
         case OpCode::CLOSE_UPVALUE: return "CLOSE_UPVALUE";
         case OpCode::RETURN: return "RETURN";
+        case OpCode::STRUCT: return "STRUCT";
+        case OpCode::STRUCT_LONG: return "STRUCT_LONG";
+        case OpCode::PAUSE: return "PAUSE";
         // Unreachable.
         default: return "";
     }

@@ -8,15 +8,10 @@
 
 #include <optional>
 
-constexpr size_t FRAMES_MAX = 64;
+class Context;
+enum class InterpretResult;
 
-enum class InterpretResult {
-    PARSE_ERROR,
-    ANALYSIS_ERROR,
-    COMPILE_ERROR,
-    RUNTIME_ERROR,
-    OK,
-};
+constexpr size_t FRAMES_MAX = 64;
 
 struct CallFrame {
     ClosureObject* closure;
@@ -27,27 +22,57 @@ struct CallFrame {
 class VM {
     friend class GC;
 
-    std::vector<Value> m_stack;
+    Context& m_context;
+
+    std::vector<Value> m_stack{};
 
     std::array<CallFrame, FRAMES_MAX> m_frames{CallFrame{nullptr, nullptr, 0}};
     size_t m_frameCount = 0;
+    CallFrame* m_frame = nullptr;
 
     UpvalueObject* m_openUpvalues = nullptr;
+
+    size_t m_pc = 0;
+
+    void executionLoop(FunctionObject* function);
+
 public:
-    VM();
+    explicit VM(Context& context);
 
     InterpretResult run(FunctionObject* function);
+
+    inline void callFunction(ClosureObject* closure, uint8_t argCount);
+    inline void callConstructor(StructObject* struct_, uint8_t argCount);
+    inline void callNative(NativeObject* native, uint8_t argCount);
+
+    inline void checkFunctionCallable(const FunctionType* type, uint8_t argCount);
+    inline void checkConstructorCallable(const ConstructorType* type, uint8_t argCount);
+
+    inline void encloseFunction(FunctionObject* function);
+
+    inline void makeConstructor(std::shared_ptr<const ConstructorType> type);
+
+    inline uint8_t readByte();
+    inline uint16_t readShort();
+    inline uint32_t readLong();
+
+    inline Value readConstant();
+    inline Value readConstantLong();
 
     void push(Value value);
     Value pop();
     Value peek(size_t depth);
 
-    void call(ClosureObject* closure);
-
     UpvalueObject* captureUpvalue(uint32_t location);
     void closeUpvalues(uint32_t last);
 
-    void runtimeError(const std::string& msg);
+private:
+    class RuntimeError : public std::runtime_error {
+    public:
+        RuntimeError() : std::runtime_error{"Fatal (internal):\n    VM::RuntimeError was left uncaught.\nThis is a COMPILER BUG, please report it at https://github.com/enact-lang/enact."} {}
+    };
+
+    RuntimeError runtimeError(const std::string& msg);
 };
 
 #endif //ENACT_VM_H

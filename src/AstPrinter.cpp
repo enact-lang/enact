@@ -230,6 +230,10 @@ std::string AstPrinter::visitNilExpr(NilExpr& expr) {
     return "nil";
 }
 
+std::string AstPrinter::visitSetExpr(SetExpr &expr) {
+    return "(= " + evaluate(*expr.target) + " " + evaluate(*expr.value) + ")";
+}
+
 std::string AstPrinter::visitStringExpr(StringExpr& expr) {
     std::stringstream s;
     s << "\"" << expr.value << "\"";

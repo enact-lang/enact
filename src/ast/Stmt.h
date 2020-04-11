@@ -173,13 +173,15 @@ public:
     std::vector<Param> params;
     std::vector<std::unique_ptr<Stmt>> body;
     Type type;
+    bool isMut;
 
-    FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param>&& params, std::vector<std::unique_ptr<Stmt>> body, Type type) :
+    FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param>&& params, std::vector<std::unique_ptr<Stmt>> body, Type type, bool isMut) :
             name{name},
             returnTypename{std::move(returnTypename)},
             params{std::move(params)},
             body{std::move(body)},
-            type{type} {}
+            type{type},
+            isMut{isMut} {}
     ~FunctionStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {
@@ -259,13 +261,15 @@ public:
     std::vector<Field> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
+    std::shared_ptr<const ConstructorType> constructorType;
 
-    StructStmt(Token name, std::vector<Token> traits, std::vector<Field>&& fields, std::vector<std::unique_ptr<FunctionStmt>> methods, std::vector<std::unique_ptr<FunctionStmt>> assocFunctions) :
+    StructStmt(Token name, std::vector<Token> traits, std::vector<Field>&& fields, std::vector<std::unique_ptr<FunctionStmt>> methods, std::vector<std::unique_ptr<FunctionStmt>> assocFunctions, std::shared_ptr<const ConstructorType> constructorType) :
             name{name},
             traits{traits},
             fields{std::move(fields)},
             methods{std::move(methods)},
-            assocFunctions{std::move(assocFunctions)} {}
+            assocFunctions{std::move(assocFunctions)},
+            constructorType{constructorType} {}
     ~StructStmt() override = default;
 
     std::string accept(StmtVisitor<std::string> *visitor) override {

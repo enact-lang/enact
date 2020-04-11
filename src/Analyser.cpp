@@ -2,29 +2,37 @@
 #include <set>
 #include <sstream>
 #include "h/Analyser.h"
-#include "h/Enact.h"
+#include "h/Context.h"
 
-std::vector<std::unique_ptr<Stmt>> Analyser::analyse(std::vector<std::unique_ptr<Stmt>> program) {
+Analyser::Analyser(Context& context) : m_context{context} {
+}
+
+std::vector<std::unique_ptr<Stmt>> Analyser::analyse(std::vector<std::unique_ptr<Stmt>> ast) {
     m_hadError = false;
 
-    beginScope();
+    if (m_scopes.empty()) {
+        beginScope();
 
-    declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
-    declareVariable("print", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
-    declareVariable("put", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
-    declareVariable("dis", Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}), true});
+        declareVariable("", Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{}), true});
+        declareVariable("print",
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true), true});
+        declareVariable("put",
+                        Variable{std::make_shared<FunctionType>(NOTHING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true), true});
+        declareVariable("dis",
+                        Variable{std::make_shared<FunctionType>(STRING_TYPE, std::vector<Type>{DYNAMIC_TYPE}, false, true), true});
+    }
 
-    for (auto &stmt : program) {
+    for (auto &stmt : ast) {
         analyse(*stmt);
     }
 
     // Analyse all function bodies in the global scope
-    for (auto& function : m_globalFunctions) {
-        analyseFunctionBody(function);
+    for (auto it = m_globalFunctions.rbegin(); it != m_globalFunctions.rend(); it++) {
+        analyseFunctionBody(*it);
+        m_globalFunctions.pop_back();
     }
-    endScope();
 
-    return program;
+    return ast;
 }
 
 void Analyser::analyse(Stmt& stmt) {
@@ -44,7 +52,7 @@ bool Analyser::hadError() {
 }
 
 Analyser::AnalysisError Analyser::errorAt(const Token &token, const std::string &message) {
-    Enact::reportErrorAt(token, message);
+    m_context.reportErrorAt(token, message);
     m_hadError = true;
     return AnalysisError{};
 }
@@ -58,13 +66,13 @@ void Analyser::visitBlockStmt(BlockStmt &stmt) {
 }
 
 void Analyser::visitBreakStmt(BreakStmt &stmt) {
-    if (!m_insideLoop) {
+    if (m_loopCount == 0) {
         throw errorAt(stmt.keyword, "Break is only allowed inside loops.");
     }
 }
 
 void Analyser::visitContinueStmt(ContinueStmt &stmt) {
-    if (!m_insideLoop) {
+    if (m_loopCount == 0) {
         throw errorAt(stmt.keyword, "Continue is only allowed inside loops.");
     }
 }
@@ -87,13 +95,13 @@ void Analyser::visitForStmt(ForStmt &stmt) {
                 + stmt.condition->getType()->toString() + "'.");
     }
 
-    m_insideLoop = true;
+    m_loopCount++;
     beginScope();
     for (auto& statement : stmt.body) {
         analyse(*statement);
     }
     endScope();
-    m_insideLoop = false;
+    m_loopCount--;
 
     analyse(*stmt.increment);
     endScope();
@@ -105,7 +113,7 @@ void Analyser::visitFunctionStmt(FunctionStmt &stmt) {
     declareVariable(stmt.name.lexeme, Variable{stmt.type, true});
 
     if (m_scopes.size() == 1) {
-        m_globalFunctions.push_back(stmt);
+        m_globalFunctions.emplace_back(stmt);
     } else {
         analyseFunctionBody(stmt);
     }
@@ -174,13 +182,17 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
         throw errorAt(stmt.name, "Cannot redeclare type '" + stmt.name.lexeme + "'.");
     }
 
-    std::vector<Type> traits;
+    m_types.emplace(stmt.name.lexeme, nullptr);
+
+    std::vector<std::shared_ptr<const TraitType>> traits;
     for (const Token &traitName : stmt.traits) {
         // Check that the trait has been declared as a type.
         if (m_types.count(traitName.lexeme) > 0) {
             // Check that the trait actually is a trait, and not an 'int' or something.
             if (m_types[traitName.lexeme]->isTrait()) {
-                traits.push_back(m_types[traitName.lexeme]);
+                traits.push_back(std::shared_ptr<const TraitType>{
+                    m_types[traitName.lexeme]->as<TraitType>()
+                });
             } else {
                 throw errorAt(traitName, "Type '" + traitName.lexeme + "' is not a trait.");
             }
@@ -190,10 +202,10 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
     }
 
     // In the AST, fields are represented as a name paired with a type (Field).
-    // We must now find the types that the typenames are referring to, and create
-    // NamedTypes containing them.
-    std::unordered_map<std::string, Type> fields;
-    std::vector<Type> fieldTypes;
+    // We must now find the types that the typenames are referring to, keeping
+    // track of them in an insertion order map to make things easier for the
+    // Compiler.
+    InsertionOrderMap<std::string, Type> fields{};
     for (const Field& field : stmt.fields) {
         // Check if the field has the same name as another field
         if (fields.count(field.name.lexeme) > 0) {
@@ -203,36 +215,33 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
 
         if (m_types.count(field.typeName->name()) > 0) {
             fields.insert(std::pair(field.name.lexeme, m_types[field.typeName->name()]));
-            fieldTypes.push_back(m_types[field.typeName->name()]);
         } else {
-            throw errorAt(field.name, "Undeclared field type '" + field.typeName->name() + "'.");
+            throw errorAt(field.name, "Undeclared type '" + field.typeName->name() + "' of field.");
         }
     }
 
-    // Methods are must be kept seperate from fields, so we can declare the constructor
-    // properly. We take the methods as they are represented in the AST (a pointer to
-    // a FunctionStmt) and convert them to NamedTypes.
-    std::unordered_map<std::string, Type> methods;
+    // Methods aren't just fields with a function value, as they are bound to an object (self).
+    // As such, they need to be treated differently from fields and kept separate.
+    InsertionOrderMap<std::string, Type> methods;
     for (auto& method : stmt.methods) {
         // Check if the method has the same name as a field
-        if (methods.count(method->name.lexeme) > 0 || fields.count(method->name.lexeme) > 0) {
+        if (fields.contains(method->name.lexeme) || methods.contains(method->name.lexeme)) {
             throw errorAt(method->name, "Struct method '" + method->name.lexeme +
                                         "' cannot have the same name as another field or method.");
         }
 
-        methods.insert(std::pair(method->name.lexeme, getFunctionType(*method)));
+        methods.insert(std::pair(method->name.lexeme, getFunctionType(*method, true)));
     }
 
     // Check that the traits are satisfied now
-    for (const Type& type: traits) {
-        const TraitType& traitType = *std::static_pointer_cast<TraitType>(type);
-
+    for (const auto& traitType: traits) {
         // Check methods have been defined
-        for (const std::pair<const std::string, Type>& traitMethod : traitType.getMethods()) {
+        for (const auto& requiredMethod : traitType->getMethods()) {
             bool found = false;
 
-            for (const std::pair<const std::string, Type>& structMethod : methods) {
-                if (structMethod == traitMethod) {
+            for (const auto& method : methods) {
+                if (method.first == requiredMethod.first
+                        && method.second->looselyEquals(*requiredMethod.second)) {
                     found = true;
                     break;
                 }
@@ -240,56 +249,49 @@ void Analyser::visitStructStmt(StructStmt &stmt) {
 
             if (found) continue;
 
-            throw errorAt(stmt.name, "Method '" + traitMethod.first + "' is required by trait '"
-                + traitType.toString() + "' but is not implemented.");
+            throw errorAt(stmt.name, "Method '" + requiredMethod.first + "' is required by trait '"
+                + traitType->toString() + "' but is not implemented.");
         }
     }
 
-    // Assoc functions must be kept separate from the fields, as they are called on
-    // the type rather than an instance of the type.
-    std::unordered_map<std::string, Type> assocFunctions;
-
-    Type thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods, assocFunctions);
-    m_types.insert(std::make_pair(stmt.name.lexeme, thisType));
-
+    // Assoc functions must again be kept separate from the other kinds of properties,
+    // as they are called on the type rather than an instance of the type.
+    InsertionOrderMap<std::string, Type> assocFunctions;
     for (auto& function : stmt.assocFunctions) {
         assocFunctions.insert(std::pair(function->name.lexeme, getFunctionType(*function)));
     }
 
-    thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods, assocFunctions);
-
+    auto thisType = std::make_shared<StructType>(stmt.name.lexeme, traits, fields, methods);
     m_types[stmt.name.lexeme] = thisType;
 
+    for (size_t i = 0; i < stmt.methods.size(); ++i) {
+        methods.atIndex(i)->get() = getFunctionType(*stmt.methods[i], true);
+    }
+
+    for (size_t i = 0; i < stmt.assocFunctions.size(); ++i) {
+        assocFunctions.atIndex(i)->get() = getFunctionType(*stmt.assocFunctions[i]);
+    }
+
     // Now, create a constructor for the struct.
-    Variable constructor{std::make_shared<ConstructorType>(*thisType->as<StructType>()), true};
-    declareVariable(stmt.name.lexeme, constructor);
+    auto constructorType = std::make_shared<const ConstructorType>(thisType, assocFunctions);
+    stmt.constructorType = constructorType;
 
-    // We now need to analyse all of the code inside the methods.
-    // First, we'll begin the struct scope:
-    beginScope();
-
-    // Next, we'll declare all fields and methods:
-    for (const auto& field : fields) {
-        declareVariable(field.first, Variable{field.second, false});
-    }
-
-    for (const auto& method : methods) {
-        declareVariable(method.first, Variable{method.second, true});
-    }
-
-    // And "this":
-    declareVariable("this", Variable{thisType, false});
+    declareVariable(stmt.name.lexeme, Variable{constructorType, true});
 
     // Now we can analyse the methods:
     for (auto& method : stmt.methods) {
-        analyse(*method);
-    }
+        method->type = getFunctionType(*method, true);
+        beginScope();
 
-    // End the struct scope.
-    endScope();
+        declareVariable("self", Variable{thisType, !method->isMut});
+        analyse(*method);
+
+        endScope();
+    }
 
     // Look at the assoc functions (remember, they are outside of the struct scope):
     for (auto& function : stmt.assocFunctions) {
+        function->type = getFunctionType(*function);
         analyse(*function);
     }
 }
@@ -299,9 +301,9 @@ void Analyser::visitTraitStmt(TraitStmt &stmt) {
         throw errorAt(stmt.name, "Cannot redeclare type '" + stmt.name.lexeme + "'.");
     }
 
-    std::unordered_map<std::string, Type> methods;
+    InsertionOrderMap<std::string, Type> methods;
     for (auto& method : stmt.methods) {
-        if (methods.count(method->name.lexeme) > 0) {
+        if (methods.contains(method->name.lexeme)) {
             throw errorAt(method->name, "Trait method '" + method->name.lexeme +
                                         "' cannot have the same name as another method.");
         }
@@ -320,13 +322,13 @@ void Analyser::visitWhileStmt(WhileStmt &stmt) {
                 + stmt.condition->getType()->toString() + "'.");
     }
 
-    m_insideLoop = true;
+    m_loopCount++;
     beginScope();
     for (auto& statement : stmt.body) {
         analyse(*statement);
     }
     endScope();
-    m_insideLoop = false;
+    m_loopCount--;
 }
 
 void Analyser::visitVariableStmt(VariableStmt &stmt) {
@@ -399,14 +401,14 @@ void Analyser::visitAssignExpr(AssignExpr &expr) {
     analyse(*expr.target);
     analyse(*expr.value);
 
+    auto& name = expr.target->name;
+    if (lookUpVariable(name).isConst) {
+        throw errorAt(name, "Cannot assign to constant variable.");
+    }
+
     if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
         throw errorAt(expr.oper, "Cannot assign variable of type '" + expr.target->getType()->toString() +
                                  "' with value of type '" + expr.value->getType()->toString() + "'.");
-    }
-
-    auto name = expr.target->name;
-    if (lookUpVariable(name).isConst) {
-        throw errorAt(name, "Cannot assign to constant variable.");
     }
 }
 
@@ -457,7 +459,7 @@ void Analyser::visitBinaryExpr(BinaryExpr &expr) {
             }
 
             if (left->isString() && right->isString()) {
-                expr.setType(m_types["string"]);
+                expr.setType(m_types["String"]);
             } else if (left->isFloat() || right->isFloat()) {
                 expr.setType(m_types["float"]);
             } else if (left->isInt() && right->isInt()) {
@@ -493,38 +495,48 @@ void Analyser::visitCallExpr(CallExpr &expr) {
         analyse(*argument);
     }
 
-    Type type = expr.callee->getType();
+    Type calleeType = expr.callee->getType();
 
-    if (type->isConstructor()) {
-        type = std::make_shared<FunctionType>(type->as<ConstructorType>()->getFunctionType());
-    }
-
-    if (type->isFunction()) {
-        auto calleeType = type->as<FunctionType>();
-
-        // Do we have the correct amount of arguments?
-        if (expr.arguments.size() != calleeType->getArgumentTypes().size()) {
-            throw errorAt(expr.paren, "Expected " + std::to_string(calleeType->getArgumentTypes().size()) +
-                                      " arguments, but got " + std::to_string(expr.arguments.size()) + ".");
-        }
-
-        // Are the arguments we have the right type?
-        for (int i = 0; i < expr.arguments.size(); ++i) {
-            if (!expr.arguments[i]->getType()->looselyEquals(*calleeType->getArgumentTypes()[i])) {
-                throw errorAt(expr.paren,
-                              "Expected argument of type '" + calleeType->getArgumentTypes()[i]->toString() +
-                              "' but got '" + expr.arguments[i]->getType()->toString() + "'.");
-            }
-        }
-
-        // The call expression's type is the return type of the callee.
-        expr.setType(calleeType->getReturnType());
-    } else if (type->isDynamic()) {
+    if (calleeType->isDynamic()) {
         // We'll have to check this one at runtime.
         expr.setType(DYNAMIC_TYPE);
-    } else {
-        throw errorAt(expr.paren, "Only functions can be called.");
+        return;
     }
+
+    Type returnType;
+    std::vector<Type> paramTypes;
+
+    if (calleeType->isConstructor()) {
+        auto constructorType = calleeType->as<ConstructorType>();
+
+        returnType = constructorType->getStructType();
+        for (const auto& property : constructorType->getStructType()->getFields()) {
+            paramTypes.push_back(property.second);
+        }
+    } else if (calleeType->isFunction()) {
+        auto functionType = calleeType->as<FunctionType>();
+
+        returnType = functionType->getReturnType();
+        paramTypes = functionType->getArgumentTypes();
+    } else {
+        throw errorAt(expr.paren, "Only functions or constructors can be called.");
+    }
+
+    // Do we have the correct amount of arguments?
+    if (expr.arguments.size() != paramTypes.size()) {
+        throw errorAt(expr.paren, "Expected " + std::to_string(paramTypes.size()) +
+                " arguments, but got " + std::to_string(expr.arguments.size()) + ".");
+    }
+
+    // Are the arguments we have the right type?
+    for (int i = 0; i < expr.arguments.size(); ++i) {
+        if (!expr.arguments[i]->getType()->looselyEquals(*paramTypes[i])) {
+            throw errorAt(expr.paren, "Expected argument of type '" + paramTypes[i]->toString() +
+                    "' but got '" + expr.arguments[i]->getType()->toString() + "'.");
+        }
+    }
+
+    expr.setType(returnType);
 }
 
 void Analyser::visitFloatExpr(FloatExpr &expr) {
@@ -539,12 +551,12 @@ void Analyser::visitGetExpr(GetExpr &expr) {
     if (objectType->isStruct()) {
         auto type = objectType->as<StructType>();
 
-        if (auto t = type->getFieldOrMethod(expr.name.lexeme)) {
+        if (auto t = type->getProperty(expr.name.lexeme)) {
             expr.setType(*t);
             return;
         }
 
-        throw errorAt(expr.oper, "Struct type '" + type->getName() + "' does not have a field or method named '" +
+        throw errorAt(expr.name, "Struct type '" + type->getName() + "' does not have a property named '" +
                                  expr.name.lexeme + "'.");
     } else if (objectType->isTrait()) {
         auto type = objectType->as<TraitType>();
@@ -554,24 +566,24 @@ void Analyser::visitGetExpr(GetExpr &expr) {
             return;
         }
 
-        throw errorAt(expr.oper, "Trait type '" + type->getName() + "' does not have a method named '" +
+        throw errorAt(expr.name, "Trait type '" + type->getName() + "' does not have a method named '" +
                                  expr.name.lexeme + "'.");
 
     } else if (objectType->isConstructor()) {
-        auto type = objectType->as<ConstructorType>()->getStructType();
+        auto type = objectType->as<ConstructorType>();
 
-        if (auto t = type.getAssocFunction(expr.name.lexeme)) {
+        if (auto t = type->getAssocProperty(expr.name.lexeme)) {
             expr.setType(*t);
             return;
         }
 
-        throw errorAt(expr.oper, "Struct type '" + type.getName() + "' does not have an associated function named '" +
+        throw errorAt(expr.name, "Struct type '" + type->getStructType()->getName() + "' does not have an associated function named '" +
                                  expr.name.lexeme + "'.");
     } else if (objectType->isDynamic()) {
         // We'll have to check at runtime.
         expr.setType(objectType);
     } else {
-        throw errorAt(expr.oper, "Only structs, traits and types have fields.");
+        throw errorAt(expr.name, "Only structs, traits and types have fields.");
     }
 }
 
@@ -598,8 +610,34 @@ void Analyser::visitNilExpr(NilExpr &expr) {
     expr.setType(m_types["nothing"]);
 }
 
+void Analyser::visitSetExpr(SetExpr& expr) {
+    analyse(*expr.target);
+    analyse(*expr.value);
+
+    Type objectType = expr.target->object->getType();
+    std::string name = expr.target->name.lexeme;
+
+    if (objectType->isStruct()
+            && objectType->as<StructType>()->findMethod(name)) {
+        throw errorAt(expr.oper, "Cannot assign to a struct method.");
+    }
+
+    if (objectType->isConstructor()
+            && objectType->as<ConstructorType>()->findAssocProperty(name)) {
+        throw errorAt(expr.oper, "Cannot assign to an assoc method.");
+    }
+
+    if (!expr.target->getType()->looselyEquals(*expr.value->getType())) {
+        throw errorAt(expr.oper, "Cannot assign value of type '" + expr.value->getType()->toString()
+                + "' to property '" + expr.target->name.lexeme + "' of type '" + expr.value->getType()->toString()
+                + "'.");
+    }
+
+    expr.setType(expr.value->getType());
+}
+
 void Analyser::visitStringExpr(StringExpr &expr) {
-    expr.setType(m_types["string"]);
+    expr.setType(m_types["String"]);
 }
 
 void Analyser::visitSubscriptExpr(SubscriptExpr &expr) {
@@ -690,7 +728,7 @@ void Analyser::analyseFunctionBody(FunctionStmt &stmt) {
     endScope();
 }
 
-Type Analyser::getFunctionType(const FunctionStmt &stmt) {
+Type Analyser::getFunctionType(const FunctionStmt &stmt, bool isMethod, bool isNative) {
     Type returnType;
     if (stmt.returnTypename->name().empty()) {
         returnType = NOTHING_TYPE;
@@ -707,7 +745,7 @@ Type Analyser::getFunctionType(const FunctionStmt &stmt) {
         parameterTypes.push_back(lookUpType(*parameter.typeName));
     }
 
-    return std::make_shared<FunctionType>(returnType, parameterTypes);
+    return std::make_shared<FunctionType>(returnType, parameterTypes, isMethod, isNative);
 }
 
 Type Analyser::lookUpType(const Typename& name) {
@@ -720,11 +758,11 @@ Type Analyser::lookUpType(const Typename& name) {
             }
             break;
         case Typename::Kind::ARRAY: {
-            auto arrName = dynamic_cast<const ArrayTypename&>(name);
+            const auto& arrName = static_cast<const ArrayTypename&>(name);
             return std::make_shared<ArrayType>(lookUpType(arrName.elementTypename()));
         }
         case Typename::Kind::FUNCTION: {
-            auto funName = static_cast<const FunctionTypename&>(name);
+            const auto& funName = static_cast<const FunctionTypename&>(name);
 
             std::vector<Type> argTypes{};
             for (const auto& argName : funName.argumentTypenames()) {
@@ -732,6 +770,10 @@ Type Analyser::lookUpType(const Typename& name) {
             }
 
             return std::make_shared<FunctionType>(lookUpType(funName.returnTypename()), std::move(argTypes));
+        }
+        case Typename::Kind::CONSTRUCTOR: {
+            const auto& conName = static_cast<const ConstructorTypename&>(name);
+            return lookUpVariable(conName.structTypename().where()).type;
         }
     }
 

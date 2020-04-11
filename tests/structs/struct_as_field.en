@@ -1,0 +1,46 @@
+struct Vector3:
+    x float
+    y float
+    z float
+
+    fun show():
+        print("Vector3 {")
+        put("    x: ")
+        print(self.x)
+        put("    y: ")
+        print(self.y)
+        put("    z: ")
+        print(self.z)
+        print("}")
+    end
+
+    fun sum() float:
+        return self.x + self.y + self.z
+    end
+end
+
+struct GameObject:
+    position Vector3
+    name String
+
+    assoc new(name String) GameObject:
+        return GameObject(Vector3(0, 0, 0), name)
+    end
+
+    mut fun move(x float, y float, z float):
+        self.position = Vector3(x, y, z)
+    end
+
+    fun show():
+        put("GameObject '")
+        put(self.name)
+        put("' at position: ")
+        self.position.show()
+    end
+end
+
+var ball = GameObject.new("ball")
+
+ball.show()
+ball.move(21, 32, 43)
+ball.show()

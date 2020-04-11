@@ -1,28 +1,36 @@
 #include <sstream>
+#include "h/Context.h"
 #include "h/VM.h"
-#include "h/Enact.h"
-#include "h/GC.h"
 
-VM::VM() : m_stack{} {
-    GC::setVM(this);
+
+VM::VM(Context& context) : m_context{context} {
 }
 
-InterpretResult VM::run(FunctionObject* function) {
+InterpretResult VM::run(FunctionObject *function) {
+    try {
+        executionLoop(function);
+    } catch (const RuntimeError& error) {
+        return InterpretResult::RUNTIME_ERROR;
+    }
+
+    return InterpretResult::OK;
+}
+
+void VM::executionLoop(FunctionObject* function) {
     push(Value{function});
 
-    CallFrame* frame = &m_frames[m_frameCount++];
-    frame->closure = GC::allocateObject<ClosureObject>(function);
+    m_frame = &m_frames[m_frameCount++];
+    m_frame->closure = m_context.gc.allocateObject<ClosureObject>(function);
     pop();
-    push(Value{frame->closure});
-    frame->ip = function->getChunk().getCode().data();
-    frame->slotsBegin = 0;
+    if (m_pc == 0) {
+        push(Value{m_frame->closure});
+    } else {
+        m_stack[0] = Value{m_frame->closure};
+    }
+    m_frame->ip = function->getChunk().getCode().data() + m_pc;
+    m_frame->slotsBegin = 0;
 
     for (;;) {
-        #define READ_BYTE() (*frame->ip++)
-        #define READ_SHORT() (static_cast<uint16_t>(READ_BYTE() | (READ_BYTE() << 8)))
-        #define READ_LONG() (static_cast<uint32_t>(READ_BYTE() | (READ_BYTE() << 8) | (READ_BYTE() << 16)))
-        #define READ_CONSTANT() ((frame->closure->getFunction()->getChunk().getConstants())[READ_BYTE()])
-        #define READ_CONSTANT_LONG() ((frame->closure->getFunction()->getChunk().getConstants())[READ_LONG()])
         #define NUMERIC_OP(op) \
             do { \
                 Value b = pop(); \
@@ -38,29 +46,29 @@ InterpretResult VM::run(FunctionObject* function) {
                 } \
             } while (false)
 
-        if (Enact::getFlags().flagEnabled(Flag::DEBUG_TRACE_EXECUTION)) {
+        if (m_context.options.flagEnabled(Flag::DEBUG_TRACE_EXECUTION)) {
             std::cout << "    ";
             for (Value value : m_stack) {
                 std::cout << "[ " << value << " ] ";
             }
             std::cout << "\n";
 
-            std::cout << frame->closure->getFunction()->getChunk()
+            std::cout << m_frame->closure->getFunction()->getChunk()
                     .disassembleInstruction(
-                            frame->ip - frame->closure->getFunction()->getChunk().getCode().data()).first;
+                            m_frame->ip - m_frame->closure->getFunction()->getChunk().getCode().data()).first;
         }
 
-        Value* slots = &m_stack[frame->slotsBegin];
+        Value* slots = &m_stack[m_frame->slotsBegin];
 
-        switch (static_cast<OpCode>(READ_BYTE())) {
+        switch (static_cast<OpCode>(readByte())) {
             case OpCode::CONSTANT: {
-                Value constant = READ_CONSTANT();
+                Value constant = readConstant();
                 push(constant);
                 break;
             }
 
             case OpCode::CONSTANT_LONG: {
-                Value constant = READ_CONSTANT_LONG();
+                Value constant = readConstantLong();
                 push(constant);
                 break;
             }
@@ -72,84 +80,40 @@ InterpretResult VM::run(FunctionObject* function) {
             case OpCode::CHECK_INT: {
                 Value value = peek(0);
                 if (!value.getType()->isInt()) {
-                    runtimeError("Expected a value of type 'int', but got a value of type '"
+                    throw runtimeError("Expected a value of type 'int', but got a value of type '"
                                  + value.getType()->toString() + "' instead.");
-
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_NUMERIC: {
                 Value value = peek(0);
                 if (!value.getType()->isNumeric()) {
-                    runtimeError("Expected a value of type 'int' or 'float', but got a value of type '"
+                    throw runtimeError("Expected a value of type 'int' or 'float', but got a value of type '"
                             + value.getType()->toString() + "' instead.");
-
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_BOOL: {
                 Value value = peek(0);
                 if (!value.getType()->isBool()) {
-                    runtimeError("Expected a value of type 'bool', but got a value of type '"
+                    throw runtimeError("Expected a value of type 'bool', but got a value of type '"
                             + value.getType()->toString() + "' instead.");
-
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_REFERENCE: {
                 Value value = peek(0);
                 if (value.getType()->isPrimitive()) {
-                    runtimeError("Only reference types can be copied, not a value of type '"
+                    throw runtimeError("Only reference types can be copied, not a value of type '"
                                  + value.getType()->toString() + "'.");
-
-                    return InterpretResult::RUNTIME_ERROR;
-                }
-                break;
-            }
-            case OpCode::CHECK_CALLABLE: {
-                uint8_t argCount = READ_BYTE();
-
-                Value functionValue = peek(argCount);
-                if (!functionValue.getType()->isFunction()) {
-                    runtimeError("Only functions can be called, not a value of type '"
-                            + functionValue.getType()->toString() + ".");
-                    return InterpretResult::RUNTIME_ERROR;
-                }
-
-                const FunctionType* functionType = functionValue.getType()->as<FunctionType>();
-
-                uint8_t paramCount = functionType->getArgumentTypes().size();
-                if (argCount != paramCount) {
-                    std::stringstream s;
-                    s << "Expected " << static_cast<size_t>(paramCount) << " arguments to function, but got " <<
-                            static_cast<size_t>(argCount) << ".";
-                    runtimeError(s.str());
-                    return InterpretResult::RUNTIME_ERROR;
-                }
-
-                for (uint8_t i = 0; i < argCount; ++i) {
-                    Type shouldBe = functionType->getArgumentTypes()[i];
-                    Type argumentType = peek(i).getType();
-                    if (!argumentType->looselyEquals(*shouldBe)) {
-                        std::stringstream s;
-                        s << "Expected argument " << static_cast<size_t>(i) + 1 << " to be of type '" <<
-                            shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
-                            "' instead.";
-                        runtimeError(s.str());
-                        return InterpretResult::RUNTIME_ERROR;
-                    }
                 }
                 break;
             }
             case OpCode::CHECK_INDEXABLE: {
                 Value array = peek(0);
                 if (!array.getType()->isArray()) {
-                    runtimeError("Expected an array, but got a value of type '" + array.getType()->toString() +
+                    throw runtimeError("Expected an array, but got a value of type '" + array.getType()->toString() +
                             "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
@@ -158,29 +122,26 @@ InterpretResult VM::run(FunctionObject* function) {
                 Type valueType = peek(1).getType();
 
                 if (!valueType->looselyEquals(*shouldBe)) {
-                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                    throw runtimeError("Expected a value of type '" + shouldBe->toString() +
                         "' to assign in array, but got a value of type '" + valueType->toString() + "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_TYPE: {
-                Type shouldBe = READ_CONSTANT().asObject()->getType();
+                Type shouldBe = readConstant().asObject()->getType();
                 Value value = peek(0);
                 if (!shouldBe->looselyEquals(*value.getType())) {
-                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                    throw runtimeError("Expected a value of type '" + shouldBe->toString() +
                             "' but got a value of type '" + value.getType()->toString() + "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             case OpCode::CHECK_TYPE_LONG: {
-                Type shouldBe = READ_CONSTANT_LONG().asObject()->getType();
+                Type shouldBe = readConstantLong().asObject()->getType();
                 Value value = peek(0);
                 if (!shouldBe->looselyEquals(*value.getType())) {
-                    runtimeError("Expected a value of type '" + shouldBe->toString() +
+                    throw runtimeError("Expected a value of type '" + shouldBe->toString() +
                                  "' but got a value of type '" + value.getType()->toString() + "' instead.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
@@ -214,9 +175,9 @@ InterpretResult VM::run(FunctionObject* function) {
 
 
             case OpCode::ARRAY: {
-                uint8_t length = READ_BYTE();
-                Type type = READ_CONSTANT().asObject()->as<TypeObject>()->getContainedType();
-                auto* array = GC::allocateObject<ArrayObject>(length, type);
+                uint8_t length = readByte();
+                Type type = readConstant().asObject()->as<TypeObject>()->getContainedType();
+                auto* array = m_context.gc.allocateObject<ArrayObject>(length, type);
                 if (length != 0) {
                     for (uint8_t i = length; i-- > 0;) {
                         array->at(i) = pop();
@@ -226,9 +187,9 @@ InterpretResult VM::run(FunctionObject* function) {
                 break;
             }
             case OpCode::ARRAY_LONG: {
-                uint32_t length = READ_LONG();
-                Type type = READ_CONSTANT_LONG().asObject()->as<TypeObject>()->getContainedType();
-                auto* array = GC::allocateObject<ArrayObject>(length, type);
+                uint32_t length = readLong();
+                Type type = readConstantLong().asObject()->as<TypeObject>()->getContainedType();
+                auto* array = m_context.gc.allocateObject<ArrayObject>(length, type);
                 if (length != 0) {
                     for (uint32_t i = length; i-- > 0;) {
                         array->at(i) = pop();
@@ -243,9 +204,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 ArrayObject* array = pop().asObject()->as<ArrayObject>();
 
                 if (index >= array->length()) {
-                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                    throw runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
                              + "length '" + std::to_string(array->asVector().size()) + "'.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
 
                 push(array->at(index));
@@ -257,9 +217,8 @@ InterpretResult VM::run(FunctionObject* function) {
                 Value newValue = peek(0);
 
                 if (index >= array->length()) {
-                    runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
+                    throw runtimeError("Array index '" + std::to_string(index) + "' is out of bounds for array of "
                                  + "length '" + std::to_string(array->asVector().size()) + "'.");
-                    return InterpretResult::RUNTIME_ERROR;
                 }
 
                 array->at(index) = newValue;
@@ -268,23 +227,23 @@ InterpretResult VM::run(FunctionObject* function) {
 
             case OpCode::POP: pop(); break;
 
-            case OpCode::GET_LOCAL: push(slots[READ_BYTE()]); break;
-            case OpCode::GET_LOCAL_LONG: push(slots[READ_LONG()]); break;
+            case OpCode::GET_LOCAL: push(slots[readByte()]); break;
+            case OpCode::GET_LOCAL_LONG: push(slots[readLong()]); break;
 
-            case OpCode::SET_LOCAL: slots[READ_BYTE()] = peek(0); break;
-            case OpCode::SET_LOCAL_LONG: slots[READ_LONG()] = peek(0); break;
+            case OpCode::SET_LOCAL: slots[readByte()] = peek(0); break;
+            case OpCode::SET_LOCAL_LONG: slots[readLong()] = peek(0); break;
 
             case OpCode::GET_UPVALUE: {
-                uint8_t slot = READ_BYTE();
-                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                uint8_t slot = readByte();
+                UpvalueObject* upvalue = m_frame->closure->getUpvalues()[slot];
                 push(upvalue->isClosed() ?
                         upvalue->getClosed() :
                         m_stack[upvalue->getLocation()]);
                 break;
             }
             case OpCode::GET_UPVALUE_LONG: {
-                uint8_t slot = READ_BYTE();
-                UpvalueObject* upvalue = frame->closure->getUpvalues()[slot];
+                uint8_t slot = readByte();
+                UpvalueObject* upvalue = m_frame->closure->getUpvalues()[slot];
                 push(upvalue->isClosed() ?
                       upvalue->getClosed() :
                       m_stack[upvalue->getLocation()]);
@@ -292,107 +251,367 @@ InterpretResult VM::run(FunctionObject* function) {
             }
 
             case OpCode::SET_UPVALUE: {
-                uint8_t slot = READ_BYTE();
-                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                uint8_t slot = readByte();
+                m_stack[m_frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
                 break;
             }
             case OpCode::SET_UPVALUE_LONG: {
-                uint32_t slot = READ_LONG();
-                m_stack[frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                uint32_t slot = readLong();
+                m_stack[m_frame->closure->getUpvalues()[slot]->getLocation()] = peek(0);
+                break;
+            }
+
+            case OpCode::GET_FIELD: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint8_t index = readByte();
+                push(instance->field(index));
+
+                break;
+            }
+            case OpCode::GET_FIELD_LONG: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = readLong();
+                push(instance->field(index));
+
+                break;
+            }
+            case OpCode::SET_FIELD: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint8_t index = readByte();
+                instance->field(index) = peek(0);
+
+                break;
+            }
+            case OpCode::SET_FIELD_LONG: {
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = readLong();
+                instance->field(index) = peek(0);
+
+                break;
+            }
+
+            case OpCode::GET_METHOD: {
+                auto* instance = peek(0)
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = readByte();
+                ClosureObject* method = instance
+                        ->getStruct()
+                        ->method(index);
+
+                auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, method);
+                pop(); // Pop the instance
+                push(Value{bound});
+                break;
+            }
+            case OpCode::GET_METHOD_LONG: {
+                auto* instance = peek(0)
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                uint32_t index = readLong();
+                ClosureObject* method = instance
+                        ->getStruct()
+                        ->method(index);
+
+                auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, method);
+                pop(); // Pop the instance;
+                push(Value{bound});
+                break;
+            }
+
+            case OpCode::GET_ASSOC: {
+                auto* struct_ = peek(0)
+                        .asObject()
+                        ->as<StructObject>();
+
+                uint32_t index = readByte();
+                Value assoc = struct_->assoc(index);
+
+                pop();
+                push(assoc);
+                break;
+            }
+            case OpCode::GET_ASSOC_LONG: {
+                auto* struct_ = peek(0)
+                        .asObject()
+                        ->as<StructObject>();
+
+                uint32_t index = readLong();
+                Value assoc = struct_->assoc(index);
+
+                pop();
+                push(assoc);
+                break;
+            }
+
+            case OpCode::GET_PROPERTY_DYNAMIC: {
+                Value maybeObject = peek(0);
+                if (!maybeObject.isObject()) {
+                    throw runtimeError("Only instances and constructors have properties, not a value of type '" +
+                                       maybeObject.getType()->toString() + "'.");
+                }
+
+                Object* object = maybeObject.asObject();
+                const std::string& name = readConstant()
+                        .asObject()
+                        ->as<StringObject>()
+                        ->asStdString();
+
+                if (object->is<InstanceObject>()) {
+                    auto* instance = peek(0)
+                            .asObject()
+                            ->as<InstanceObject>();
+
+                    Value property;
+
+                    if (auto field = instance->fieldNamed(name)) {
+                        property = *field;
+                    } else if (auto method = instance->getStruct()->methodNamed(name)) {
+                        auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, *method);
+                        property = Value{bound};
+                    } else {
+                        throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                           "' does not have a property named '" + name + "'.");
+                    }
+
+                    pop(); // Pop the instance
+                    push(property);
+                } else if (object->is<StructObject>()) {
+                    auto* struct_ = pop()
+                            .asObject()
+                            ->as<StructObject>();
+
+                    std::optional<std::reference_wrapper<Value>> assoc;
+                    if (!(assoc = struct_->assocNamed(name))) {
+                        throw runtimeError("Struct '" + assoc->get().getType()->toString() +
+                                           "' does not have an associated function named '" + name + "'.");
+                    }
+
+                    push(*assoc);
+                } else {
+                    throw runtimeError("Only instances and constructors have properties, not a value of type '" +
+                                       object->getType()->toString() + "'.");
+                }
+
+                break;
+            }
+            case OpCode::GET_PROPERTY_DYNAMIC_LONG: {
+                Value maybeObject = peek(0);
+                if (!maybeObject.isObject()) {
+                    throw runtimeError("Only instances and constructors have properties, not a value of type '" +
+                                       maybeObject.getType()->toString() + "'.");
+                }
+
+                Object* object = maybeObject.asObject();
+                const std::string& name = readConstantLong()
+                        .asObject()
+                        ->as<StringObject>()
+                        ->asStdString();
+
+                if (object->is<InstanceObject>()) {
+                    auto* instance = peek(0)
+                            .asObject()
+                            ->as<InstanceObject>();
+
+                    Value property;
+
+                    if (auto field = instance->fieldNamed(name)) {
+                        property = *field;
+                    } else if (auto method = instance->getStruct()->methodNamed(name)) {
+                        auto* bound = m_context.gc.allocateObject<BoundMethodObject>(Value{instance}, *method);
+                        property = Value{bound};
+                    } else {
+                        throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                           "' does not have a property named '" + name + "'.");
+                    }
+
+                    pop(); // Pop the instance
+                    push(property);
+                } else if (object->is<StructObject>()) {
+                    auto* struct_ = pop()
+                            .asObject()
+                            ->as<StructObject>();
+
+                    std::optional<std::reference_wrapper<Value>> assoc;
+                    if (!(assoc = struct_->assocNamed(name))) {
+                        throw runtimeError("Struct '" + assoc->get().getType()->toString() +
+                                           "' does not have an associated function named '" + name + "'.");
+                    }
+
+                    push(*assoc);
+                } else {
+                    throw runtimeError("Only instances and constructors have properties, not a value of type '" +
+                                       object->getType()->toString() + "'.");
+                }
+
+                break;
+            }
+
+            case OpCode::SET_PROPERTY_DYNAMIC_LONG: {
+                Value maybeInstance = peek(0);
+                if (!maybeInstance.isObject() && !maybeInstance.asObject()->is<InstanceObject>()) {
+                    throw runtimeError("Only instances have assignable fields, not a value of type '" +
+                                       maybeInstance.getType()->toString() + "'.");
+                }
+
+                auto* instance = pop()
+                        .asObject()
+                        ->as<InstanceObject>();
+
+                const std::string& name = readConstantLong()
+                        .asObject()
+                        ->as<StringObject>()
+                        ->asStdString();
+
+                std::optional<std::reference_wrapper<Value>> maybeField;
+                if (!(maybeField = instance->fieldNamed(name))) {
+                    throw runtimeError("Instance of type '" + instance->getType()->toString() +
+                                       "' does not have a field named '" + name + "'.");
+                }
+
+                Value& field = maybeField.value().get();
+                Value value = peek(0);
+
+                if (!field.getType()->looselyEquals(*value.getType())) {
+                    throw runtimeError("Cannot assign a value of type '" + value.getType()->toString() +
+                                       "' to field '" + name + "' of type '" + field.getType()->toString() + "'.");
+                }
+
+                field = peek(0);
                 break;
             }
 
             case OpCode::JUMP: {
-                uint16_t jumpSize = READ_SHORT();
-                frame->ip += jumpSize;
+                uint16_t jumpSize = readShort();
+                m_frame->ip += jumpSize;
                 break;
             }
             case OpCode::JUMP_IF_TRUE: {
-                uint16_t jumpSize = READ_SHORT();
+                uint16_t jumpSize = readShort();
                 if (peek(0).asBool()) {
-                    frame->ip += jumpSize;
+                    m_frame->ip += jumpSize;
                 }
                 break;
             }
             case OpCode::JUMP_IF_FALSE: {
-                uint16_t jumpSize = READ_SHORT();
+                uint16_t jumpSize = readShort();
                 if (!peek(0).asBool()) {
-                    frame->ip += jumpSize;
+                    m_frame->ip += jumpSize;
                 }
                 break;
             }
 
             case OpCode::LOOP: {
-                uint16_t jumpSize = READ_SHORT();
-                frame->ip -= jumpSize;
+                uint16_t jumpSize = readShort();
+                m_frame->ip -= jumpSize;
                 break;
             }
 
-            case OpCode::CALL: {
-                uint8_t argCount = READ_BYTE();
-                Object* callee = peek(argCount).asObject();
+            case OpCode::CALL_FUNCTION: {
+                uint8_t argCount = readByte();
+                auto* closure = peek(argCount)
+                        .asObject()
+                        ->as<ClosureObject>();
+
+                callFunction(closure, argCount);
+                m_frame = &m_frames[m_frameCount - 1];
+                break;
+            }
+
+            case OpCode::CALL_BOUND_METHOD: {
+                uint8_t argCount = readByte();
+                auto* bound = peek(argCount)
+                        .asObject()
+                        ->as<BoundMethodObject>();
+
+                callFunction(bound->method(), argCount);
+                m_frame = &m_frames[m_frameCount - 1];
+                push(bound->receiver());
+
+                break;
+            }
+
+            case OpCode::CALL_CONSTRUCTOR: {
+                uint8_t argCount = readByte();
+                auto* struct_ = peek(argCount)
+                        .asObject()
+                        ->as<StructObject>();
+
+                callConstructor(struct_, argCount);
+                break;
+            }
+
+            case OpCode::CALL_NATIVE: {
+                uint8_t argCount = readByte();
+                auto* native = peek(argCount)
+                        .asObject()
+                        ->as<NativeObject>();
+
+                callNative(native, argCount);
+                break;
+            }
+
+            case OpCode::CALL_DYNAMIC: {
+                uint8_t argCount = readByte();
+                Value calleeValue = peek(argCount);
+
+                if (!calleeValue.isObject()) {
+                    throw runtimeError("Only functions and constructors can be called, not a value of type '"
+                                 + calleeValue.getType()->toString() + ".");
+                }
+
+                Object* callee = calleeValue.asObject();
 
                 if (callee->is<ClosureObject>()) {
-                    call(callee->as<ClosureObject>());
-                    frame = &m_frames[m_frameCount - 1];
+                    checkFunctionCallable(callee->getType()->as<FunctionType>(), argCount);
+                    callFunction(callee->as<ClosureObject>(), argCount);
+
+                    // TODO: incorporate this in callFunction()
+                    m_frame = &m_frames[m_frameCount - 1];
+                } else if (callee->is<BoundMethodObject>()) {
+                    auto* bound = callee->as<BoundMethodObject>();
+                    checkFunctionCallable(bound->method()->getType()->as<FunctionType>(), argCount);
+
+                    callFunction(bound->method(), argCount);
+                    m_frame = &m_frames[m_frameCount - 1];
+                    push(bound->receiver());
+                } else if (callee->is<StructObject>()) {
+                    checkConstructorCallable(callee->getType()->as<ConstructorType>(), argCount);
+                    callConstructor(callee->as<StructObject>(), argCount);
+                } else if (callee->is<NativeObject>()) {
+                    // Native functions are of a regular FunctionType
+                    checkFunctionCallable(callee->getType()->as<FunctionType>(), argCount);
+                    callNative(callee->as<NativeObject>(), argCount);
                 } else {
-                    NativeFn native = callee->as<NativeObject>()->getFunction();
-                    Value result = native(argCount, &m_stack.back() - argCount + 1);
-
-                    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
-
-                    push(result);
+                    throw runtimeError("Only functions and constructors can be called, not a value of type '"
+                                 + callee->getType()->toString() + ".");
                 }
                 break;
             }
 
             case OpCode::CLOSURE: {
-                FunctionObject* function = READ_CONSTANT().asObject()->as<FunctionObject>();
-                push(Value{function});
-                ClosureObject* closure = GC::allocateObject<ClosureObject>(function);
-                pop();
-                push(Value{closure});
-
-                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
-                    uint8_t isLocal = READ_BYTE();
-                    uint32_t index;
-                    if (i < UINT8_MAX) {
-                        index = READ_BYTE();
-                    } else {
-                        index = READ_LONG();
-                    }
-
-                    if (isLocal) {
-                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
-                    } else {
-                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
-                    }
-                }
+                FunctionObject* function = readConstant().asObject()->as<FunctionObject>();
+                encloseFunction(function);
                 break;
             }
 
             case OpCode::CLOSURE_LONG: {
-                FunctionObject* function = READ_CONSTANT_LONG().asObject()->as<FunctionObject>();
-                push(Value{function});
-                ClosureObject* closure = GC::allocateObject<ClosureObject>(function);
-                pop();
-                push(Value{closure});
-
-                for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
-                    uint8_t isLocal = READ_BYTE();
-                    uint32_t index;
-                    if (i < UINT8_MAX) {
-                        index = READ_BYTE();
-                    } else {
-                        index = READ_LONG();
-                    }
-
-                    if (isLocal) {
-                        closure->getUpvalues()[i] = captureUpvalue(frame->slotsBegin + index);
-                    } else {
-                        closure->getUpvalues()[i] = frame->closure->getUpvalues()[i];
-                    }
-                }
+                FunctionObject* function = readConstantLong().asObject()->as<FunctionObject>();
+                encloseFunction(function);
                 break;
             }
 
@@ -404,30 +623,222 @@ InterpretResult VM::run(FunctionObject* function) {
             case OpCode::RETURN: {
                 Value result = pop();
 
-                closeUpvalues(frame->slotsBegin);
+                closeUpvalues(m_frame->slotsBegin);
 
                 m_frameCount--;
                 if (m_frameCount == 0) {
                     pop();
-                    return InterpretResult::OK;
+                    return;
                 }
 
-                m_stack.erase(m_stack.begin() + frame->slotsBegin, m_stack.end());
+                m_stack.erase(m_stack.begin() + m_frame->slotsBegin, m_stack.end());
                 push(result);
 
-                frame = &m_frames[m_frameCount - 1];
+                m_frame = &m_frames[m_frameCount - 1];
                 break;
             }
+
+            case OpCode::STRUCT: {
+                auto type = std::static_pointer_cast<const ConstructorType>(
+                        readConstant()
+                            .asObject()
+                            ->as<TypeObject>()
+                            ->getContainedType());
+
+                makeConstructor(type);
+                break;
+            }
+            case OpCode::STRUCT_LONG: {
+                auto type = std::static_pointer_cast<const ConstructorType>(
+                        readConstant()
+                            .asObject()
+                            ->as<TypeObject>()
+                            ->getContainedType());
+
+                makeConstructor(type);
+                break;
+            }
+
+            case OpCode::PAUSE: {
+                m_pc = m_frame->ip - function->getChunk().getCode().data();
+                m_frameCount--;
+                return;
+            }
+        }
+    }
+}
+
+inline void VM::callFunction(ClosureObject* closure, uint8_t argCount) {
+    if (m_frameCount == FRAMES_MAX) {
+        throw runtimeError("Stack overflow.");
+    }
+
+    CallFrame* frame = &m_frames[m_frameCount++];
+    frame->closure = closure;
+    frame->ip = closure->getFunction()->getChunk().getCode().data();
+
+    frame->slotsBegin = m_stack.size() - argCount - 1;
+}
+
+inline void VM::callConstructor(StructObject *struct_, uint8_t argCount) {
+    auto* instance = m_context.gc.allocateObject<InstanceObject>(
+            struct_,
+            std::move(std::vector<Value>{m_stack.end() - argCount, m_stack.end()}));
+
+    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
+
+    push(Value{instance});
+}
+
+inline void VM::callNative(NativeObject *native, uint8_t argCount) {
+    NativeFn fn = native->getFunction();
+
+    Value result = fn(argCount, &m_stack.back() - argCount + 1);
+    m_stack.erase(m_stack.end() - argCount - 1, m_stack.end());
+
+    push(result);
+}
+
+inline void VM::checkFunctionCallable(const FunctionType *type, uint8_t argCount) {
+    const std::vector<Type>& paramTypes = type->getArgumentTypes();
+
+    if (argCount != paramTypes.size()) {
+        std::stringstream s;
+        s << "Expected " << paramTypes.size() << " arguments to function, but got " <<
+          static_cast<size_t>(argCount) << ".";
+        throw runtimeError(s.str());
+    }
+
+    for (uint8_t i = argCount; i-- > 0;) {
+        Type shouldBe = paramTypes[paramTypes.size() - 1 - i];
+        Type argumentType = peek(i).getType();
+
+        if (!argumentType->looselyEquals(*shouldBe)) {
+            std::stringstream s;
+            s << "Expected argument " << paramTypes.size() - static_cast<size_t>(i) << " to be of type '" <<
+              shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
+              "' instead.";
+            throw runtimeError(s.str());
+        }
+    }
+}
+
+inline void VM::checkConstructorCallable(const ConstructorType *type, uint8_t argCount) {
+    std::vector<std::reference_wrapper<const Type>> paramTypes = type
+            ->getStructType()
+            ->getFields()
+            .values();
+
+    if (argCount != paramTypes.size()) {
+        std::stringstream s;
+        s << "Expected " << paramTypes.size() << " arguments to constructor, but got " <<
+          static_cast<size_t>(argCount) << ".";
+        throw runtimeError(s.str());
+    }
+
+    for (uint8_t i = argCount; i-- > 0;) {
+        Type shouldBe = paramTypes[paramTypes.size() - 1 - i];
+        Type argumentType = peek(i).getType();
+
+        if (!argumentType->looselyEquals(*shouldBe)) {
+            std::stringstream s;
+            s << "Expected argument " << paramTypes.size() - static_cast<size_t>(i) << " to be of type '" <<
+              shouldBe->toString() << "' but got value of type '" + argumentType->toString() <<
+              "' instead.";
+            throw runtimeError(s.str());
+        }
+    }
+}
+
+inline void VM::encloseFunction(FunctionObject *function) {
+    push(Value{function});
+    auto* closure = m_context.gc.allocateObject<ClosureObject>(function);
+    pop();
+    push(Value{closure});
+
+    for (size_t i = 0; i < closure->getUpvalues().size(); ++i) {
+        uint8_t isLocal = readByte();
+        uint32_t index;
+        if (i < UINT8_MAX) {
+            index = readByte();
+        } else {
+            index = readLong();
         }
 
-        #undef READ_BYTE
-        #undef READ_SHORT
-        #undef READ_LONG
-        #undef READ_CONSTANT
-        #undef READ_CONSTANT_LONG
-
-        #undef NUMERIC_OP
+        if (isLocal) {
+            closure->getUpvalues()[i] = captureUpvalue(m_frame->slotsBegin + index);
+        } else {
+            closure->getUpvalues()[i] = m_frame->closure->getUpvalues()[i];
+        }
     }
+}
+
+inline void VM::makeConstructor(std::shared_ptr<const ConstructorType> type) {
+    // Collect methods
+    size_t methodsBeginIndex = m_stack.size();
+    size_t methodCount = type->getStructType()->getMethods().length();
+    for (uint32_t i = 0; i < methodCount; ++i) {
+        auto* function = readConstant().asObject()->as<FunctionObject>();
+        encloseFunction(function);
+    }
+
+    // Collect assocs
+    size_t assocsBeginIndex = m_stack.size();
+    size_t assocCount = type->getAssocProperties().length();
+    for (uint32_t i = 0; i < assocCount; ++i) {
+        auto* function = readConstant().asObject()->as<FunctionObject>();
+        encloseFunction(function);
+    }
+
+    // Move methods off the stack
+    auto methodsBegin = m_stack.begin() + methodsBeginIndex;
+    auto methodsEnd = m_stack.begin() + methodsBeginIndex + methodCount;
+    std::vector<ClosureObject*> methods{};
+    for (auto it = methodsBegin; it != methodsEnd; ++it) {
+        methods.push_back(it->asObject()->as<ClosureObject>());
+    }
+
+    // Move assocs off the stack
+    auto assocsBegin = m_stack.begin() + assocsBeginIndex;
+    auto assocsEnd = m_stack.begin() + assocsBeginIndex + assocCount;
+    std::vector<Value> assocs{assocsBegin, assocsEnd};
+
+    auto* struct_ = m_context.gc.allocateObject<StructObject>(type, std::move(methods), std::move(assocs));
+
+    // Erase the moved elements
+    m_stack.erase(methodsBegin, assocsEnd);
+
+    push(Value{struct_});
+}
+
+inline uint8_t VM::readByte() {
+    return *m_frame->ip++;
+}
+
+inline uint16_t VM::readShort() {
+    return static_cast<uint16_t>(readByte() | (readByte() << 8u));
+}
+
+inline uint32_t VM::readLong() {
+    return static_cast<uint32_t>(readByte() | (readByte() << 8u) | (readByte() << 16u));
+}
+
+inline Value VM::readConstant() {
+    return m_frame
+            ->closure
+            ->getFunction()
+            ->getChunk()
+            .getConstants()
+            [readByte()];
+}
+
+inline Value VM::readConstantLong() {
+    return m_frame
+            ->closure
+            ->getFunction()
+            ->getChunk()
+            .getConstants()
+    [readLong()];
 }
 
 void VM::push(Value value) {
@@ -445,19 +856,6 @@ Value VM::peek(size_t depth) {
     return m_stack[m_stack.size() - 1 - depth];
 }
 
-void VM::call(ClosureObject* closure) {
-    if (m_frameCount == FRAMES_MAX) {
-        runtimeError("Stack overflow.");
-    }
-
-    CallFrame* frame = &m_frames[m_frameCount++];
-    frame->closure = closure;
-    frame->ip = closure->getFunction()->getChunk().getCode().data();
-
-    uint8_t paramCount = closure->getFunction()->getType()->as<FunctionType>()->getArgumentTypes().size();
-    frame->slotsBegin = m_stack.size() - paramCount - 1;
-}
-
 UpvalueObject* VM::captureUpvalue(uint32_t location) {
     UpvalueObject* prevUpvalue = nullptr;
     UpvalueObject* upvalue = m_openUpvalues;
@@ -469,7 +867,7 @@ UpvalueObject* VM::captureUpvalue(uint32_t location) {
 
     if (upvalue != nullptr && upvalue->getLocation() == location) return upvalue;
 
-    auto* createdUpvalue = GC::allocateObject<UpvalueObject>(location);
+    auto* createdUpvalue = m_context.gc.allocateObject<UpvalueObject>(location);
     createdUpvalue->setNext(upvalue);
 
     if (prevUpvalue == nullptr) {
@@ -489,12 +887,12 @@ void VM::closeUpvalues(uint32_t last) {
     }
 }
 
-void VM::runtimeError(const std::string& msg) {
+VM::RuntimeError VM::runtimeError(const std::string& msg) {
     CallFrame* frame = &m_frames[m_frameCount - 1];
     size_t instruction = frame->ip - frame->closure->getFunction()->getChunk().getCode().data();
     line_t line = frame->closure->getFunction()->getChunk().getLine(instruction);
 
-    const std::string source = Enact::getSourceLine(line);
+    const std::string source = m_context.getSourceLine(line);
 
     std::cerr << "[line " << line << "] Error here:\n    " << source << "\n    ";
     for (int i = 0; i < source.size(); ++i) {
@@ -515,4 +913,5 @@ void VM::runtimeError(const std::string& msg) {
         }
     }
 
+    return RuntimeError{};
 }

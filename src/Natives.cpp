@@ -1,6 +1,7 @@
-#include "h/Natives.h"
-#include "h/Chunk.h"
-#include "h/Object.h"
+#include "bytecode/Chunk.h"
+#include "value/Object.h"
+
+#include "Natives.h"
 
 Value Natives::print(uint8_t argCount, Value* args) {
     std::cout << args[0] << "\n";

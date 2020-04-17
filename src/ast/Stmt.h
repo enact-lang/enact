@@ -4,8 +4,9 @@
 #ifndef ENACT_STMT_H
 #define ENACT_STMT_H
 
+#include "../trivialStructs.h"
+
 #include "Expr.h"
-#include "../h/trivialStructs.h"
 
 template <class R>
 class StmtVisitor;

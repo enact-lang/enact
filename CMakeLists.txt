@@ -5,29 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_compile_definitions(DEBUG)
 
-add_executable( enact
-        src/h/Type.h
-        src/Type.cpp
-        src/Enact.cpp
-        src/h/Enact.h
-        src/h/common.h
-        src/h/Token.h
-        src/Scanner.cpp
-        src/h/Scanner.h
-        src/Chunk.cpp
-        src/h/Chunk.h
-        src/VM.cpp
-        src/h/VM.h
-        src/h/Parser.h
-        src/Parser.cpp
-        src/h/Value.h
-        src/Value.cpp
-        src/h/Object.h
-        src/Object.cpp
-        src/ast/Expr.h
-        src/ast/Stmt.h
-        src/AstPrinter.cpp
-        src/h/AstPrinter.h
-        src/Analyser.cpp
-        src/h/Analyser.h
-        src/h/Compiler.h src/Compiler.cpp src/h/Natives.h src/Natives.cpp src/h/GC.h src/GC.cpp src/h/Options.h src/Options.cpp src/h/Typename.h src/Typename.cpp src/h/Context.h src/Context.cpp src/h/InsertionOrderMap.h)
+include_directories(include)
+add_subdirectory(src)
+
+add_executable(enact ${ENACT_SRC})

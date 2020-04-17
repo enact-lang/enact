@@ -4,10 +4,11 @@
 #ifndef ENACT_EXPR_H
 #define ENACT_EXPR_H
 
-#include "../h/Type.h"
-#include "../h/Typename.h"
 #include <memory>
 #include <vector>
+
+#include "../parser/Typename.h"
+#include "../type/Type.h"
 
 template <class R>
 class ExprVisitor;

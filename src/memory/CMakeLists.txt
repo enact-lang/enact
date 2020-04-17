@@ -1,0 +1,5 @@
+set(MEMORY_SRC
+        ${CMAKE_CURRENT_SOURCE_DIR}/GC.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/GC.h
+
+        PARENT_SCOPE)

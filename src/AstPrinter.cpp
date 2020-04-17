@@ -1,5 +1,6 @@
 #include <sstream>
-#include "h/AstPrinter.h"
+
+#include "AstPrinter.h"
 
 void AstPrinter::print(Stmt& stmt) {
     std::cout << evaluate(stmt) << "\n";

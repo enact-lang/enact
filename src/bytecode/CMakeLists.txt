@@ -1,0 +1,5 @@
+set(BYTECODE_SRC
+        ${CMAKE_CURRENT_SOURCE_DIR}/Chunk.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Chunk.h
+
+        PARENT_SCOPE)

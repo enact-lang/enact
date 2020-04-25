@@ -1,6 +1,3 @@
-// This file was automatically generated.
-// "See generate.py" for details.
-
 #ifndef ENACT_EXPR_H
 #define ENACT_EXPR_H
 

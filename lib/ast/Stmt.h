@@ -1,6 +1,3 @@
-// This file was automatically generated.
-// "See generate.py" for details.
-
 #ifndef ENACT_STMT_H
 #define ENACT_STMT_H
 
@@ -28,14 +25,10 @@ namespace enact {
     class EachStmt;
     class ExpressionStmt;
     class ForStmt;
-    class FunctionStmt;
     class GivenStmt;
     class IfStmt;
     class ReturnStmt;
-    class StructStmt;
-    class TraitStmt;
     class WhileStmt;
-    class VariableStmt;
 
     template<class R>
     class StmtVisitor {
@@ -46,14 +39,10 @@ namespace enact {
         virtual R visitEachStmt(EachStmt &stmt) = 0;
         virtual R visitExpressionStmt(ExpressionStmt &stmt) = 0;
         virtual R visitForStmt(ForStmt &stmt) = 0;
-        virtual R visitFunctionStmt(FunctionStmt &stmt) = 0;
         virtual R visitGivenStmt(GivenStmt &stmt) = 0;
         virtual R visitIfStmt(IfStmt &stmt) = 0;
         virtual R visitReturnStmt(ReturnStmt &stmt) = 0;
-        virtual R visitStructStmt(StructStmt &stmt) = 0;
-        virtual R visitTraitStmt(TraitStmt &stmt) = 0;
         virtual R visitWhileStmt(WhileStmt &stmt) = 0;
-        virtual R visitVariableStmt(VariableStmt &stmt) = 0;
     };
 
     class BlockStmt : public Stmt {
@@ -177,35 +166,6 @@ namespace enact {
         }
     };
 
-    class FunctionStmt : public Stmt {
-    public:
-        Token name;
-        std::unique_ptr<const Typename> returnTypename;
-        std::vector<Param> params;
-        std::vector<std::unique_ptr<Stmt>> body;
-        Type type;
-        bool isMut;
-
-        FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
-                     std::vector<std::unique_ptr<Stmt>> body, Type type, bool isMut) :
-                name{name},
-                returnTypename{std::move(returnTypename)},
-                params{std::move(params)},
-                body{std::move(body)},
-                type{type},
-                isMut{isMut} {}
-
-        ~FunctionStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitFunctionStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitFunctionStmt(*this);
-        }
-    };
-
     class GivenStmt : public Stmt {
     public:
         std::unique_ptr<Expr> value;
@@ -271,57 +231,6 @@ namespace enact {
         }
     };
 
-    class StructStmt : public Stmt {
-    public:
-        Token name;
-        std::vector<Token> traits;
-        std::vector<Field> fields;
-        std::vector<std::unique_ptr<FunctionStmt>> methods;
-        std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
-        std::shared_ptr<const ConstructorType> constructorType;
-
-        StructStmt(Token name, std::vector<Token> traits, std::vector<Field> &&fields,
-                   std::vector<std::unique_ptr<FunctionStmt>> methods,
-                   std::vector<std::unique_ptr<FunctionStmt>> assocFunctions,
-                   std::shared_ptr<const ConstructorType> constructorType) :
-                name{name},
-                traits{traits},
-                fields{std::move(fields)},
-                methods{std::move(methods)},
-                assocFunctions{std::move(assocFunctions)},
-                constructorType{constructorType} {}
-
-        ~StructStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitStructStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitStructStmt(*this);
-        }
-    };
-
-    class TraitStmt : public Stmt {
-    public:
-        Token name;
-        std::vector<std::unique_ptr<FunctionStmt>> methods;
-
-        TraitStmt(Token name, std::vector<std::unique_ptr<FunctionStmt>> methods) :
-                name{name},
-                methods{std::move(methods)} {}
-
-        ~TraitStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitTraitStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitTraitStmt(*this);
-        }
-    };
-
     class WhileStmt : public Stmt {
     public:
         std::unique_ptr<Expr> condition;
@@ -341,31 +250,6 @@ namespace enact {
 
         void accept(StmtVisitor<void> *visitor) override {
             return visitor->visitWhileStmt(*this);
-        }
-    };
-
-    class VariableStmt : public Stmt {
-    public:
-        Token name;
-        std::unique_ptr<const Typename> typeName;
-        std::unique_ptr<Expr> initializer;
-        bool isConst;
-
-        VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer,
-                     bool isConst) :
-                name{name},
-                typeName{std::move(typeName)},
-                initializer{std::move(initializer)},
-                isConst{isConst} {}
-
-        ~VariableStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitVariableStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitVariableStmt(*this);
         }
     };
 }

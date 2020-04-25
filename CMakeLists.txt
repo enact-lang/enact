@@ -6,6 +6,5 @@ set(CMAKE_CXX_STANDARD 17)
 add_compile_definitions(DEBUG)
 
 include_directories(include)
+add_subdirectory(lib)
 add_subdirectory(src)
-
-add_executable(enact ${ENACT_SRC})

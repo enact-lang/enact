@@ -17,93 +17,59 @@ namespace enact {
     class Expr {
         Type m_type = nullptr;
     public:
-        virtual void setType(Type t) { m_type = t; }
+        virtual ~Expr() = default;
 
+        virtual void setType(Type t) { m_type = t; }
         virtual const Type &getType() {
             ENACT_ASSERT(m_type != nullptr, "Expr::getType(): Tried to get uninitialized type.");
             return m_type;
         }
 
-        virtual ~Expr() = default;
-
+        // We need to overload for every possible visitor return type here, as we cannot
+        // have a templated virtual member function.
         virtual std::string accept(ExprVisitor<std::string> *visitor) = 0;
-
         virtual void accept(ExprVisitor<void> *visitor) = 0;
     };
 
     class AllotExpr;
-
     class AnyExpr;
-
     class ArrayExpr;
-
     class AssignExpr;
-
     class BinaryExpr;
-
     class BooleanExpr;
-
     class CallExpr;
-
     class FloatExpr;
-
     class GetExpr;
-
     class IntegerExpr;
-
     class LogicalExpr;
-
     class NilExpr;
-
     class SetExpr;
-
     class StringExpr;
-
     class SubscriptExpr;
-
     class TernaryExpr;
-
     class UnaryExpr;
-
     class VariableExpr;
 
     template<class R>
     class ExprVisitor {
     public:
         virtual R visitAllotExpr(AllotExpr &expr) = 0;
-
         virtual R visitAnyExpr(AnyExpr &expr) = 0;
-
         virtual R visitArrayExpr(ArrayExpr &expr) = 0;
-
         virtual R visitAssignExpr(AssignExpr &expr) = 0;
-
         virtual R visitBinaryExpr(BinaryExpr &expr) = 0;
-
         virtual R visitBooleanExpr(BooleanExpr &expr) = 0;
-
         virtual R visitCallExpr(CallExpr &expr) = 0;
-
         virtual R visitFloatExpr(FloatExpr &expr) = 0;
-
         virtual R visitGetExpr(GetExpr &expr) = 0;
-
         virtual R visitIntegerExpr(IntegerExpr &expr) = 0;
-
         virtual R visitLogicalExpr(LogicalExpr &expr) = 0;
-
         virtual R visitNilExpr(NilExpr &expr) = 0;
-
         virtual R visitSetExpr(SetExpr &expr) = 0;
-
         virtual R visitStringExpr(StringExpr &expr) = 0;
-
         virtual R visitSubscriptExpr(SubscriptExpr &expr) = 0;
-
         virtual R visitTernaryExpr(TernaryExpr &expr) = 0;
-
         virtual R visitUnaryExpr(UnaryExpr &expr) = 0;
-
         virtual R visitVariableExpr(VariableExpr &expr) = 0;
     };
 

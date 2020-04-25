@@ -16,68 +16,43 @@ namespace enact {
     public:
         virtual ~Stmt() = default;
 
+        // We need to overload for every possible visitor return type here, as we cannot
+        // have a templated virtual member function.
         virtual std::string accept(StmtVisitor<std::string> *visitor) = 0;
-
         virtual void accept(StmtVisitor<void> *visitor) = 0;
     };
 
     class BlockStmt;
-
     class BreakStmt;
-
     class ContinueStmt;
-
     class EachStmt;
-
     class ExpressionStmt;
-
     class ForStmt;
-
     class FunctionStmt;
-
     class GivenStmt;
-
     class IfStmt;
-
     class ReturnStmt;
-
     class StructStmt;
-
     class TraitStmt;
-
     class WhileStmt;
-
     class VariableStmt;
 
     template<class R>
     class StmtVisitor {
     public:
         virtual R visitBlockStmt(BlockStmt &stmt) = 0;
-
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;
-
         virtual R visitContinueStmt(ContinueStmt &stmt) = 0;
-
         virtual R visitEachStmt(EachStmt &stmt) = 0;
-
         virtual R visitExpressionStmt(ExpressionStmt &stmt) = 0;
-
         virtual R visitForStmt(ForStmt &stmt) = 0;
-
         virtual R visitFunctionStmt(FunctionStmt &stmt) = 0;
-
         virtual R visitGivenStmt(GivenStmt &stmt) = 0;
-
         virtual R visitIfStmt(IfStmt &stmt) = 0;
-
         virtual R visitReturnStmt(ReturnStmt &stmt) = 0;
-
         virtual R visitStructStmt(StructStmt &stmt) = 0;
-
         virtual R visitTraitStmt(TraitStmt &stmt) = 0;
-
         virtual R visitWhileStmt(WhileStmt &stmt) = 0;
-
         virtual R visitVariableStmt(VariableStmt &stmt) = 0;
     };
 

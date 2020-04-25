@@ -3,7 +3,7 @@
 
 #include "../trivialStructs.h"
 
-#include "Expr.h"
+#include "Decl.h"
 
 namespace enact {
     template<class R>
@@ -22,6 +22,7 @@ namespace enact {
     class BlockStmt;
     class BreakStmt;
     class ContinueStmt;
+    class DeclStmt;
     class EachStmt;
     class ExpressionStmt;
     class ForStmt;
@@ -36,6 +37,7 @@ namespace enact {
         virtual R visitBlockStmt(BlockStmt &stmt) = 0;
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;
         virtual R visitContinueStmt(ContinueStmt &stmt) = 0;
+        virtual R visitDeclStmt(DeclStmt &stmt) = 0;
         virtual R visitEachStmt(EachStmt &stmt) = 0;
         virtual R visitExpressionStmt(ExpressionStmt &stmt) = 0;
         virtual R visitForStmt(ForStmt &stmt) = 0;
@@ -96,6 +98,24 @@ namespace enact {
 
         void accept(StmtVisitor<void> *visitor) override {
             return visitor->visitContinueStmt(*this);
+        }
+    };
+
+    class DeclStmt : public Stmt {
+    public:
+        std::unique_ptr<Decl> decl;
+
+        DeclStmt(std::unique_ptr<Decl> decl) :
+                decl{std::move(decl)} {}
+
+        ~DeclStmt() override = default;
+
+        std::string accept(StmtVisitor<std::string> *visitor) override {
+            return visitor->visitDeclStmt(*this);
+        }
+
+        void accept(StmtVisitor<void> *visitor) override {
+            return visitor->visitDeclStmt(*this);
         }
     };
 

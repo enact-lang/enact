@@ -20,7 +20,6 @@ namespace enact {
 
     class FunctionDecl;
     class StructDecl;
-    // ? class TopLevelDecl;
     class TraitDecl;
     class VariableDecl;
 
@@ -38,12 +37,12 @@ namespace enact {
         Token name;
         std::unique_ptr<const Typename> returnTypename;
         std::vector<Param> params;
-        std::vector<std::unique_ptr<Decl>> body;
+        std::vector<std::unique_ptr<Stmt>> body;
         Type type;
         bool isMut;
 
         FunctionDecl(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
-                     std::vector<std::unique_ptr<Decl>> body, Type type, bool isMut) :
+                     std::vector<std::unique_ptr<Stmt>> body, Type type, bool isMut) :
                 name{name},
                 returnTypename{std::move(returnTypename)},
                 params{std::move(params)},

@@ -5,43 +5,54 @@
 
 #include "../value/Object.h"
 
-class Context;
+namespace enact {
+    class Context;
 
-constexpr size_t GC_HEAP_GROW_FACTOR = 2;
+    constexpr size_t GC_HEAP_GROW_FACTOR = 2;
 
-class GC {
-    Context& m_context;
+    class GC {
+        Context &m_context;
 
-    size_t m_bytesAllocated = 0;
-    size_t m_nextRun = 1024 * 1024;
+        size_t m_bytesAllocated = 0;
+        size_t m_nextRun = 1024 * 1024;
 
-    std::vector<Object*> m_objects{};
-    std::vector<Object*> m_greyStack{};
+        std::vector<Object *> m_objects{};
+        std::vector<Object *> m_greyStack{};
 
-    void markRoots();
-    void markCompilerRoots();
-    void markVMRoots();
-    void markObject(Object* object);
-    void markValue(Value value);
-    void markValues(const std::vector<Value>& values);
+        void markRoots();
 
-    void traceReferences();
-    void blackenObject(Object* object);
+        void markCompilerRoots();
 
-    void sweep();
-    
-public:
-    explicit GC(Context& context);
-    ~GC();
+        void markVMRoots();
 
-    template <typename T, typename... Args>
-    T* allocateObject(Args&&... args);
-    Object* cloneObject(Object* object);
+        void markObject(Object *object);
 
-    void collectGarbage();
+        void markValue(Value value);
 
-    void freeObject(Object* object);
-    void freeObjects();
-};
+        void markValues(const std::vector<Value> &values);
+
+        void traceReferences();
+
+        void blackenObject(Object *object);
+
+        void sweep();
+
+    public:
+        explicit GC(Context &context);
+
+        ~GC();
+
+        template<typename T, typename... Args>
+        T *allocateObject(Args &&... args);
+
+        Object *cloneObject(Object *object);
+
+        void collectGarbage();
+
+        void freeObject(Object *object);
+
+        void freeObjects();
+    };
+}
 
 #endif //ENACT_GC_H

@@ -5,92 +5,110 @@
 
 #include "Token.h"
 
-class Typename {
-public:
-    enum class Kind {
-        BASIC,
-        ARRAY,
-        FUNCTION,
-        CONSTRUCTOR
+namespace enact {
+    class Typename {
+    public:
+        enum class Kind {
+            BASIC,
+            ARRAY,
+            FUNCTION,
+            CONSTRUCTOR
+        };
+
+        virtual ~Typename() = default;
+
+        virtual std::unique_ptr<Typename> clone() const = 0;
+
+        virtual Kind kind() const = 0;
+
+        virtual const std::string &name() const = 0;
+
+        virtual const Token &where() const = 0;
     };
 
-    virtual ~Typename() = default;
+    class BasicTypename : public Typename {
+        std::string m_name;
+        Token m_where;
 
-    virtual std::unique_ptr<Typename> clone() const = 0;
+    public:
+        explicit BasicTypename(Token name);
 
-    virtual Kind kind() const = 0;
-    virtual const std::string& name() const = 0;
-    virtual const Token& where() const = 0;
-};
+        explicit BasicTypename(std::string name, Token where);
 
-class BasicTypename : public Typename {
-    std::string m_name;
-    Token m_where;
+        BasicTypename(const BasicTypename &typeName);
 
-public:
-    explicit BasicTypename(Token name);
-    explicit BasicTypename(std::string name, Token where);
-    BasicTypename(const BasicTypename& typeName);
+        std::unique_ptr<Typename> clone() const override;
 
-    std::unique_ptr<Typename> clone() const override;
+        Kind kind() const override;
 
-    Kind kind() const override;
-    const std::string& name() const override;
-    const Token& where() const override;
-};
+        const std::string &name() const override;
 
-class ArrayTypename : public Typename {
-    std::unique_ptr<const Typename> m_elementTypename;
-    std::string m_name;
+        const Token &where() const override;
+    };
 
-public:
-    explicit ArrayTypename(std::unique_ptr<const Typename> elementTypename);
-    ArrayTypename(const ArrayTypename& typeName);
+    class ArrayTypename : public Typename {
+        std::unique_ptr<const Typename> m_elementTypename;
+        std::string m_name;
 
-    std::unique_ptr<Typename> clone() const override;
+    public:
+        explicit ArrayTypename(std::unique_ptr<const Typename> elementTypename);
 
-    const Typename& elementTypename() const;
+        ArrayTypename(const ArrayTypename &typeName);
 
-    Kind kind() const override;
-    const std::string& name() const override;
-    const Token& where() const override;
-};
+        std::unique_ptr<Typename> clone() const override;
 
-class FunctionTypename : public Typename {
-    std::unique_ptr<const Typename> m_returnTypename;
-    std::vector<std::unique_ptr<const Typename>> m_argumentTypenames;
-    std::string m_name{};
+        const Typename &elementTypename() const;
 
-public:
-    FunctionTypename(std::unique_ptr<const Typename> returnTypename,
-            std::vector<std::unique_ptr<const Typename>> argumentTypenames);
-    FunctionTypename(const FunctionTypename& typeName);
+        Kind kind() const override;
 
-    std::unique_ptr<Typename> clone() const override;
+        const std::string &name() const override;
 
-    const Typename& returnTypename() const;
-    const std::vector<std::unique_ptr<const Typename>>& argumentTypenames() const;
+        const Token &where() const override;
+    };
 
-    Kind kind() const override;
-    const std::string& name() const override;
-    const Token& where() const override;
-};
+    class FunctionTypename : public Typename {
+        std::unique_ptr<const Typename> m_returnTypename;
+        std::vector<std::unique_ptr<const Typename>> m_argumentTypenames;
+        std::string m_name{};
 
-class ConstructorTypename : public Typename {
-    std::unique_ptr<const Typename> m_structTypename;
-    std::string m_name;
+    public:
+        FunctionTypename(std::unique_ptr<const Typename> returnTypename,
+                         std::vector<std::unique_ptr<const Typename>> argumentTypenames);
 
-public:
-    explicit ConstructorTypename(std::unique_ptr<const Typename> structTypename);
-    ConstructorTypename(const ConstructorTypename& typeName);
+        FunctionTypename(const FunctionTypename &typeName);
 
-    std::unique_ptr<Typename> clone() const override;
+        std::unique_ptr<Typename> clone() const override;
 
-    const Typename& structTypename() const;
+        const Typename &returnTypename() const;
 
-    Kind kind() const override;
-    const std::string& name() const override;
-    const Token& where() const override;
-};
+        const std::vector<std::unique_ptr<const Typename>> &argumentTypenames() const;
+
+        Kind kind() const override;
+
+        const std::string &name() const override;
+
+        const Token &where() const override;
+    };
+
+    class ConstructorTypename : public Typename {
+        std::unique_ptr<const Typename> m_structTypename;
+        std::string m_name;
+
+    public:
+        explicit ConstructorTypename(std::unique_ptr<const Typename> structTypename);
+
+        ConstructorTypename(const ConstructorTypename &typeName);
+
+        std::unique_ptr<Typename> clone() const override;
+
+        const Typename &structTypename() const;
+
+        Kind kind() const override;
+
+        const std::string &name() const override;
+
+        const Token &where() const override;
+    };
+}
 
 #endif //ENACT_TYPENAME_H

@@ -3,53 +3,66 @@
 
 #include "../type/Type.h"
 
-class Object;
+namespace enact {
+    class Object;
 
-enum class ValueType {
-    INT,
-    DOUBLE,
-    BOOL,
-    OBJECT,
-    NIL,
-};
+    enum class ValueType {
+        INT,
+        DOUBLE,
+        BOOL,
+        OBJECT,
+        NIL,
+    };
 
-class Value {
-    ValueType m_type;
+    class Value {
+        ValueType m_type;
 
-    union {
-        int asInt;
-        double asDouble;
-        bool asBool;
-        Object* asObject;
-    } m_value;
+        union {
+            int asInt;
+            double asDouble;
+            bool asBool;
+            Object *asObject;
+        } m_value;
 
-public:
-    explicit Value(int value);
-    explicit Value(double value);
-    explicit Value(bool value);
-    explicit Value(Object* value);
-    explicit Value();
+    public:
+        explicit Value(int value);
 
-    bool is(ValueType type) const;
+        explicit Value(double value);
 
-    bool isInt() const;
-    bool isDouble() const;
-    bool isBool() const;
-    bool isObject() const;
-    bool isNil() const;
+        explicit Value(bool value);
 
-    int asInt() const;
-    double asDouble() const;
-    bool asBool() const;
-    Object* asObject() const;
+        explicit Value(Object *value);
 
-    bool operator==(const Value& value) const;
+        explicit Value();
 
-    Type getType() const;
+        bool is(ValueType type) const;
 
-    std::string toString() const;
-};
+        bool isInt() const;
 
-std::ostream& operator<<(std::ostream& stream, const Value& value);
+        bool isDouble() const;
+
+        bool isBool() const;
+
+        bool isObject() const;
+
+        bool isNil() const;
+
+        int asInt() const;
+
+        double asDouble() const;
+
+        bool asBool() const;
+
+        Object *asObject() const;
+
+        bool operator==(const Value &value) const;
+
+        Type getType() const;
+
+        std::string toString() const;
+    };
+
+    std::ostream &operator<<(std::ostream &stream, const Value &value);
+}
 
 #endif //ENACT_VALUE_H

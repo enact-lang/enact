@@ -3,24 +3,25 @@
 
 #include "parser/Typename.h"
 
-class Expr;
-class Stmt;
+namespace enact {
+    class Expr;
+    class Stmt;
 
-struct GivenCase {
-    std::unique_ptr<Expr> value;
-    std::vector<std::unique_ptr<Stmt>> body;
-    Token keyword;
-};
+    struct GivenCase {
+        std::unique_ptr<Expr> value;
+        std::vector<std::unique_ptr<Stmt>> body;
+        Token keyword;
+    };
 
-struct Param {
-    Token name;
-    std::unique_ptr<const Typename> typeName;
-};
+    struct Param {
+        Token name;
+        std::unique_ptr<const Typename> typeName;
+    };
 
-struct Field {
-    Token name;
-    std::unique_ptr<const Typename> typeName;
-};
-
+    struct Field {
+        Token name;
+        std::unique_ptr<const Typename> typeName;
+    };
+}
 
 #endif //ENACT_GIVENCASE_H

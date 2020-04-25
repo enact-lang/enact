@@ -17,6 +17,7 @@ set(ENACT_SRC
         ${CONTEXT_SRC}
         ${MEMORY_SRC}
         ${PARSER_SRC}
+        ${SEMA_SRC}
         ${TYPE_SRC}
         ${VALUE_SRC}
         ${VM_SRC}
@@ -27,7 +28,7 @@ set(ENACT_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/InsertionOrderMap.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Natives.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Natives.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/trivialStructs.h)
+        ${CMAKE_CURRENT_SOURCE_DIR}/trivialStructs.h sema/SemaDecls.h)
 set(ENACT_SRC ${ENACT_SRC} PARENT_SCOPE)
 
 add_library(enact ${ENACT_SRC})

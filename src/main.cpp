@@ -1,8 +1,8 @@
-#include "../lib/context/Context.h"
+#include "../include/Enact.h"
 
 int main(int argc, char *argv[]) {
-    Options options{argc, argv};
-    Context context{options};
+    enact::Options options{argc, argv};
+    enact::Context context{options};
 
     return static_cast<int>(context.run());
 }

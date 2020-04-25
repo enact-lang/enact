@@ -1,0 +1,4 @@
+#ifndef ENACT_SEMADECLS_H
+#define ENACT_SEMADECLS_H
+
+#endif //ENACT_SEMADECLS_H

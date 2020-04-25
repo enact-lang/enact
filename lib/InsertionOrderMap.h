@@ -78,6 +78,31 @@ namespace enact {
             m_insertionOrder.push_back(value.first);
         }
 
+        template <class... Args>
+        void emplace(const KeyType& key, Args... constructorArgs) {
+            m_map.emplace(key, constructorArgs...);
+            m_insertionOrder.push_back(key);
+        }
+
+        void insertOrAssign(const std::pair<KeyType, ValueType> &value) {
+            if (contains(value.first)) {
+                m_map[value.first] = value.second;
+                m_insertionOrder.push_back(value.first);
+            } else {
+                insert(value);
+            }
+        }
+
+        template <class... Args>
+        void emplaceOrAssign(const KeyType& key, Args... constructorArgs) {
+            if (contains(key)) {
+                m_map[key] = ValueType{constructorArgs...};
+                m_insertionOrder.push_back(key);
+            } else {
+                emplace(key, constructorArgs...);
+            }
+        }
+
         void erase(size_t index) {
             m_map.erase(m_insertionOrder[index]);
             m_insertionOrder.erase(index);

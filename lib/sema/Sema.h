@@ -9,11 +9,6 @@ namespace enact {
     private:
         Context& m_context;
 
-        // All global declarations. Assembled at parse time. We use reference
-        // wrappers here relying on the assumption that the AST will be preserved
-        // throughout the compilation process.
-        std::vector<std::reference_wrapper<const Stmt>> m_decls{};
-
         // All global variables and their corresponding types and semantic info.
         // Populated (declared) by SemaDecls and resolved (defined) by SemaDefs.
         InsertionOrderMap<std::string, VariableInfo> m_variables{};
@@ -29,8 +24,8 @@ namespace enact {
     public:
         explicit Sema(Context& context);
 
-        // Parser uses this to add global declarations when it finds them.
-        void addDeclStmt(const Stmt& stmt);
+        // Conduct a complete semantic analysis of `ast`, then return it.
+        std::vector<std::unique_ptr<Decl>> analyse(std::vector<std::unique_ptr<Decl> ast);
 
         // SemaDecl uses these to declare global names.
         void declareVariable(const std::string& name, const VariableInfo& info);

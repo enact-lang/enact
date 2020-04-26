@@ -22,9 +22,8 @@ namespace enact {
     class BlockStmt;
     class BreakStmt;
     class ContinueStmt;
-    class DeclStmt;
+    class DeclarationStmt;
     class EachStmt;
-    class ExpressionStmt;
     class ForStmt;
     class GivenStmt;
     class IfStmt;
@@ -37,9 +36,8 @@ namespace enact {
         virtual R visitBlockStmt(BlockStmt &stmt) = 0;
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;
         virtual R visitContinueStmt(ContinueStmt &stmt) = 0;
-        virtual R visitDeclStmt(DeclStmt &stmt) = 0;
+        virtual R visitDeclarationStmt(DeclarationStmt &stmt) = 0;
         virtual R visitEachStmt(EachStmt &stmt) = 0;
-        virtual R visitExpressionStmt(ExpressionStmt &stmt) = 0;
         virtual R visitForStmt(ForStmt &stmt) = 0;
         virtual R visitGivenStmt(GivenStmt &stmt) = 0;
         virtual R visitIfStmt(IfStmt &stmt) = 0;
@@ -101,21 +99,21 @@ namespace enact {
         }
     };
 
-    class DeclStmt : public Stmt {
+    class DeclarationStmt : public Stmt {
     public:
         std::unique_ptr<Decl> decl;
 
-        DeclStmt(std::unique_ptr<Decl> decl) :
+        DeclarationStmt(std::unique_ptr<Decl> decl) :
                 decl{std::move(decl)} {}
 
-        ~DeclStmt() override = default;
+        ~DeclarationStmt() override = default;
 
         std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitDeclStmt(*this);
+            return visitor->visitDeclarationStmt(*this);
         }
 
         void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitDeclStmt(*this);
+            return visitor->visitDeclarationStmt(*this);
         }
     };
 
@@ -141,33 +139,15 @@ namespace enact {
         }
     };
 
-    class ExpressionStmt : public Stmt {
-    public:
-        std::unique_ptr<Expr> expr;
-
-        ExpressionStmt(std::unique_ptr<Expr> expr) :
-                expr{std::move(expr)} {}
-
-        ~ExpressionStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitExpressionStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitExpressionStmt(*this);
-        }
-    };
-
     class ForStmt : public Stmt {
     public:
-        std::unique_ptr<Stmt> initializer;
+        std::unique_ptr<Decl> initializer;
         std::unique_ptr<Expr> condition;
         std::unique_ptr<Expr> increment;
         std::vector<std::unique_ptr<Stmt>> body;
         Token keyword;
 
-        ForStmt(std::unique_ptr<Stmt> initializer, std::unique_ptr<Expr> condition, std::unique_ptr<Expr> increment,
+        ForStmt(std::unique_ptr<Decl> initializer, std::unique_ptr<Expr> condition, std::unique_ptr<Expr> increment,
                 std::vector<std::unique_ptr<Stmt>> body, Token keyword) :
                 initializer{std::move(initializer)},
                 condition{std::move(condition)},

@@ -1,8 +1,11 @@
 #ifndef ENACT_DECL_H
 #define ENACT_DECL_H
 
+#include "../sema/VariableInfo.h"
 #include "../trivialStructs.h"
 #include "../type/Type.h"
+
+#include "Expr.h"
 
 namespace enact {
     template<class R>
@@ -18,6 +21,7 @@ namespace enact {
         virtual void accept(DeclVisitor<void> *visitor) = 0;
     };
 
+    class ExpressionDecl;
     class FunctionDecl;
     class StructDecl;
     class TraitDecl;
@@ -26,10 +30,35 @@ namespace enact {
     template<class R>
     class DeclVisitor {
     public:
+        virtual R visitExpressionDecl(ExpressionDecl& decl) = 0;
         virtual R visitFunctionDecl(FunctionDecl& decl) = 0;
         virtual R visitStructDecl(StructDecl &decl) = 0;
         virtual R visitTraitDecl(TraitDecl &decl) = 0;
         virtual R visitVariableDecl(VariableDecl &decl) = 0;
+    };
+
+    class ExpressionDecl : public Decl {
+    public:
+        std::unique_ptr<Expr> expr;
+
+        ExpressionDecl(std::unique_ptr<Expr> expr) :
+                expr{std::move(expr)} {}
+
+        ~ExpressionDecl() override = default;
+
+        std::string accept(DeclVisitor<std::string> *visitor) override {
+            return visitor->visitExpressionDecl(*this);
+        }
+
+        void accept(DeclVisitor<void> *visitor) override {
+            return visitor->visitExpressionDecl(*this);
+        }
+    };
+
+    enum class MutatesSelf {
+        YES,
+        NO,
+        INVALID
     };
 
     class FunctionDecl : public Decl {
@@ -39,16 +68,16 @@ namespace enact {
         std::vector<Param> params;
         std::vector<std::unique_ptr<Stmt>> body;
         Type type;
-        bool isMut;
+        MutatesSelf doesMutateSelf;
 
         FunctionDecl(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
-                     std::vector<std::unique_ptr<Stmt>> body, Type type, bool isMut) :
+                     std::vector<std::unique_ptr<Stmt>> body, Type type) :
                 name{name},
                 returnTypename{std::move(returnTypename)},
                 params{std::move(params)},
                 body{std::move(body)},
                 type{type},
-                isMut{isMut} {}
+                doesMutateSelf{MutatesSelf::INVALID} {}
 
         ~FunctionDecl() override = default;
 
@@ -117,14 +146,14 @@ namespace enact {
         Token name;
         std::unique_ptr<const Typename> typeName;
         std::unique_ptr<Expr> initializer;
-        bool isConst;
+        Mutability mutability;
 
         VariableDecl(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer,
-                     bool isConst) :
+                     Mutability mutability) :
                 name{name},
                 typeName{std::move(typeName)},
                 initializer{std::move(initializer)},
-                isConst{isConst} {}
+                mutability{mutability} {}
 
         ~VariableDecl() override = default;
 

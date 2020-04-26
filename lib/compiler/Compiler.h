@@ -1,7 +1,7 @@
 #ifndef ENACT_COMPILER_H
 #define ENACT_COMPILER_H
 
-#include "../ast/Stmt.h"
+#include "../ast/AstVisitor.h"
 #include "../bytecode/Chunk.h"
 #include "../value/Object.h"
 
@@ -25,7 +25,7 @@ namespace enact {
         SCRIPT
     };
 
-    class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
+    class Compiler : private AstVisitor<void> {
         friend class GC;
 
         Context &m_context;
@@ -43,53 +43,38 @@ namespace enact {
         bool m_hadError = false;
 
         void start(FunctionKind functionKind, Type functionType, const std::string &name);
-
         void startProgram();
-
         void startFunction(FunctionStmt &function);
 
         void compile(std::vector<std::unique_ptr<Stmt>> ast);
-
-        void compile(Stmt &stmt);
-
-        void compile(Expr &expr);
-
         FunctionObject *compileFunction(FunctionStmt &stmt);
 
+        void compile(Stmt &stmt);
+        void compile(Expr &expr);
+
         void endProgram();
-
         void endPart();
-
         void endFunction();
 
         void beginScope();
-
         void endScope();
 
         void addLocal(const Token &name);
-
         uint32_t resolveLocal(const Token &name);
 
         void addUpvalue(uint32_t index, bool isLocal);
-
         uint32_t resolveUpvalue(const Token &name);
 
         void defineNative(std::string name, Type functionType, NativeFn function);
 
         void emitByte(uint8_t byte);
-
         void emitByte(OpCode byte);
-
         void emitShort(uint16_t value);
-
         void emitLong(uint32_t value);
-
         void emitConstant(Value constant);
 
         size_t emitJump(OpCode jump);
-
         void patchJump(size_t index, Token where);
-
         void emitLoop(size_t loopStartIndex, Token where);
 
         void emitFunction(FunctionStmt &stmt);
@@ -119,67 +104,39 @@ namespace enact {
         CompileError errorAt(const Token &token, const std::string &message);
 
         void visitBlockStmt(BlockStmt &stmt) override;
-
         void visitBreakStmt(BreakStmt &stmt) override;
-
         void visitContinueStmt(ContinueStmt &stmt) override;
-
         void visitEachStmt(EachStmt &stmt) override;
-
-        void visitExpressionStmt(ExpressionStmt &stmt) override;
-
+        void visitDeclarationStmt(DeclarationStmt &stmt) override;
         void visitForStmt(ForStmt &stmt) override;
-
-        void visitFunctionStmt(FunctionStmt &stmt) override;
-
         void visitGivenStmt(GivenStmt &stmt) override;
-
         void visitIfStmt(IfStmt &stmt) override;
-
         void visitReturnStmt(ReturnStmt &stmt) override;
-
-        void visitStructStmt(StructStmt &stmt) override;
-
-        void visitTraitStmt(TraitStmt &stmt) override;
-
         void visitWhileStmt(WhileStmt &stmt) override;
 
-        void visitVariableStmt(VariableStmt &stmt) override;
+        void visitExpressionDecl(ExpressionDecl& decl) override;
+        void visitFunctionDecl(FunctionDecl& decl) override;
+        void visitStructDecl(StructDecl& decl) override;
+        void visitTraitDecl(TraitDecl& decl) override;
+        void visitVariableDecl(VariableDecl& decl) override;
 
         void visitAllotExpr(AllotExpr &expr) override;
-
         void visitAnyExpr(AnyExpr &expr) override;
-
         void visitArrayExpr(ArrayExpr &expr) override;
-
         void visitAssignExpr(AssignExpr &expr) override;
-
         void visitBinaryExpr(BinaryExpr &expr) override;
-
         void visitBooleanExpr(BooleanExpr &expr) override;
-
         void visitCallExpr(CallExpr &expr) override;
-
         void visitFloatExpr(FloatExpr &expr) override;
-
         void visitGetExpr(GetExpr &expr) override;
-
         void visitIntegerExpr(IntegerExpr &expr) override;
-
         void visitLogicalExpr(LogicalExpr &expr) override;
-
         void visitNilExpr(NilExpr &expr) override;
-
         void visitSetExpr(SetExpr &expr) override;
-
         void visitStringExpr(StringExpr &expr) override;
-
         void visitSubscriptExpr(SubscriptExpr &expr) override;
-
         void visitTernaryExpr(TernaryExpr &expr) override;
-
         void visitUnaryExpr(UnaryExpr &expr) override;
-
         void visitVariableExpr(VariableExpr &expr) override;
 
     public:

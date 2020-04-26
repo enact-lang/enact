@@ -12,32 +12,32 @@ namespace enact {
     // to Sema the variables and types that we come across - it's fine if they are
     // incomplete for now - we don't do any resolution until SemaDef, when everything
     // has been declared.
-    class SemaDecls : private ExprVisitor<void>, StmtVisitor<void> {
+    class SemaDecls : private AstVisitor<void> {
     public:
         explicit SemaDecls(Sema& sema);
 
-        void declareDeclStmts();
+        std::vector<std::unique_ptr<Decl>> declare(std::vector<std::unique_ptr<Decl> ast);
 
     private:
         Sema& m_sema;
-
-        void visit(Stmt& stmt);
-        void visit(Expr& expr);
 
         void visitBlockStmt(BlockStmt &stmt) override;
         void visitBreakStmt(BreakStmt &stmt) override;
         void visitContinueStmt(ContinueStmt &stmt) override;
         void visitEachStmt(EachStmt &stmt) override;
-        void visitExpressionStmt(ExpressionStmt &stmt) override;
+        void visitDeclarationStmt(DeclarationStmt &stmt) override;
         void visitForStmt(ForStmt &stmt) override;
-        void visitFunctionStmt(FunctionStmt &stmt) override;
         void visitGivenStmt(GivenStmt &stmt) override;
         void visitIfStmt(IfStmt &stmt) override;
         void visitReturnStmt(ReturnStmt &stmt) override;
-        void visitStructStmt(StructStmt &stmt) override;
-        void visitTraitStmt(TraitStmt &stmt) override;
         void visitWhileStmt(WhileStmt &stmt) override;
-        void visitVariableStmt(VariableStmt &stmt) override;
+
+        void visitExpressionDecl(ExpressionDecl& decl) override;
+        void visitFunctionDecl(FunctionDecl& decl) override;
+        void visitStructDecl(StructDecl& decl) override;
+        void visitTraitDecl(TraitDecl& decl) override;
+        void visitVariableDecl(VariableDecl& decl) override;
+
         void visitAllotExpr(AllotExpr &expr) override;
         void visitAnyExpr(AnyExpr &expr) override;
         void visitArrayExpr(ArrayExpr &expr) override;

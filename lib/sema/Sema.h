@@ -11,11 +11,11 @@ namespace enact {
 
         // All global variables and their corresponding types and semantic info.
         // Populated (declared) by SemaDecls and resolved (defined) by SemaDefs.
-        InsertionOrderMap<std::string, VariableInfo> m_variables{};
+        InsertionOrderMap<std::string, VariableInfo> m_globalVariables{};
 
         // All global types and their resolved values. Populated (declared) by
         // SemaDecls and resolved (defined) by SemaDefs.
-        InsertionOrderMap<std::string, Type> m_types{};
+        InsertionOrderMap<std::string, Type> m_globalTypes{};
 
         // The two AST passes that we manage here.
         SemaDecls m_declarer{*this};
@@ -24,21 +24,21 @@ namespace enact {
     public:
         explicit Sema(Context& context);
 
-        // Conduct a complete semantic analysis of `ast`, then return it.
+        // Conduct a complete semantic analysis of `ast`, then move it back to the caller.
         std::vector<std::unique_ptr<Decl>> analyse(std::vector<std::unique_ptr<Decl> ast);
 
         // SemaDecl uses these to declare global names.
-        void declareVariable(const std::string& name, const VariableInfo& info);
-        void declareType(const std::string& name, Type value = nullptr);
+        void declareGlobalVariable(const std::string& name, const VariableInfo& info);
+        void declareGlobalType(const std::string& name, Type value = nullptr);
 
         // SemaDef uses these to define global names.
-        void defineVariable(const std::string& name, Type type);
-        void defineType(const std::string& name, Type value);
+        void defineGlobalVariable(const std::string& name, Type type);
+        void defineGlobalType(const std::string& name, Type value);
 
         // Check if a symbol has been declared. Returns nullopt if the symbol
         // does not exist, otherwise returns the symbol in question.
-        std::optional<VariableInfo> variableDeclared(const std::string& name);
-        std::optional<Type> typeDeclared(const std::string& name);
+        std::optional<VariableInfo> globalVariableDeclared(const std::string& name);
+        std::optional<Type> globalTypeDeclared(const std::string& name);
     };
 }
 

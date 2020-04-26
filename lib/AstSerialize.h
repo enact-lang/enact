@@ -4,6 +4,8 @@
 #include "ast/AstVisitor.h"
 
 namespace enact {
+    // A functor which takes an AST node (Stmt/Decl/Expr), serializes it,
+    // and returns the output as an std::string.
     class AstSerialize : private AstVisitor<std::string> {
         std::string m_ident = "";
 

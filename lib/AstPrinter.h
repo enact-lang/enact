@@ -1,24 +1,29 @@
 #ifndef ENACT_ASTPRINTER_H
 #define ENACT_ASTPRINTER_H
 
-#include "ast/Stmt.h"
+#include "ast/AstVisitor.h"
 
 namespace enact {
-    class AstPrinter : private StmtVisitor<std::string>, private ExprVisitor<std::string> {
+    class AstPrinter : private AstVisitor<std::string> {
+        std::string m_ident = "";
+
         std::string visitBlockStmt(BlockStmt &stmt) override;
         std::string visitBreakStmt(BreakStmt &stmt) override;
         std::string visitContinueStmt(ContinueStmt &stmt) override;
         std::string visitEachStmt(EachStmt &stmt) override;
-        std::string visitExpressionStmt(ExpressionStmt &stmt) override;
+        std::string visitDeclarationStmt(DeclarationStmt &stmt) override;
         std::string visitForStmt(ForStmt &stmt) override;
-        std::string visitFunctionStmt(FunctionStmt &stmt) override;
         std::string visitGivenStmt(GivenStmt &stmt) override;
         std::string visitIfStmt(IfStmt &stmt) override;
         std::string visitReturnStmt(ReturnStmt &stmt) override;
-        std::string visitStructStmt(StructStmt &stmt) override;
-        std::string visitTraitStmt(TraitStmt &stmt) override;
         std::string visitWhileStmt(WhileStmt &stmt) override;
-        std::string visitVariableStmt(VariableStmt &stmt) override;
+
+        std::string visitExpressionDecl(ExpressionDecl& decl) override;
+        std::string visitFunctionDecl(FunctionDecl& decl) override;
+        std::string visitStructDecl(StructDecl& decl) override;
+        std::string visitTraitDecl(TraitDecl& decl) override;
+        std::string visitVariableDecl(VariableDecl& decl) override;
+
         std::string visitAllotExpr(AllotExpr &expr) override;
         std::string visitAnyExpr(AnyExpr &expr) override;
         std::string visitArrayExpr(ArrayExpr &expr) override;
@@ -37,9 +42,6 @@ namespace enact {
         std::string visitTernaryExpr(TernaryExpr &expr) override;
         std::string visitUnaryExpr(UnaryExpr &expr) override;
         std::string visitVariableExpr(VariableExpr &expr) override;
-
-        std::string evaluate(Stmt &stmt);
-        std::string evaluate(Expr &expr);
 
     public:
         void print(Stmt &stmt);

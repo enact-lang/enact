@@ -4,172 +4,223 @@
 
 namespace enact {
     void AstPrinter::print(Stmt &stmt) {
-        std::cout << evaluate(stmt) << "\n";
-    }
-
-    std::string AstPrinter::evaluate(Stmt &stmt) {
-        return stmt.accept(this);
-    }
-
-    std::string AstPrinter::evaluate(Expr &expr) {
-        return expr.accept(this);
+        std::cout << visitStmt(stmt) << "\n";
     }
 
     std::string AstPrinter::visitBlockStmt(BlockStmt &stmt) {
         std::stringstream s;
-        s << "Stmt::Block [\n";
+
+        s << m_ident << "(Stmt::Block (\n";
+        m_ident += "    ";
+
         for (auto &statement : stmt.statements) {
-            s << evaluate(*statement) << "\n";
+            s << visitStmt(*statement) << "\n";
         }
-        s << "]";
+
+        m_ident.erase(m_ident.back() - 5);
+        s << m_ident << ")";
+
         return s.str();
     }
 
     std::string AstPrinter::visitBreakStmt(BreakStmt &stmt) {
-        return "Stmt::Break";
+        return m_ident + "(Stmt::Break)";
     }
 
     std::string AstPrinter::visitContinueStmt(ContinueStmt &stmt) {
-        return "Stmt::Continue";
+        return m_ident + "(Stmt::Continue)";
     }
 
     std::string AstPrinter::visitEachStmt(EachStmt &stmt) {
         std::stringstream s;
-        s << "Stmt::Each " << stmt.name.lexeme << " in " << evaluate(*stmt.object) << " [\n";
+
+        s << m_ident << "(Stmt::Each (" << stmt.name.lexeme << " " << visitExpr(*stmt.object) << ") (\n";
+        m_ident += "    ";
+
         for (auto &statement : stmt.body) {
-            s << evaluate(*statement) << "\n";
+            s << visitStmt(*statement) << "\n";
         }
-        s << "]";
+
+        m_ident.erase(m_ident.back() - 5);
+        s << m_ident << ")";
+
         return s.str();
     }
 
-    std::string AstPrinter::visitExpressionStmt(ExpressionStmt &stmt) {
-        return "Stmt::Expression " + evaluate(*stmt.expr);
+    std::string AstPrinter::visitDeclarationStmt(DeclarationStmt &stmt) {
+        return m_ident + "(Stmt::Declaration " + visitDecl(*stmt.decl) + ")";
     }
 
     std::string AstPrinter::visitForStmt(ForStmt &stmt) {
         std::stringstream s;
-        s << "Stmt::For " << evaluate(*stmt.initializer) << "; "
-          << evaluate(*stmt.condition) << "; "
-          << evaluate(*stmt.increment) << " [\n";
-        for (auto &statement : stmt.body) {
-            s << evaluate(*statement) << "\n";
-        }
-        s << "]";
-        return s.str();
-    }
 
-    std::string AstPrinter::visitFunctionStmt(FunctionStmt &stmt) {
-        std::stringstream s;
-        s << "Stmt::Function " << stmt.name.lexeme << " (";
-
-        std::string separator = "";
-        for (auto &param : stmt.params) {
-            s << separator << param.name.lexeme << " " << param.typeName->name();
-            separator = ", ";
-        }
-
-        s << ") " << stmt.returnTypename->name() << " [\n";
+        s << m_ident << "(Stmt::For (" <<
+                visitDecl(*stmt.initializer) << " " <<
+                visitExpr(*stmt.condition) << " " <<
+                visitExpr(*stmt.increment) << ") (\n";
+        m_ident += "    ";
 
         for (auto &statement : stmt.body) {
-            s << evaluate(*statement) << "\n";
+            s << visitStmt(*statement) << "\n";
         }
 
-        s << "]";
+        m_ident.erase(m_ident.back() - 5);
+        s << m_ident << ")";
 
         return s.str();
     }
 
     std::string AstPrinter::visitGivenStmt(GivenStmt &stmt) {
         std::stringstream s;
-        s << "Stmt::Given " << evaluate(*stmt.value) << " [\n";
+
+        s << m_ident << "(Stmt::Given " << visitExpr(*stmt.value) << " (\n";
+        m_ident += "    ";
+
         for (auto &case_ : stmt.cases) {
-            s << "when " << evaluate(*case_.value) << " [\n";
+            s << m_ident << "(" << visitExpr(*case_.value) << " (\n";
+            m_ident += "    ";
+
             for (auto &statement: case_.body) {
-                s << evaluate(*statement) << "\n";
+                s << visitStmt(*statement) << "\n";
             }
-            s << "]\n";
+
+            m_ident.erase(m_ident.back() - 5);
+            s << m_ident << ")\n";
         }
-        s << "]";
+
+        m_ident.erase(m_ident.back() - 5);
+        s << m_ident << ")";
+
         return s.str();
     }
 
     std::string AstPrinter::visitIfStmt(IfStmt &stmt) {
         std::stringstream s;
-        s << "Stmt::If " << evaluate(*stmt.condition) << " [\n";
+
+        s << m_ident << "(Stmt::If " << visitExpr(*stmt.condition) << " (\n";
+        m_ident += "    ";
+
         for (auto &statement : stmt.thenBlock) {
-            s << evaluate(*statement) << "\n";
+            s << visitStmt(*statement) << "\n";
         }
-        s << "] else [\n";
+        s << m_ident.substr(4) << ") (\n";
         for (auto &statement : stmt.elseBlock) {
-            s << evaluate(*statement) << "\n";
+            s << visitStmt(*statement) << "\n";
         }
-        s << "]";
+
+        m_ident.erase(m_ident.back() - 5);
+        s << m_ident << ")";
+
         return s.str();
     }
 
     std::string AstPrinter::visitReturnStmt(ReturnStmt &stmt) {
-        return "Stmt::Return " + evaluate(*stmt.value);
-    }
-
-    std::string AstPrinter::visitStructStmt(StructStmt &stmt) {
-        std::stringstream s;
-        s << "Stmt::Struct " << stmt.name.lexeme << " ";
-
-        std::string separator = "";
-        for (auto &trait : stmt.traits) {
-            s << separator << "is " << trait.lexeme;
-            separator = ", ";
-        }
-
-        s << "[\n";
-
-        for (auto &field : stmt.fields) {
-            s << "field " << field.name.lexeme << " " << field.typeName->name() << "\n";
-        }
-
-        for (auto &method : stmt.methods) {
-            s << evaluate(*method) << "\n";
-        }
-
-        for (auto &function : stmt.assocFunctions) {
-            s << "assoc " << evaluate(*function) << "\n";
-        }
-
-        s << "]";
-
-        return s.str();
-    }
-
-    std::string AstPrinter::visitTraitStmt(TraitStmt &stmt) {
-        std::stringstream s;
-        s << "Stmt::Trait " << stmt.name.lexeme << " [\n";
-
-        for (auto &method : stmt.methods) {
-            s << evaluate(*method) << "\n";
-        }
-
-        s << "]";
-
-        return s.str();
+        return "(Stmt::Return " + visitExpr(*stmt.value) + ")";
     }
 
     std::string AstPrinter::visitWhileStmt(WhileStmt &stmt) {
         std::stringstream s;
-        s << "Stmt::While " << evaluate(*stmt.condition) << " then [\n";
+
+        s << m_ident << "(Stmt::While " << visitExpr(*stmt.condition) << " (\n";
+        m_ident += "    ";
+
         for (auto &statement : stmt.body) {
-            s << evaluate(*statement) << "\n";
+            s << visitStmt(*statement) << "\n";
         }
-        s << "]";
+
+        m_ident.erase(m_ident.back() - 5);
+        s << m_ident << ")";
+
         return s.str();
     }
 
-    std::string AstPrinter::visitVariableStmt(VariableStmt &stmt) {
-        return "Stmt::Var " + stmt.name.lexeme + " " + evaluate(*stmt.initializer);
+    std::string AstPrinter::visitExpressionDecl(ExpressionDecl &decl) {
+        return "(Decl::Expression " + visitExpr(*decl.expr) + ")";
+    }
+
+    std::string AstPrinter::visitFunctionDecl(FunctionDecl &decl) {
+        std::stringstream s;
+
+        s << "(Decl::Function " << decl.name.lexeme << " (";
+
+        for (auto &param : decl.params) {
+            s << param.name.lexeme << " " << param.typeName->name();
+        }
+
+        s << ") " << decl.returnTypename->name() << " (\n";
+        m_ident += "    ";
+
+        for (auto &statement : decl.body) {
+            s << visitStmt(*statement) << "\n";
+        }
+
+        m_ident.erase(m_ident.back() - 5);
+        s << ")";
+
+        return s.str();
+    }
+
+    std::string AstPrinter::visitStructDecl(StructDecl &decl) {
+        std::stringstream s;
+        s << "(Decl::Struct " << decl.name.lexeme << " (";
+
+        for (auto &trait : decl.traits) {
+            s << trait.lexeme;
+        }
+
+        s << ") (\n";
+        m_ident += "    ";
+
+        for (auto &field : decl.fields) {
+            s << m_ident << "(" << field.name.lexeme << " " << field.typeName->name() << ")\n";
+        }
+
+        for (auto &method : decl.methods) {
+            s << m_ident << visitDecl(*method) << "\n";
+        }
+
+        for (auto &function : decl.assocFunctions) {
+            s << m_ident << "(assoc " << visitDecl(*function) << ")\n";
+        }
+
+        m_ident.erase(m_ident.back() - 5);
+        s << ")";
+
+        return s.str();
+    }
+
+    std::string AstPrinter::visitTraitDecl(TraitDecl &decl) {
+        std::stringstream s;
+
+        s << "(Decl::Trait " << decl.name.lexeme << " (\n";
+        m_ident += "    ";
+
+        for (auto &method : decl.methods) {
+            s << m_ident << visitDecl(*method) << "\n";
+        }
+
+        m_ident.erase(m_ident.back() - 5);
+        s << ")";
+
+        return s.str();
+    }
+
+    std::string AstPrinter::visitVariableDecl(VariableDecl &decl) {
+        std::stringstream s;
+
+        s << "(Decl::Variable ";
+        switch (decl.mutability) {
+            case Mutability::NONE:  s << "val "; break;
+            case Mutability::BOXED: s << "let "; break;
+            case Mutability::FULL:  s << "var "; break;
+        }
+        s << decl.name.lexeme + " " + visitExpr(*decl.initializer) << ")";
+
+        return s.str();
     }
 
     std::string AstPrinter::visitAllotExpr(AllotExpr &expr) {
-        return "(= " + evaluate(*expr.target) + " " + evaluate(*expr.value) + ")";
+        return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
     }
 
     std::string AstPrinter::visitAnyExpr(AnyExpr &expr) {
@@ -180,22 +231,22 @@ namespace enact {
         std::stringstream s;
         s << "[";
 
-        std::string separator = "";
+        std::string separator;
         for (auto &element : expr.value) {
-            s << separator << evaluate(*element);
+            s << separator << visitExpr(*element);
             separator = ", ";
         }
 
-        s << "] " << expr.getType()->toString();
+        s << "]";
         return s.str();
     }
 
     std::string AstPrinter::visitAssignExpr(AssignExpr &expr) {
-        return "(= " + evaluate(*expr.target) + " " + evaluate(*expr.value) + ")";
+        return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
     }
 
     std::string AstPrinter::visitBinaryExpr(BinaryExpr &expr) {
-        return "(" + expr.oper.lexeme + " " + evaluate(*expr.left) + " " + evaluate(*expr.right) + ")";
+        return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
     }
 
     std::string AstPrinter::visitBooleanExpr(BooleanExpr &expr) {
@@ -204,11 +255,13 @@ namespace enact {
 
     std::string AstPrinter::visitCallExpr(CallExpr &expr) {
         std::stringstream s;
-        s << "(() " << evaluate(*expr.callee);
+
+        s << "(() " << visitExpr(*expr.callee);
         for (auto &arg : expr.arguments) {
-            s << " " << evaluate(*arg);
+            s << " " << visitExpr(*arg);
         }
         s << ")";
+
         return s.str();
     }
 
@@ -217,7 +270,7 @@ namespace enact {
     }
 
     std::string AstPrinter::visitGetExpr(GetExpr &expr) {
-        return "(. " + evaluate(*expr.object) + " " + expr.name.lexeme + ")";
+        return "(. " + visitExpr(*expr.object) + " " + expr.name.lexeme + ")";
     }
 
     std::string AstPrinter::visitIntegerExpr(IntegerExpr &expr) {
@@ -225,7 +278,7 @@ namespace enact {
     }
 
     std::string AstPrinter::visitLogicalExpr(LogicalExpr &expr) {
-        return "(" + expr.oper.lexeme + " " + evaluate(*expr.left) + " " + evaluate(*expr.right) + ")";
+        return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
     }
 
     std::string AstPrinter::visitNilExpr(NilExpr &expr) {
@@ -233,7 +286,7 @@ namespace enact {
     }
 
     std::string AstPrinter::visitSetExpr(SetExpr &expr) {
-        return "(= " + evaluate(*expr.target) + " " + evaluate(*expr.value) + ")";
+        return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
     }
 
     std::string AstPrinter::visitStringExpr(StringExpr &expr) {
@@ -243,16 +296,18 @@ namespace enact {
     }
 
     std::string AstPrinter::visitSubscriptExpr(SubscriptExpr &expr) {
-        return "([] " + evaluate(*expr.object) + " " + evaluate(*expr.index) + ")";
+        return "([] " + visitExpr(*expr.object) + " " + visitExpr(*expr.index) + ")";
     }
 
     std::string AstPrinter::visitTernaryExpr(TernaryExpr &expr) {
-        return "(?: " + evaluate(*expr.condition) + " " + evaluate(*expr.thenExpr) + " " + evaluate(*expr.elseExpr) +
-               ")";
+        return "(?: " +
+                visitExpr(*expr.condition) + " " +
+                visitExpr(*expr.thenExpr) + " " +
+                visitExpr(*expr.elseExpr) + ")";
     }
 
     std::string AstPrinter::visitUnaryExpr(UnaryExpr &expr) {
-        return "(" + expr.oper.lexeme + " " + evaluate(*expr.operand) + ")";
+        return "(" + expr.oper.lexeme + " " + visitExpr(*expr.operand) + ")";
     }
 
     std::string AstPrinter::visitVariableExpr(VariableExpr &expr) {

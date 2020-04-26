@@ -33,7 +33,7 @@ namespace enact {
     template<class R>
     class StmtVisitor {
     public:
-        virtual R visit(Stmt& stmt) {
+        virtual R visitStmt(Stmt& stmt) {
             return stmt.accept(*this);
         }
 

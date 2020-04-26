@@ -50,7 +50,7 @@ namespace enact {
     template<class R>
     class ExprVisitor {
     public:
-        virtual R visit(Expr& expr) {
+        virtual R visitExpr(Expr& expr) {
             return expr.accept(*this);
         }
 

@@ -33,6 +33,10 @@ namespace enact {
     template<class R>
     class StmtVisitor {
     public:
+        virtual R visit(Stmt& stmt) {
+            return stmt.accept(*this);
+        }
+
         virtual R visitBlockStmt(BlockStmt &stmt) = 0;
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;
         virtual R visitContinueStmt(ContinueStmt &stmt) = 0;

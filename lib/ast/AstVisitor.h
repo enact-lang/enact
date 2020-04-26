@@ -5,20 +5,7 @@
 
 namespace enact {
     template<class T>
-    class AstVisitor : public StmtVisitor<T>, public DeclVisitor<T>, public ExprVisitor<T> {
-    public:
-        virtual T visit(Stmt& stmt) {
-            return stmt.accept(*this);
-        }
-
-        virtual T visit(Decl& decl) {
-            return decl.accept(*this);
-        }
-
-        virtual T visit(Expr& expr) {
-            return expr.accept(*this);
-        }
-    };
+    class AstVisitor : public StmtVisitor<T>, public DeclVisitor<T>, public ExprVisitor<T> {};
 }
 
 #endif //ENACT_ASTVISITOR_H

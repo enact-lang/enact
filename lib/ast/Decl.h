@@ -30,6 +30,10 @@ namespace enact {
     template<class R>
     class DeclVisitor {
     public:
+        virtual R visit(Decl& decl) {
+            return decl.accept(*this);
+        }
+
         virtual R visitExpressionDecl(ExpressionDecl& decl) = 0;
         virtual R visitFunctionDecl(FunctionDecl& decl) = 0;
         virtual R visitStructDecl(StructDecl &decl) = 0;

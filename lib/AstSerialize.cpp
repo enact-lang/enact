@@ -1,13 +1,21 @@
 #include <sstream>
 
-#include "AstPrinter.h"
+#include "AstSerialize.h"
 
 namespace enact {
-    void AstPrinter::print(Stmt &stmt) {
-        std::cout << visitStmt(stmt) << "\n";
+    std::string AstSerialize::operator()(Stmt &stmt) {
+        return visitStmt(stmt);
     }
 
-    std::string AstPrinter::visitBlockStmt(BlockStmt &stmt) {
+    std::string AstSerialize::operator()(Decl &decl) {
+        return visitDecl(decl);
+    }
+
+    std::string AstSerialize::operator()(Expr &expr) {
+        return visitExpr(expr);
+    }
+
+    std::string AstSerialize::visitBlockStmt(BlockStmt &stmt) {
         std::stringstream s;
 
         s << m_ident << "(Stmt::Block (\n";
@@ -23,15 +31,15 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitBreakStmt(BreakStmt &stmt) {
+    std::string AstSerialize::visitBreakStmt(BreakStmt &stmt) {
         return m_ident + "(Stmt::Break)";
     }
 
-    std::string AstPrinter::visitContinueStmt(ContinueStmt &stmt) {
+    std::string AstSerialize::visitContinueStmt(ContinueStmt &stmt) {
         return m_ident + "(Stmt::Continue)";
     }
 
-    std::string AstPrinter::visitEachStmt(EachStmt &stmt) {
+    std::string AstSerialize::visitEachStmt(EachStmt &stmt) {
         std::stringstream s;
 
         s << m_ident << "(Stmt::Each (" << stmt.name.lexeme << " " << visitExpr(*stmt.object) << ") (\n";
@@ -47,11 +55,11 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitDeclarationStmt(DeclarationStmt &stmt) {
+    std::string AstSerialize::visitDeclarationStmt(DeclarationStmt &stmt) {
         return m_ident + "(Stmt::Declaration " + visitDecl(*stmt.decl) + ")";
     }
 
-    std::string AstPrinter::visitForStmt(ForStmt &stmt) {
+    std::string AstSerialize::visitForStmt(ForStmt &stmt) {
         std::stringstream s;
 
         s << m_ident << "(Stmt::For (" <<
@@ -70,7 +78,7 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitGivenStmt(GivenStmt &stmt) {
+    std::string AstSerialize::visitGivenStmt(GivenStmt &stmt) {
         std::stringstream s;
 
         s << m_ident << "(Stmt::Given " << visitExpr(*stmt.value) << " (\n";
@@ -94,7 +102,7 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitIfStmt(IfStmt &stmt) {
+    std::string AstSerialize::visitIfStmt(IfStmt &stmt) {
         std::stringstream s;
 
         s << m_ident << "(Stmt::If " << visitExpr(*stmt.condition) << " (\n";
@@ -114,11 +122,11 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitReturnStmt(ReturnStmt &stmt) {
+    std::string AstSerialize::visitReturnStmt(ReturnStmt &stmt) {
         return "(Stmt::Return " + visitExpr(*stmt.value) + ")";
     }
 
-    std::string AstPrinter::visitWhileStmt(WhileStmt &stmt) {
+    std::string AstSerialize::visitWhileStmt(WhileStmt &stmt) {
         std::stringstream s;
 
         s << m_ident << "(Stmt::While " << visitExpr(*stmt.condition) << " (\n";
@@ -134,11 +142,11 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitExpressionDecl(ExpressionDecl &decl) {
+    std::string AstSerialize::visitExpressionDecl(ExpressionDecl &decl) {
         return "(Decl::Expression " + visitExpr(*decl.expr) + ")";
     }
 
-    std::string AstPrinter::visitFunctionDecl(FunctionDecl &decl) {
+    std::string AstSerialize::visitFunctionDecl(FunctionDecl &decl) {
         std::stringstream s;
 
         s << "(Decl::Function " << decl.name.lexeme << " (";
@@ -160,7 +168,7 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitStructDecl(StructDecl &decl) {
+    std::string AstSerialize::visitStructDecl(StructDecl &decl) {
         std::stringstream s;
         s << "(Decl::Struct " << decl.name.lexeme << " (";
 
@@ -189,7 +197,7 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitTraitDecl(TraitDecl &decl) {
+    std::string AstSerialize::visitTraitDecl(TraitDecl &decl) {
         std::stringstream s;
 
         s << "(Decl::Trait " << decl.name.lexeme << " (\n";
@@ -205,7 +213,7 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitVariableDecl(VariableDecl &decl) {
+    std::string AstSerialize::visitVariableDecl(VariableDecl &decl) {
         std::stringstream s;
 
         s << "(Decl::Variable ";
@@ -219,15 +227,15 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitAllotExpr(AllotExpr &expr) {
+    std::string AstSerialize::visitAllotExpr(AllotExpr &expr) {
         return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
     }
 
-    std::string AstPrinter::visitAnyExpr(AnyExpr &expr) {
+    std::string AstSerialize::visitAnyExpr(AnyExpr &expr) {
         return "_";
     }
 
-    std::string AstPrinter::visitArrayExpr(ArrayExpr &expr) {
+    std::string AstSerialize::visitArrayExpr(ArrayExpr &expr) {
         std::stringstream s;
         s << "[";
 
@@ -241,19 +249,19 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitAssignExpr(AssignExpr &expr) {
+    std::string AstSerialize::visitAssignExpr(AssignExpr &expr) {
         return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
     }
 
-    std::string AstPrinter::visitBinaryExpr(BinaryExpr &expr) {
+    std::string AstSerialize::visitBinaryExpr(BinaryExpr &expr) {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
     }
 
-    std::string AstPrinter::visitBooleanExpr(BooleanExpr &expr) {
+    std::string AstSerialize::visitBooleanExpr(BooleanExpr &expr) {
         return (expr.value ? "true" : "false");
     }
 
-    std::string AstPrinter::visitCallExpr(CallExpr &expr) {
+    std::string AstSerialize::visitCallExpr(CallExpr &expr) {
         std::stringstream s;
 
         s << "(() " << visitExpr(*expr.callee);
@@ -265,52 +273,52 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstPrinter::visitFloatExpr(FloatExpr &expr) {
+    std::string AstSerialize::visitFloatExpr(FloatExpr &expr) {
         return std::to_string(expr.value);
     }
 
-    std::string AstPrinter::visitGetExpr(GetExpr &expr) {
+    std::string AstSerialize::visitGetExpr(GetExpr &expr) {
         return "(. " + visitExpr(*expr.object) + " " + expr.name.lexeme + ")";
     }
 
-    std::string AstPrinter::visitIntegerExpr(IntegerExpr &expr) {
+    std::string AstSerialize::visitIntegerExpr(IntegerExpr &expr) {
         return std::to_string(expr.value);
     }
 
-    std::string AstPrinter::visitLogicalExpr(LogicalExpr &expr) {
+    std::string AstSerialize::visitLogicalExpr(LogicalExpr &expr) {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
     }
 
-    std::string AstPrinter::visitNilExpr(NilExpr &expr) {
+    std::string AstSerialize::visitNilExpr(NilExpr &expr) {
         return "nil";
     }
 
-    std::string AstPrinter::visitSetExpr(SetExpr &expr) {
+    std::string AstSerialize::visitSetExpr(SetExpr &expr) {
         return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
     }
 
-    std::string AstPrinter::visitStringExpr(StringExpr &expr) {
+    std::string AstSerialize::visitStringExpr(StringExpr &expr) {
         std::stringstream s;
         s << "\"" << expr.value << "\"";
         return s.str();
     }
 
-    std::string AstPrinter::visitSubscriptExpr(SubscriptExpr &expr) {
+    std::string AstSerialize::visitSubscriptExpr(SubscriptExpr &expr) {
         return "([] " + visitExpr(*expr.object) + " " + visitExpr(*expr.index) + ")";
     }
 
-    std::string AstPrinter::visitTernaryExpr(TernaryExpr &expr) {
+    std::string AstSerialize::visitTernaryExpr(TernaryExpr &expr) {
         return "(?: " +
                 visitExpr(*expr.condition) + " " +
                 visitExpr(*expr.thenExpr) + " " +
                 visitExpr(*expr.elseExpr) + ")";
     }
 
-    std::string AstPrinter::visitUnaryExpr(UnaryExpr &expr) {
+    std::string AstSerialize::visitUnaryExpr(UnaryExpr &expr) {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.operand) + ")";
     }
 
-    std::string AstPrinter::visitVariableExpr(VariableExpr &expr) {
+    std::string AstSerialize::visitVariableExpr(VariableExpr &expr) {
         return expr.name.lexeme;
     }
 }

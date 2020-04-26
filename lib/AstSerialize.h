@@ -1,10 +1,10 @@
-#ifndef ENACT_ASTPRINTER_H
-#define ENACT_ASTPRINTER_H
+#ifndef ENACT_ASTSERIALIZE_H
+#define ENACT_ASTSERIALIZE_H
 
 #include "ast/AstVisitor.h"
 
 namespace enact {
-    class AstPrinter : private AstVisitor<std::string> {
+    class AstSerialize : private AstVisitor<std::string> {
         std::string m_ident = "";
 
         std::string visitBlockStmt(BlockStmt &stmt) override;
@@ -44,8 +44,10 @@ namespace enact {
         std::string visitVariableExpr(VariableExpr &expr) override;
 
     public:
-        void print(Stmt &stmt);
+        std::string operator()(Stmt& stmt);
+        std::string operator()(Decl& decl);
+        std::string operator()(Expr& expr);
     };
 }
 
-#endif //ENACT_ASTPRINTER_H
+#endif //ENACT_ASTSERIALIZE_H

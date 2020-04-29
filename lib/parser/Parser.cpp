@@ -189,25 +189,22 @@ namespace enact {
         return std::make_unique<TernaryExpr>(std::move(condition), std::move(thenBranch), std::move(elseBranch), oper);
     }
 
-    std::unique_ptr<Decl> Parser::declaration() {
+    std::unique_ptr<Stmt> Parser::declaration() {
         consumeSeparator();
         try {
             if (consume(TokenType::FUN)) return functionDeclaration();
             if (consume(TokenType::STRUCT)) return structDeclaration();
             if (consume(TokenType::TRAIT)) return traitDeclaration();
-            if (consume(TokenType::VAL) ||
-                    consume(TokenType::LET) ||
-                    consume(TokenType::VAR))
-                return variableDeclaration();
-
-            return expressionDeclaration();
+            if (consume(TokenType::VAR)) return variableDeclaration(false);
+            if (consume(TokenType::CONST)) return variableDeclaration(true);
+            return statement();
         } catch (ParseError &error) {
             synchronise();
             return nullptr;
         }
     }
 
-    std::unique_ptr<Decl> Parser::functionDeclaration(bool mustParseBody) {
+    std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody, bool isMut) {
         expect(TokenType::IDENTIFIER, "Expected function name.");
         Token name = m_previous;
 
@@ -229,26 +226,26 @@ namespace enact {
         std::vector<std::unique_ptr<Stmt>> body;
 
         if (!mustParseBody && consumeSeparator()) {
-            return std::make_unique<FunctionDecl>(name, std::move(returnTypename), std::move(params), std::move(body),
-                                                  nullptr);
+            return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body),
+                                                  nullptr, isMut);
         }
 
         expect(TokenType::COLON, "Expected ':' before function body.");
         consumeSeparator();
 
         while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(statement());
+            body.push_back(declaration());
         }
 
         expect(TokenType::END, "Expected 'end' at end of function declaration.");
 
         expectSeparator("Expected newline or ';' after function declaration.");
 
-        return std::make_unique<FunctionDecl>(name, std::move(returnTypename), std::move(params), std::move(body),
-                                              nullptr);
+        return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body),
+                                              nullptr, isMut);
     }
 
-    std::unique_ptr<Decl> Parser::structDeclaration() {
+    std::unique_ptr<Stmt> Parser::structDeclaration() {
         expect(TokenType::IDENTIFIER, "Expected struct name.");
         Token name = m_previous;
 
@@ -267,8 +264,8 @@ namespace enact {
         consumeSeparator();
 
         std::vector<Field> fields;
-        std::vector<std::unique_ptr<FunctionDecl>> methods;
-        std::vector<std::unique_ptr<FunctionDecl>> assocFunctions;
+        std::vector<std::unique_ptr<FunctionStmt>> methods;
+        std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
 
         while (!check(TokenType::END) && !isAtEnd()) {
             consumeSeparator();
@@ -285,19 +282,20 @@ namespace enact {
 
             if (consume(TokenType::ASSOC)) {
                 // Associated function declaration
-                auto function = std::unique_ptr<FunctionDecl>{
-                        static_cast<FunctionDecl*>(functionDeclaration().release())
+                auto function = std::unique_ptr<FunctionStmt>{
+                        static_cast<FunctionStmt *>(functionDeclaration().release())
                 };
                 assocFunctions.push_back(std::move(function));
                 continue;
             }
 
+            bool isMut = consume(TokenType::MUT);
             // We've exhausted all other possibilities, so we must consume a method declaration or else it's an error.
             expect(TokenType::FUN, "Expected field or method declaration.");
 
             // Parse method body
-            auto method = std::unique_ptr<FunctionDecl>{
-                    static_cast<FunctionDecl*>(functionDeclaration(true).release())
+            auto method = std::unique_ptr<FunctionStmt>{
+                    static_cast<FunctionStmt *>(functionDeclaration(true, isMut).release())
             };
             methods.push_back(std::move(method));
         }
@@ -305,23 +303,23 @@ namespace enact {
         expect(TokenType::END, "Expected 'end' at end of struct declaration.");
         expectSeparator("Expected newline or ';' after 'end'.");
 
-        return std::make_unique<StructDecl>(name, traits, std::move(fields), std::move(methods),
+        return std::make_unique<StructStmt>(name, traits, std::move(fields), std::move(methods),
                                             std::move(assocFunctions), nullptr);
     }
 
-    std::unique_ptr<Decl> Parser::traitDeclaration() {
+    std::unique_ptr<Stmt> Parser::traitDeclaration() {
         expect(TokenType::IDENTIFIER, "Expected trait name.");
         Token name = m_previous;
 
         expect(TokenType::COLON, "Expected ':' after trait name.");
         consumeSeparator();
 
-        std::vector<std::unique_ptr<FunctionDecl>> methods;
+        std::vector<std::unique_ptr<FunctionStmt>> methods;
         while (!check(TokenType::END) && !isAtEnd()) {
             consumeSeparator();
             if (consume(TokenType::FUN)) {
-                auto method = std::unique_ptr<FunctionDecl>{
-                        static_cast<FunctionDecl*>(functionDeclaration(false).release())
+                auto method = std::unique_ptr<FunctionStmt>{
+                        static_cast<FunctionStmt *>(functionDeclaration(false).release())
                 };
                 methods.push_back(std::move(method));
             } else {
@@ -332,29 +330,14 @@ namespace enact {
         expect(TokenType::END, "Expected 'end' at end of trait declaration.");
         expectSeparator("Expected newline or ';' after 'end'.");
 
-        return std::make_unique<TraitDecl>(name, std::move(methods));
+        return std::make_unique<TraitStmt>(name, std::move(methods));
     }
 
-    std::unique_ptr<Decl> Parser::variableDeclaration(bool mustExpectSeparator) {
-        Mutability mutability;
-        switch (m_previous.type) {
-            case TokenType::VAL:
-                mutability = Mutability::NONE;
-                break;
-            case TokenType::LET:
-                mutability = Mutability::BOXED;
-                break;
-            case TokenType::VAR:
-                mutability = Mutability::FULL;
-                break;
-            default:
-                ENACT_ABORT("Could not determine the mutability of a variable declaration from the previous token!");
-
-        }
+    std::unique_ptr<Stmt> Parser::variableDeclaration(bool isConst, bool mustExpectSeparator) {
         expect(TokenType::IDENTIFIER, "Expected variable name.");
         Token name = m_previous;
 
-        std::unique_ptr<const Typename> typeName = expectTypename(true);
+        std::unique_ptr<const Typename> typeName{expectTypename(true)};
 
         expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
 
@@ -362,13 +345,7 @@ namespace enact {
 
         if (mustExpectSeparator) expectSeparator("Expected newline or ';' after variable declaration.");
 
-        return std::make_unique<VariableDecl>(name, std::move(typeName), std::move(initializer), mutability);
-    }
-
-    std::unique_ptr<Decl> Parser::expressionDeclaration() {
-        std::unique_ptr<Expr> expr = expression();
-        expectSeparator("Expected newline or ';' after expression.");
-        return std::make_unique<ExpressionDecl>(std::move(expr));
+        return std::make_unique<VariableStmt>(name, std::move(typeName), std::move(initializer), isConst);
     }
 
     std::unique_ptr<Stmt> Parser::statement() {
@@ -381,7 +358,7 @@ namespace enact {
         if (consume(TokenType::RETURN)) return returnStatement();
         if (consume(TokenType::BREAK)) return breakStatement();
         if (consume(TokenType::CONTINUE)) return continueStatement();
-        return declarationStatement();
+        return expressionStatement();
     }
 
     std::unique_ptr<Stmt> Parser::blockStatement() {
@@ -390,7 +367,7 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> statements;
         while (!check(TokenType::END) && !isAtEnd()) {
-            statements.push_back(statement());
+            statements.push_back(declaration());
         }
 
         expect(TokenType::END, "Expected 'end' at end of block.");
@@ -408,7 +385,7 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> thenBlock;
         while (!check(TokenType::END) && !check(TokenType::ELSE) && !isAtEnd()) {
-            thenBlock.push_back(statement());
+            thenBlock.push_back(declaration());
         }
 
         std::vector<std::unique_ptr<Stmt>> elseBlock;
@@ -417,7 +394,7 @@ namespace enact {
             expect(TokenType::COLON, "Expected ':' after start of else block.");
             consumeSeparator();
             while (!check(TokenType::END) && !isAtEnd()) {
-                elseBlock.push_back(statement());
+                elseBlock.push_back(declaration());
             }
         }
 
@@ -437,7 +414,7 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> body;
         while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(statement());
+            body.push_back(declaration());
         }
 
         expect(TokenType::END, "Expected 'end' at end of while loop.");
@@ -449,15 +426,15 @@ namespace enact {
     std::unique_ptr<Stmt> Parser::forStatement() {
         Token keyword = m_previous;
 
-        std::unique_ptr<Decl> initializer;
+        std::unique_ptr<Stmt> initializer;
         if (check(TokenType::SEPARATOR)) {
-            initializer = std::make_unique<ExpressionDecl>(std::make_unique<NilExpr>());
-        } else if (consume(TokenType::VAL) ||
-                consume(TokenType::VAR) ||
-                consume(TokenType::LET)) {
-            initializer = variableDeclaration(false);
+            initializer = std::make_unique<ExpressionStmt>(std::make_unique<NilExpr>());
+        } else if (consume(TokenType::VAR)) {
+            initializer = variableDeclaration(false, false);
+        } else if (consume(TokenType::CONST)) {
+            initializer = variableDeclaration(true, false);
         } else {
-            initializer = std::make_unique<ExpressionDecl>(expression());
+            initializer = std::make_unique<ExpressionStmt>(expression());
         }
 
         expect(TokenType::SEPARATOR, "Expected '|' after for loop initializer.");
@@ -484,7 +461,7 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> body;
         while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(statement());
+            body.push_back(declaration());
         }
 
         expect(TokenType::END, "Expected 'end' at end of for loop.");
@@ -507,7 +484,7 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> body;
         while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(statement());
+            body.push_back(declaration());
         }
 
         expect(TokenType::END, "Expected 'end' at end of each loop.");
@@ -532,7 +509,7 @@ namespace enact {
 
                 std::vector<std::unique_ptr<Stmt>> caseBody;
                 while (!check(TokenType::WHEN) && !check(TokenType::ELSE) && !check(TokenType::END) && !isAtEnd()) {
-                    caseBody.push_back(statement());
+                    caseBody.push_back(declaration());
                 }
 
                 cases.push_back(GivenCase{std::move(caseValue), std::move(caseBody), keyword});
@@ -543,7 +520,7 @@ namespace enact {
 
                 std::vector<std::unique_ptr<Stmt>> caseBody;
                 while (!check(TokenType::WHEN) && !check(TokenType::END) && !isAtEnd()) {
-                    caseBody.push_back(statement());
+                    caseBody.push_back(declaration());
                 }
 
                 std::unique_ptr<Expr> caseValue = std::make_unique<AnyExpr>();
@@ -577,28 +554,21 @@ namespace enact {
         return std::make_unique<ContinueStmt>(m_previous);
     }
 
-    std::unique_ptr<Stmt> Parser::declarationStatement() {
-        return std::make_unique<DeclarationStmt>(declaration());
+    std::unique_ptr<Stmt> Parser::expressionStatement() {
+        std::unique_ptr<Expr> expr = expression();
+        expectSeparator("Expected newline or ';' after expression.");
+        return std::make_unique<ExpressionStmt>(std::move(expr));
     }
 
-    std::vector<std::unique_ptr<Decl>> Parser::parse() {
+    std::vector<std::unique_ptr<Stmt>> Parser::parse() {
         m_scanner = Scanner{m_context.source};
         advance();
 
-        std::vector<std::unique_ptr<Decl>> ast{};
-        auto scriptDecl = std::make_unique<FunctionDecl>(Token::synthetic("<script>"), nullptr, {}, {}, nullptr);
-
+        std::vector<std::unique_ptr<Stmt>> ast{};
         while (!isAtEnd()) {
-            std::unique_ptr<Stmt> stmt = statement();
-            try {
-                auto& decl = dynamic_cast<DeclarationStmt&>(*stmt);
-                ast.push_back(std::move(decl.decl));
-            } catch (const std::bad_cast& error) {
-                scriptDecl->body.push_back(std::move(stmt));
-            }
+            std::unique_ptr<Stmt> stmt = declaration();
+            if (stmt) ast.push_back(std::move(stmt));
         }
-
-        ast.push_back(std::move(scriptDecl));
 
         return ast;
     }
@@ -722,16 +692,14 @@ namespace enact {
 
         while (!isAtEnd()) {
             switch (m_current.type) {
-                case TokenType::ASSOC:
                 case TokenType::BLOCK:
                 case TokenType::CLASS:
+                case TokenType::CONST:
                 case TokenType::EACH:
                 case TokenType::FUN:
                 case TokenType::FOR:
                 case TokenType::IF:
-                case TokenType::LET:
                 case TokenType::RETURN:
-                case TokenType::VAL:
                 case TokenType::VAR:
                 case TokenType::WHILE:
                     return;

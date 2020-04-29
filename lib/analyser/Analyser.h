@@ -1,7 +1,7 @@
 #ifndef ENACT_ANALYSER_H
 #define ENACT_ANALYSER_H
 
-#include "../ast/AstVisitor.h"
+#include "../ast/Stmt.h"
 #include "../type/Type.h"
 
 namespace enact {
@@ -9,7 +9,7 @@ namespace enact {
 
 // Walks the AST and assigns a Type to each node.
 
-    class Analyser : private AstVisitor<void> {
+    class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
         Context &m_context;
 
         std::unordered_map<std::string, Type> m_types{
@@ -64,20 +64,17 @@ namespace enact {
         void visitBlockStmt(BlockStmt &stmt) override;
         void visitBreakStmt(BreakStmt &stmt) override;
         void visitContinueStmt(ContinueStmt &stmt) override;
-        void visitDeclarationStmt(DeclarationStmt& stmt) override;
         void visitEachStmt(EachStmt &stmt) override;
+        void visitExpressionStmt(ExpressionStmt &stmt) override;
         void visitForStmt(ForStmt &stmt) override;
+        void visitFunctionStmt(FunctionStmt &stmt) override;
         void visitGivenStmt(GivenStmt &stmt) override;
         void visitIfStmt(IfStmt &stmt) override;
         void visitReturnStmt(ReturnStmt &stmt) override;
+        void visitStructStmt(StructStmt &stmt) override;
+        void visitTraitStmt(TraitStmt &stmt) override;
         void visitWhileStmt(WhileStmt &stmt) override;
-
-        void visitExpressionDecl(ExpressionDecl& decl) override;
-        void visitFunctionDecl(FunctionDecl& decl) override;
-        void visitStructDecl(StructDecl& decl) override;
-        void visitTraitDecl(TraitDecl& decl) override;
-        void visitVariableDecl(VariableDecl& decl) override;
-
+        void visitVariableStmt(VariableStmt &stmt) override;
         void visitAllotExpr(AllotExpr &expr) override;
         void visitAnyExpr(AnyExpr &expr) override;
         void visitArrayExpr(ArrayExpr &expr) override;

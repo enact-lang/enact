@@ -1,3 +1,6 @@
+// This file was automatically generated.
+// "See generate.py" for details.
+
 #ifndef ENACT_EXPR_H
 #define ENACT_EXPR_H
 
@@ -50,10 +53,6 @@ namespace enact {
     template<class R>
     class ExprVisitor {
     public:
-        virtual R visitExpr(Expr& expr) {
-            return expr.accept(*this);
-        }
-
         virtual R visitAllotExpr(AllotExpr &expr) = 0;
         virtual R visitAnyExpr(AnyExpr &expr) = 0;
         virtual R visitArrayExpr(ArrayExpr &expr) = 0;

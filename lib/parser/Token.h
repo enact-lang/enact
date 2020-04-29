@@ -8,7 +8,7 @@
 namespace enact {
     enum class TokenType {
         // Single character tokens.
-        LEFT_PAREN, RIGHT_PAREN,
+                LEFT_PAREN, RIGHT_PAREN,
         LEFT_SQUARE, RIGHT_SQUARE,
         COLON, COMMA, DOT, MINUS,
         NEWLINE, PLUS, QUESTION,
@@ -16,21 +16,21 @@ namespace enact {
         STAR,
 
         // 1 or 2 character tokens.
-        BANG, BANG_EQUAL,
+                BANG, BANG_EQUAL,
         EQUAL, EQUAL_EQUAL,
         GREATER, GREATER_EQUAL,
         LESS, LESS_EQUAL,
 
         // Literals.
-        IDENTIFIER, STRING, INTEGER, FLOAT,
+                IDENTIFIER, STRING, INTEGER, FLOAT,
 
         // Reserved words.
-        AND, ASSOC, BLOCK, BREAK,
-        CLASS, CONTINUE, COPY,
+                AND, ASSOC, BLOCK, BREAK,
+        CLASS, CONST, CONTINUE, COPY,
         EACH, ELSE, END, FALSE, FUN,
-        FOR, GIVEN, IF, IN, IS, LET, NIL,
+        FOR, GIVEN, IF, IN, IS, MUT, NIL,
         OR, RETURN, STRUCT, THIS, TRAIT,
-        TRUE, VAL, VAR, WHEN, WHILE,
+        TRUE, VAR, WHEN, WHILE,
 
         ERROR, ENDFILE, MAX,
     };
@@ -40,16 +40,6 @@ namespace enact {
         std::string lexeme;
         line_t line;
         col_t col;
-
-        Token(TokenType type, std::string lexeme, line_t line, col_t col) :
-                type{type},
-                lexeme{lexeme},
-                line{line},
-                col{col} {}
-
-        static Token synthetic(std::string name) {
-            return Token{TokenType::IDENTIFIER, std::move(name), 0, 0};
-        }
     };
 }
 

@@ -147,6 +147,7 @@ namespace enact {
         if (candidate == "block") return TokenType::BLOCK;
         if (candidate == "break") return TokenType::BREAK;
         if (candidate == "class") return TokenType::CLASS;
+        if (candidate == "const") return TokenType::CONST;
         if (candidate == "continue") return TokenType::CONTINUE;
         if (candidate == "copy") return TokenType::COPY;
         if (candidate == "each") return TokenType::EACH;
@@ -159,7 +160,7 @@ namespace enact {
         if (candidate == "if") return TokenType::IF;
         if (candidate == "in") return TokenType::IN;
         if (candidate == "is") return TokenType::IS;
-        if (candidate == "let") return TokenType::LET;
+        if (candidate == "mut") return TokenType::MUT;
         if (candidate == "nil") return TokenType::NIL;
         if (candidate == "or") return TokenType::OR;
         if (candidate == "return") return TokenType::RETURN;
@@ -167,7 +168,6 @@ namespace enact {
         if (candidate == "this") return TokenType::THIS;
         if (candidate == "trait") return TokenType::TRAIT;
         if (candidate == "true") return TokenType::TRUE;
-        if (candidate == "val") return TokenType::VAL;
         if (candidate == "var") return TokenType::VAR;
         if (candidate == "when") return TokenType::WHEN;
         if (candidate == "while") return TokenType::WHILE;

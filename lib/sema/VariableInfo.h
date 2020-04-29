@@ -1,8 +1,6 @@
 #ifndef ENACT_VARIABLEINFO_H
 #define ENACT_VARIABLEINFO_H
 
-#include "../type/Type.h"
-
 namespace enact {
     enum class Mutability {
         NONE,  // 'val'

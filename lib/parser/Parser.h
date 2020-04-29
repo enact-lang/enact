@@ -33,6 +33,7 @@ namespace enact {
     class Parser;
 
     typedef std::unique_ptr<Expr> (Parser::*PrefixFn)();
+
     typedef std::unique_ptr<Expr> (Parser::*InfixFn)(std::unique_ptr<Expr>);
 
     struct ParseRule {
@@ -50,10 +51,6 @@ namespace enact {
         Token m_previous{};
         Token m_current{};
 
-        // Keep track of any global statements so we can put them in the "<script>" declaration later
-        // This of course excludes any `DeclarationStmt`s.
-        std::vector<std::unique_ptr<Stmt>> m_globalStatements;
-
         bool m_hadError = false;
 
         std::unique_ptr<Expr> parsePrecedence(Precedence precedence);
@@ -62,56 +59,85 @@ namespace enact {
 
         // Prefix parse rules
         std::unique_ptr<Expr> grouping();
+
         std::unique_ptr<Expr> variable();
+
         std::unique_ptr<Expr> number();
+
         std::unique_ptr<Expr> literal();
+
         std::unique_ptr<Expr> string();
+
         std::unique_ptr<Expr> array();
+
         std::unique_ptr<Expr> unary();
 
         // Infix parse rules
         std::unique_ptr<Expr> call(std::unique_ptr<Expr> callee);
+
         std::unique_ptr<Expr> subscript(std::unique_ptr<Expr> object);
+
         std::unique_ptr<Expr> binary(std::unique_ptr<Expr> left);
+
         std::unique_ptr<Expr> assignment(std::unique_ptr<Expr> target);
+
         std::unique_ptr<Expr> field(std::unique_ptr<Expr> object);
+
         std::unique_ptr<Expr> ternary(std::unique_ptr<Expr> condition);
 
         // Declarations
-        std::unique_ptr<Decl> declaration();
-        std::unique_ptr<Decl> functionDeclaration(bool mustParseBody = true);
-        std::unique_ptr<Decl> structDeclaration();
-        std::unique_ptr<Decl> traitDeclaration();
-        std::unique_ptr<Decl> variableDeclaration(bool mustExpectSeparator = true);
-        std::unique_ptr<Decl> expressionDeclaration();
+        std::unique_ptr<Stmt> declaration();
+
+        std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true, bool isMut = false);
+
+        std::unique_ptr<Stmt> structDeclaration();
+
+        std::unique_ptr<Stmt> traitDeclaration();
+
+        std::unique_ptr<Stmt> variableDeclaration(bool isConst, bool mustExpectSeparator = true);
 
         // Statements
         std::unique_ptr<Stmt> statement();
+
         std::unique_ptr<Stmt> blockStatement();
+
         std::unique_ptr<Stmt> ifStatement();
+
         std::unique_ptr<Stmt> whileStatement();
+
         std::unique_ptr<Stmt> forStatement();
+
         std::unique_ptr<Stmt> eachStatement();
+
         std::unique_ptr<Stmt> givenStatement();
+
         std::unique_ptr<Stmt> returnStatement();
+
         std::unique_ptr<Stmt> breakStatement();
+
         std::unique_ptr<Stmt> continueStatement();
-        std::unique_ptr<Stmt> declarationStatement();
+
+        std::unique_ptr<Stmt> expressionStatement();
 
         void advance();
+
         void undoAdvance();
 
         bool check(TokenType expected);
+
         bool consume(TokenType expected);
+
         bool consumeSeparator();
 
         void expect(TokenType type, const std::string &message);
+
         void expectSeparator(const std::string &message);
 
-        std::unique_ptr<const Typename> expectTypename(bool emptyAllowed = false);
-        std::unique_ptr<const Typename> expectFunctionTypename();
-
         bool isAtEnd();
+
+        std::unique_ptr<const Typename> expectTypename(bool emptyAllowed = false);
+
+        std::unique_ptr<const Typename> expectFunctionTypename();
 
         class ParseError : public std::runtime_error {
         public:
@@ -119,16 +145,19 @@ namespace enact {
         };
 
         ParseError errorAt(const Token &token, const std::string &message);
+
         ParseError errorAtCurrent(const std::string &message);
+
         ParseError error(const std::string &message);
 
         void synchronise();
 
     public:
         Parser(Context &context);
+
         ~Parser() = default;
 
-        std::vector<std::unique_ptr<Decl>> parse();
+        std::vector<std::unique_ptr<Stmt>> parse();
 
         bool hadError();
 
@@ -168,6 +197,7 @@ namespace enact {
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // BLOCK
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // BREAK
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // CLASS
+                ParseRule{nullptr, nullptr, Precedence::NONE}, // CONST
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // CONTINUE
                 ParseRule{&Parser::unary, nullptr, Precedence::UNARY}, // COPY
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // EACH
@@ -180,7 +210,7 @@ namespace enact {
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // IF
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // IN
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // IS
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // LET
+                ParseRule{nullptr, nullptr, Precedence::NONE}, // MUT
                 ParseRule{&Parser::literal, nullptr, Precedence::NONE}, // NIL
                 ParseRule{nullptr, &Parser::binary, Precedence::OR}, // OR
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // RETURN
@@ -188,7 +218,6 @@ namespace enact {
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // THIS
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // TRAIT
                 ParseRule{&Parser::literal, nullptr, Precedence::NONE}, // TRUE
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // VAL
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // VAR
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // WHEN
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // WHILE

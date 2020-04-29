@@ -9,6 +9,9 @@
 #include "../parser/Typename.h"
 
 namespace enact {
+// Forward declarations from "../ast/Stmt.h":
+    class FunctionStmt;
+
 // The type tree used to give expressions types.
 // Here's what it looks like:
 

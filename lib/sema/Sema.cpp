@@ -4,6 +4,10 @@ namespace enact {
     Sema::Sema(Context& context) : m_context{context} {
     }
 
+    void Sema::addDeclStmt(const Stmt& stmt) {
+        m_decls.emplace_back(stmt);
+    }
+
     void Sema::declareVariable(const std::string& name, const VariableInfo& info) {
         m_variables.emplaceOrAssign(name, info);
     }

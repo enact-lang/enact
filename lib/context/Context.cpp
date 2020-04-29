@@ -1,7 +1,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "../AstSerialize.h"
+#include "../AstPrinter.h"
 
 #include "Context.h"
 
@@ -27,7 +27,7 @@ namespace enact {
         if (analyser.hadError()) return InterpretResult::ANALYSIS_ERROR;
 
         if (options.flagEnabled(Flag::DEBUG_PRINT_AST)) {
-            AstSerialize printer{};
+            AstPrinter printer{};
             for (auto &stmt : ast) {
                 printer.print(*stmt);
             }
@@ -79,9 +79,9 @@ namespace enact {
             if (analyser.hadError()) return InterpretResult::ANALYSIS_ERROR;
 
             if (options.flagEnabled(Flag::DEBUG_PRINT_AST)) {
-                AstSerialize serialize;
-                for (auto& decl : ast) {
-                    std::cout << serialize(*decl) << "\n";
+                AstPrinter printer{};
+                for (auto &stmt : ast) {
+                    printer.print(*stmt);
                 }
             }
 

@@ -1,11 +1,11 @@
 #include <sstream>
 
-#include "Scanner.h"
+#include "Lexer.h"
 
 namespace enact {
-    Scanner::Scanner(std::string source) : m_source{std::move(source)} {}
+    Lexer::Lexer(std::string source) : m_source{std::move(source)} {}
 
-    Token Scanner::scanToken() {
+    Token Lexer::scanToken() {
         skipWhitespace();
         m_start = m_current;
 
@@ -76,7 +76,7 @@ namespace enact {
         return errorToken(errorMessage);
     }
 
-    void Scanner::skipWhitespace() {
+    void Lexer::skipWhitespace() {
         while (true) {
             char c = peek();
             switch (c) {
@@ -99,7 +99,7 @@ namespace enact {
         }
     }
 
-    Token Scanner::number() {
+    Token Lexer::number() {
         while (isDigit(peek())) advance();
 
         TokenType type = TokenType::INTEGER;
@@ -113,12 +113,12 @@ namespace enact {
         return makeToken(type);
     }
 
-    Token Scanner::identifier() {
+    Token Lexer::identifier() {
         while (isIdentifier(peek())) advance();
         return makeToken(identifierType(m_source.substr(m_start, m_current - m_start)));
     }
 
-    Token Scanner::string() {
+    Token Lexer::string() {
         while (peek() != '"' && !isAtEnd()) advance();
 
         if (isAtEnd()) {
@@ -131,17 +131,17 @@ namespace enact {
         return makeToken(TokenType::STRING);
     }
 
-    Token Scanner::makeToken(TokenType type) {
+    Token Lexer::makeToken(TokenType type) {
         std::string lexeme{m_source.substr(m_start, m_current - m_start)};
         m_last = Token{type, lexeme, m_line, m_col};
         return m_last;
     }
 
-    Token Scanner::errorToken(const std::string &what) {
+    Token Lexer::errorToken(const std::string &what) {
         return Token{TokenType::ERROR, what, m_line, m_col};
     }
 
-    TokenType Scanner::identifierType(std::string candidate) {
+    TokenType Lexer::identifierType(std::string candidate) {
         if (candidate == "and") return TokenType::AND;
         if (candidate == "assoc") return TokenType::ASSOC;
         if (candidate == "block") return TokenType::BLOCK;
@@ -175,28 +175,28 @@ namespace enact {
         return TokenType::IDENTIFIER;
     }
 
-    bool Scanner::isAtEnd() {
+    bool Lexer::isAtEnd() {
         return m_current >= m_source.length();
     }
 
-    char Scanner::advance() {
+    char Lexer::advance() {
         ++m_col;
         return m_source[m_current++];
     }
 
-    char Scanner::peek() {
+    char Lexer::peek() {
         return m_source[m_current];
     }
 
-    char Scanner::peekNext() {
+    char Lexer::peekNext() {
         return m_source[m_current + 1];
     }
 
-    char Scanner::previous() {
+    char Lexer::previous() {
         return m_source[m_current - 1];
     }
 
-    bool Scanner::match(char expected) {
+    bool Lexer::match(char expected) {
         if (peek() == expected) {
             advance();
             return true;
@@ -204,21 +204,21 @@ namespace enact {
         return false;
     }
 
-    bool Scanner::isDigit(char c) {
+    bool Lexer::isDigit(char c) {
         return c >= '0' && c <= '9';
     }
 
-    bool Scanner::isIdentifierStart(char c) {
+    bool Lexer::isIdentifierStart(char c) {
         return (c >= 'a' && c <= 'z') ||
                (c >= 'A' && c <= 'Z') ||
                c == '_';
     }
 
-    bool Scanner::isIdentifier(char c) {
+    bool Lexer::isIdentifier(char c) {
         return isIdentifierStart(c) || isDigit(c);
     }
 
-    Token Scanner::backtrack() {
+    Token Lexer::backtrack() {
         m_current -= m_last.lexeme.size();
         m_start = m_current;
         return m_last;

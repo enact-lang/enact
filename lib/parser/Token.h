@@ -28,8 +28,8 @@ namespace enact {
         AND, AS, ASSOC, BREAK, CONTINUE,
         ELSE, ENUM, FALSE, FUNC, FOR,
         IF, IMM, IMPL, IN, IS,
-        MUT, NONE, NOT, OR, PUB,
-        RETURN, STRUCT, TRAIT, TRUE, WHILE,
+        MUT, NOT, OR, PUB, RETURN,
+        STRUCT, TRAIT, TRUE, WHILE,
 
         ERROR, END_OF_FILE, MAX,
     };

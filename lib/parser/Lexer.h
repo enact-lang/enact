@@ -50,7 +50,7 @@ namespace enact {
 
         int m_currentInterpolations = 0;
 
-        const std::unordered_map<std::string, TokenType> m_keywords{
+        std::unordered_map<std::string, TokenType> m_keywords{
                 {"and", TokenType::AND},
                 {"as", TokenType::AS},
                 {"assoc", TokenType::ASSOC},

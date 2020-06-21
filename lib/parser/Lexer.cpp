@@ -71,7 +71,7 @@ namespace enact {
         }
 
         std::string errorMessage = "Unrecognized character '";
-        errorMessage.append(std::string{c});
+        errorMessage.push_back(c);
         errorMessage.append("'.");
         return errorToken(errorMessage);
     }
@@ -152,6 +152,8 @@ namespace enact {
                         advance();
                         return errorToken("Unrecognised escape sequence.");
                 }
+
+                inEscapeSequence = false;
             } else {
                 if (c == '"') break;
                 if (c == '\\') {
@@ -160,7 +162,7 @@ namespace enact {
                     continue;
                 }
 
-                value += c;
+                value.push_back(c);
             }
 
             advance();
@@ -173,7 +175,7 @@ namespace enact {
         // Eat the close quote.
         advance();
 
-        return makeToken(TokenType::STRING);
+        return Token{TokenType::STRING, value, m_line, m_col};
     }
 
     Token Lexer::interpolationStart(std::string value) {

@@ -13,18 +13,16 @@ namespace enact {
         std::string visitBreakStmt(BreakStmt &stmt) override;
         std::string visitContinueStmt(ContinueStmt &stmt) override;
         std::string visitEachStmt(EachStmt &stmt) override;
-        std::string visitDeclarationStmt(DeclarationStmt &stmt) override;
+        std::string visitExpressionStmt(ExpressionStmt& stmt) override;
         std::string visitForStmt(ForStmt &stmt) override;
+        std::string visitFunctionStmt(FunctionStmt& decl) override;
         std::string visitGivenStmt(GivenStmt &stmt) override;
         std::string visitIfStmt(IfStmt &stmt) override;
         std::string visitReturnStmt(ReturnStmt &stmt) override;
+        std::string visitStructStmt(StructStmt& stmt) override;
+        std::string visitTraitStmt(TraitStmt& stmt) override;
+        std::string visitVariableStmt(VariableStmt& stmt) override;
         std::string visitWhileStmt(WhileStmt &stmt) override;
-
-        std::string visitExpressionDecl(ExpressionDecl& decl) override;
-        std::string visitFunctionDecl(FunctionDecl& decl) override;
-        std::string visitStructDecl(StructDecl& decl) override;
-        std::string visitTraitDecl(TraitDecl& decl) override;
-        std::string visitVariableDecl(VariableDecl& decl) override;
 
         std::string visitAllotExpr(AllotExpr &expr) override;
         std::string visitAnyExpr(AnyExpr &expr) override;
@@ -47,7 +45,6 @@ namespace enact {
 
     public:
         std::string operator()(Stmt& stmt);
-        std::string operator()(Decl& decl);
         std::string operator()(Expr& expr);
     };
 }

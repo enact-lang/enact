@@ -40,6 +40,10 @@ namespace enact {
     template<class R>
     class StmtVisitor {
     public:
+        R visitStmt(Stmt& stmt) {
+            return stmt.accept(*this);
+        };
+
         virtual R visitBlockStmt(BlockStmt &stmt) = 0;
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;
         virtual R visitContinueStmt(ContinueStmt &stmt) = 0;
@@ -344,19 +348,25 @@ namespace enact {
         }
     };
 
+    enum class Mutability {
+        NONE,  // 'val'
+        BOXED, // 'let'
+        FULL   // 'var'
+    };
+
     class VariableStmt : public Stmt {
     public:
         Token name;
         std::unique_ptr<const Typename> typeName;
         std::unique_ptr<Expr> initializer;
-        bool isConst;
+        Mutability mutability;
 
         VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer,
-                     bool isConst) :
+                     Mutability mutability) :
                 name{name},
                 typeName{std::move(typeName)},
                 initializer{std::move(initializer)},
-                isConst{isConst} {}
+                mutability{mutability} {}
 
         ~VariableStmt() override = default;
 

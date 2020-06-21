@@ -7,10 +7,6 @@ namespace enact {
         return visitStmt(stmt);
     }
 
-    std::string AstSerialize::operator()(Decl &decl) {
-        return visitDecl(decl);
-    }
-
     std::string AstSerialize::operator()(Expr &expr) {
         return visitExpr(expr);
     }
@@ -55,15 +51,15 @@ namespace enact {
         return s.str();
     }
 
-    std::string AstSerialize::visitDeclarationStmt(DeclarationStmt &stmt) {
-        return m_ident + "(Stmt::Declaration " + visitDecl(*stmt.decl) + ")";
+    std::string AstSerialize::visitExpressionStmt(ExpressionStmt &stmt) {
+        return "(Stmt::Expression " + visitExpr(*stmt.expr) + ")";
     }
 
     std::string AstSerialize::visitForStmt(ForStmt &stmt) {
         std::stringstream s;
 
         s << m_ident << "(Stmt::For (" <<
-                visitDecl(*stmt.initializer) << " " <<
+                visitStmt(*stmt.initializer) << " " <<
                 visitExpr(*stmt.condition) << " " <<
                 visitExpr(*stmt.increment) << ") (\n";
         m_ident += "    ";
@@ -74,6 +70,28 @@ namespace enact {
 
         m_ident.erase(m_ident.back() - 5);
         s << m_ident << ")";
+
+        return s.str();
+    }
+
+    std::string AstSerialize::visitFunctionStmt(FunctionStmt &stmt) {
+        std::stringstream s;
+
+        s << "(Stmt::Function " << stmt.name.lexeme << " (";
+
+        for (auto &param : stmt.params) {
+            s << param.name.lexeme << " " << param.typeName->name();
+        }
+
+        s << ") " << stmt.returnTypename->name() << " (\n";
+        m_ident += "    ";
+
+        for (auto &statement : stmt.body) {
+            s << visitStmt(*statement) << "\n";
+        }
+
+        m_ident.erase(m_ident.back() - 5);
+        s << ")";
 
         return s.str();
     }
@@ -126,6 +144,65 @@ namespace enact {
         return "(Stmt::Return " + visitExpr(*stmt.value) + ")";
     }
 
+    std::string AstSerialize::visitStructStmt(StructStmt &stmt) {
+        std::stringstream s;
+        s << "(Stmt::Struct " << stmt.name.lexeme << " (";
+
+        for (auto &trait : stmt.traits) {
+            s << trait.lexeme;
+        }
+
+        s << ") (\n";
+        m_ident += "    ";
+
+        for (auto &field : stmt.fields) {
+            s << m_ident << "(" << field.name.lexeme << " " << field.typeName->name() << ")\n";
+        }
+
+        for (auto &method : stmt.methods) {
+            s << m_ident << visitStmt(*method) << "\n";
+        }
+
+        for (auto &function : stmt.assocFunctions) {
+            s << m_ident << "(assoc " << visitStmt(*function) << ")\n";
+        }
+
+        m_ident.erase(m_ident.back() - 5);
+        s << ")";
+
+        return s.str();
+    }
+
+    std::string AstSerialize::visitTraitStmt(TraitStmt &stmt) {
+        std::stringstream s;
+
+        s << "(Stmt::Trait " << stmt.name.lexeme << " (\n";
+        m_ident += "    ";
+
+        for (auto &method : stmt.methods) {
+            s << m_ident << visitStmt(*method) << "\n";
+        }
+
+        m_ident.erase(m_ident.back() - 5);
+        s << ")";
+
+        return s.str();
+    }
+
+    std::string AstSerialize::visitVariableStmt(VariableStmt &stmt) {
+        std::stringstream s;
+
+        s << "(Stmt::Variable ";
+        switch (stmt.mutability) {
+            case Mutability::NONE:  s << "val "; break;
+            case Mutability::BOXED: s << "let "; break;
+            case Mutability::FULL:  s << "var "; break;
+        }
+        s << stmt.name.lexeme + " " + visitExpr(*stmt.initializer) << ")";
+
+        return s.str();
+    }
+
     std::string AstSerialize::visitWhileStmt(WhileStmt &stmt) {
         std::stringstream s;
 
@@ -138,91 +215,6 @@ namespace enact {
 
         m_ident.erase(m_ident.back() - 5);
         s << m_ident << ")";
-
-        return s.str();
-    }
-
-    std::string AstSerialize::visitExpressionDecl(ExpressionDecl &decl) {
-        return "(Decl::Expression " + visitExpr(*decl.expr) + ")";
-    }
-
-    std::string AstSerialize::visitFunctionDecl(FunctionDecl &decl) {
-        std::stringstream s;
-
-        s << "(Decl::Function " << decl.name.lexeme << " (";
-
-        for (auto &param : decl.params) {
-            s << param.name.lexeme << " " << param.typeName->name();
-        }
-
-        s << ") " << decl.returnTypename->name() << " (\n";
-        m_ident += "    ";
-
-        for (auto &statement : decl.body) {
-            s << visitStmt(*statement) << "\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
-        s << ")";
-
-        return s.str();
-    }
-
-    std::string AstSerialize::visitStructDecl(StructDecl &decl) {
-        std::stringstream s;
-        s << "(Decl::Struct " << decl.name.lexeme << " (";
-
-        for (auto &trait : decl.traits) {
-            s << trait.lexeme;
-        }
-
-        s << ") (\n";
-        m_ident += "    ";
-
-        for (auto &field : decl.fields) {
-            s << m_ident << "(" << field.name.lexeme << " " << field.typeName->name() << ")\n";
-        }
-
-        for (auto &method : decl.methods) {
-            s << m_ident << visitDecl(*method) << "\n";
-        }
-
-        for (auto &function : decl.assocFunctions) {
-            s << m_ident << "(assoc " << visitDecl(*function) << ")\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
-        s << ")";
-
-        return s.str();
-    }
-
-    std::string AstSerialize::visitTraitDecl(TraitDecl &decl) {
-        std::stringstream s;
-
-        s << "(Decl::Trait " << decl.name.lexeme << " (\n";
-        m_ident += "    ";
-
-        for (auto &method : decl.methods) {
-            s << m_ident << visitDecl(*method) << "\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
-        s << ")";
-
-        return s.str();
-    }
-
-    std::string AstSerialize::visitVariableDecl(VariableDecl &decl) {
-        std::stringstream s;
-
-        s << "(Decl::Variable ";
-        switch (decl.mutability) {
-            case Mutability::NONE:  s << "val "; break;
-            case Mutability::BOXED: s << "let "; break;
-            case Mutability::FULL:  s << "var "; break;
-        }
-        s << decl.name.lexeme + " " + visitExpr(*decl.initializer) << ")";
 
         return s.str();
     }

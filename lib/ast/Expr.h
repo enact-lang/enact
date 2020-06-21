@@ -53,6 +53,10 @@ namespace enact {
     template<class R>
     class ExprVisitor {
     public:
+        R visitExpr(Expr& expr) {
+            return expr.accept(*this);
+        }
+
         virtual R visitAllotExpr(AllotExpr &expr) = 0;
         virtual R visitAnyExpr(AnyExpr &expr) = 0;
         virtual R visitArrayExpr(ArrayExpr &expr) = 0;

@@ -8,31 +8,30 @@
 namespace enact {
     enum class TokenType {
         // Single character tokens.
-                LEFT_PAREN, RIGHT_PAREN,
+        LEFT_PAREN, RIGHT_PAREN,
+        LEFT_BRACE, RIGHT_BRACE,
         LEFT_SQUARE, RIGHT_SQUARE,
-        COLON, COMMA, DOT, MINUS,
-        NEWLINE, PLUS, QUESTION,
-        SEMICOLON, SEPARATOR, SLASH,
-        STAR,
+        AMPERSAND, APOSTROPHE, COMMA, DOT, HASH,
+        MINUS, PLUS, QUESTION, SEMICOLON, SLASH, STAR,
 
         // 1 or 2 character tokens.
-                BANG, BANG_EQUAL,
+        BANG, BANG_EQUAL,
         EQUAL, EQUAL_EQUAL,
         GREATER, GREATER_EQUAL,
         LESS, LESS_EQUAL,
 
         // Literals.
-                IDENTIFIER, STRING, INTEGER, FLOAT,
+        IDENTIFIER, INTEGER, FLOAT,
+        STRING, INTERPOLATION,
 
         // Reserved words.
-                AND, ASSOC, BLOCK, BREAK,
-        CLASS, CONST, CONTINUE, COPY,
-        EACH, ELSE, END, FALSE, FUN,
-        FOR, GIVEN, IF, IN, IS, MUT, NIL,
-        OR, RETURN, STRUCT, THIS, TRAIT,
-        TRUE, VAR, WHEN, WHILE,
+        AND, AS, ASSOC, BREAK, CONTINUE,
+        ELSE, ENUM, FALSE, FUNC, FOR,
+        IF, IMM, IMPL, IN, IS,
+        MUT, NONE, NOT, OR, PUB,
+        RETURN, STRUCT, TRAIT, TRUE, WHILE,
 
-        ERROR, ENDFILE, MAX,
+        ERROR, END_OF_FILE, MAX,
     };
 
     struct Token {

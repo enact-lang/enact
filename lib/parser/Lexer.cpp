@@ -37,6 +37,8 @@ namespace enact {
                 return makeToken(TokenType::AMPERSAND);
             case '\'':
                 return makeToken(TokenType::APOSTROPHE);
+            case '^':
+                return makeToken(TokenType::CARAT);
             case ',':
                 return makeToken(TokenType::COMMA);
             case '.':
@@ -45,6 +47,8 @@ namespace enact {
                 return makeToken(TokenType::HASH);
             case '-':
                 return makeToken(TokenType::MINUS);
+            case '|':
+                return makeToken(TokenType::PIPE);
             case '+':
                 return makeToken(TokenType::PLUS);
             case '?':
@@ -55,16 +59,36 @@ namespace enact {
                 return makeToken(TokenType::SLASH);
             case '*':
                 return makeToken(TokenType::STAR);
+            case '~':
+                return makeToken(TokenType::TILDE);
 
             // 1 or 2 character tokens.
             case '!':
                 return makeToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
             case '=':
-                return makeToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);
+                if (match('=')) {
+                    return makeToken(TokenType::EQUAL_EQUAL);
+                }
+                if (match('>')) {
+                    return makeToken(TokenType::EQUAL_GREATER);
+                }
+                return makeToken(TokenType::EQUAL);
             case '>':
-                return makeToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
+                if (match('=')) {
+                    return makeToken(TokenType::GREATER_EQUAL);
+                }
+                if (match('>')) {
+                    return makeToken(TokenType::GREATER_GREATER);
+                }
+                return makeToken(TokenType::GREATER);
             case '<':
-                return makeToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
+                if (match('=')) {
+                    return makeToken(TokenType::LESS_EQUAL);
+                }
+                if (match('<')) {
+                    return makeToken(TokenType::LESS_LESS);
+                }
+                return makeToken(TokenType::LESS);
 
             case '"':
                 return string();

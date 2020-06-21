@@ -561,7 +561,7 @@ namespace enact {
     }
 
     std::vector<std::unique_ptr<Stmt>> Parser::parse() {
-        m_scanner = Scanner{m_context.source};
+        m_scanner = Lexer{m_context.source};
         advance();
 
         std::vector<std::unique_ptr<Stmt>> ast{};

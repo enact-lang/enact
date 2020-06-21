@@ -8,7 +8,7 @@
 #include "../ast/Stmt.h"
 #include "../bytecode/Chunk.h"
 
-#include "Scanner.h"
+#include "Lexer.h"
 #include "Token.h"
 #include "Typename.h"
 
@@ -46,7 +46,7 @@ namespace enact {
     private:
         Context &m_context;
 
-        Scanner m_scanner{""};
+        Lexer m_scanner{""};
 
         Token m_previous{};
         Token m_current{};

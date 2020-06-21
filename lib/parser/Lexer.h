@@ -9,16 +9,17 @@ namespace enact {
     class Lexer {
     public:
         explicit Lexer(std::string source);
-
         ~Lexer() = default;
 
         Token scanToken();
-        Token backtrack();
 
     private:
         Token number();
         Token identifier();
         Token string();
+
+        Token interpolationStart(std::string value);
+        Token interpolationEnd();
 
         TokenType getIdentifierType(const std::string& candidate);
 
@@ -46,6 +47,8 @@ namespace enact {
         col_t m_col = 0;
 
         Token m_last;
+
+        int m_currentInterpolations = 0;
 
         const std::unordered_map<std::string, TokenType> m_keywords{
                 {"and", TokenType::AND},

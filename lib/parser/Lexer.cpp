@@ -21,6 +21,9 @@ namespace enact {
             case '(':
                 return makeToken(TokenType::LEFT_PAREN);
             case ')':
+                if (m_currentInterpolations > 0) {
+                    return interpolationEnd();
+                }
                 return makeToken(TokenType::RIGHT_PAREN);
             case '{':
                 return makeToken(TokenType::LEFT_BRACE);
@@ -115,11 +118,53 @@ namespace enact {
 
     Token Lexer::identifier() {
         while (isIdentifier(peek())) advance();
-        return makeToken(identifierType(m_source.substr(m_start, m_current - m_start)));
+        return makeToken(getIdentifierType(m_source.substr(m_start, m_current - m_start)));
     }
 
     Token Lexer::string() {
-        while (peek() != '"' && !isAtEnd()) advance();
+        std::string value;
+        bool inEscapeSequence = false;
+        while (!isAtEnd()) {
+            const char c = peek();
+
+            if (inEscapeSequence) {
+                switch (c) {
+                    case 'n':
+                        value.push_back('\n');
+                        break;
+                    case 'r':
+                        value.push_back('\r');
+                        break;
+                    case 't':
+                        value.push_back('\t');
+                        break;
+                    case '\\':
+                        value.push_back('\\');
+                        break;
+                    case '"':
+                        value.push_back('"');
+                        break;
+                    case '(':
+                        // Eat the '('
+                        advance();
+                        return interpolationStart(std::move(value));
+                    default:
+                        advance();
+                        return errorToken("Unrecognised escape sequence.");
+                }
+            } else {
+                if (c == '"') break;
+                if (c == '\\') {
+                    inEscapeSequence = true;
+                    advance();
+                    continue;
+                }
+
+                value += c;
+            }
+
+            advance();
+        }
 
         if (isAtEnd()) {
             return errorToken("Unterminated string.");
@@ -129,6 +174,16 @@ namespace enact {
         advance();
 
         return makeToken(TokenType::STRING);
+    }
+
+    Token Lexer::interpolationStart(std::string value) {
+        ++m_currentInterpolations;
+        return Token{TokenType::INTERPOLATION, std::move(value), m_line, m_col};
+    }
+
+    Token Lexer::interpolationEnd() {
+        --m_currentInterpolations;
+        return string();
     }
 
     Token Lexer::makeToken(TokenType type) {
@@ -190,11 +245,5 @@ namespace enact {
 
     bool Lexer::isIdentifier(char c) {
         return isIdentifierStart(c) || isDigit(c);
-    }
-
-    Token Lexer::backtrack() {
-        m_current -= m_last.lexeme.size();
-        m_start = m_current;
-        return m_last;
     }
 }

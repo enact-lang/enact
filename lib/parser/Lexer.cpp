@@ -9,8 +9,7 @@ namespace enact {
         skipWhitespace();
         m_start = m_current;
 
-        //if (m_last.type == TokenType::ENDFILE) return m_last;
-        if (isAtEnd()) return makeToken(TokenType::ENDFILE);
+        if (isAtEnd()) return makeToken(TokenType::END_OF_FILE);
 
         char c = advance();
 
@@ -20,23 +19,27 @@ namespace enact {
         switch (c) {
             // Single character tokens.
             case '(':
-                ++m_openParen;
                 return makeToken(TokenType::LEFT_PAREN);
             case ')':
-                --m_openParen;
                 return makeToken(TokenType::RIGHT_PAREN);
+            case '{':
+                return makeToken(TokenType::LEFT_BRACE);
+            case '}':
+                return makeToken(TokenType::RIGHT_BRACE);
             case '[':
-                ++m_openSquare;
                 return makeToken(TokenType::LEFT_SQUARE);
             case ']':
-                --m_openSquare;
                 return makeToken(TokenType::RIGHT_SQUARE);
-            case ':':
-                return makeToken(TokenType::COLON);
+            case '&':
+                return makeToken(TokenType::AMPERSAND);
+            case '\'':
+                return makeToken(TokenType::APOSTROPHE);
             case ',':
                 return makeToken(TokenType::COMMA);
             case '.':
                 return makeToken(TokenType::DOT);
+            case '#':
+                return makeToken(TokenType::HASH);
             case '-':
                 return makeToken(TokenType::MINUS);
             case '+':
@@ -45,18 +48,12 @@ namespace enact {
                 return makeToken(TokenType::QUESTION);
             case ';':
                 return makeToken(TokenType::SEMICOLON);
-            case '|':
-                return makeToken(TokenType::SEPARATOR);
             case '/':
                 return makeToken(TokenType::SLASH);
             case '*':
                 return makeToken(TokenType::STAR);
 
-            case '\n':
-                ++m_line;
-                return makeToken(TokenType::NEWLINE);
-
-                // 1 or 2 character tokens.
+            // 1 or 2 character tokens.
             case '!':
                 return makeToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
             case '=':
@@ -80,6 +77,9 @@ namespace enact {
         while (true) {
             char c = peek();
             switch (c) {
+                case '\n':
+                    ++m_line;
+                    // Fallthrough
                 case ' ':
                 case '\t':
                 case '\r':
@@ -141,36 +141,10 @@ namespace enact {
         return Token{TokenType::ERROR, what, m_line, m_col};
     }
 
-    TokenType Lexer::identifierType(std::string candidate) {
-        if (candidate == "and") return TokenType::AND;
-        if (candidate == "assoc") return TokenType::ASSOC;
-        if (candidate == "block") return TokenType::BLOCK;
-        if (candidate == "break") return TokenType::BREAK;
-        if (candidate == "class") return TokenType::CLASS;
-        if (candidate == "const") return TokenType::CONST;
-        if (candidate == "continue") return TokenType::CONTINUE;
-        if (candidate == "copy") return TokenType::COPY;
-        if (candidate == "each") return TokenType::EACH;
-        if (candidate == "else") return TokenType::ELSE;
-        if (candidate == "end") return TokenType::END;
-        if (candidate == "false") return TokenType::FALSE;
-        if (candidate == "fun") return TokenType::FUN;
-        if (candidate == "for") return TokenType::FOR;
-        if (candidate == "given") return TokenType::GIVEN;
-        if (candidate == "if") return TokenType::IF;
-        if (candidate == "in") return TokenType::IN;
-        if (candidate == "is") return TokenType::IS;
-        if (candidate == "mut") return TokenType::MUT;
-        if (candidate == "nil") return TokenType::NIL;
-        if (candidate == "or") return TokenType::OR;
-        if (candidate == "return") return TokenType::RETURN;
-        if (candidate == "struct") return TokenType::STRUCT;
-        if (candidate == "this") return TokenType::THIS;
-        if (candidate == "trait") return TokenType::TRAIT;
-        if (candidate == "true") return TokenType::TRUE;
-        if (candidate == "var") return TokenType::VAR;
-        if (candidate == "when") return TokenType::WHEN;
-        if (candidate == "while") return TokenType::WHILE;
+    TokenType Lexer::getIdentifierType(const std::string& candidate) {
+        if (m_keywords.count(candidate) > 0) {
+            return m_keywords.at(candidate);
+        }
 
         return TokenType::IDENTIFIER;
     }

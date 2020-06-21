@@ -1,5 +1,0 @@
-block:
-    2 + 2
-    var foo = "e"
-    1; 21
-end

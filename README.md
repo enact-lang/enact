@@ -6,36 +6,36 @@
 <a href="https://www.codefactor.io/repository/github/enact-lang/enact"><img src="https://www.codefactor.io/repository/github/enact-lang/enact/badge" alt="CodeFactor" /></a><br>
 </p>
 <p align="center">
-Enact is a new programming language that's not designed to be unique or groundbreaking. Instead, Enact takes already 
-established technologies and paradigms and just makes them <strong>nicer</strong>.
+Enact is a new compiled general-purpose programming language that's not designed to be unique or groundbreaking. 
+Instead, Enact aims to be familiar, taking advantage of already established techniques and paradigms and making them
+<strong>nicer</strong>.
 </p>
 
 ## Example
 ```
 // FizzBuzz in Enact
 
-each i in 1..20:
-    given (i % 3 == 0, i % 5 == 0):
-        when (true, true):
-            print("FizzBuzz")
-        when (true, false):
-            print("Fizz")
-        when (false, true):
-            print("Buzz")
-        else:
-            print(i)
-    end
-end
+func fizzBuzz(n int) {
+    for i in 1...n {
+        switch (i % 3 == 0, i % 5 == 0) {
+            case (true, false) => print("Fizz");
+            case (false, true) => print("Buzz");
+            case (true, true)  => print("FizzBuzz");
+            default            => print(n);
+        }
+    }
+}
 ```
 
 ## Features
-- A convenient optional static type system
-- Composition-based user defined types
-- Easy interop and modularity
-- Clean and simple syntax
+- Static types that help, not hinder
+- Efficient compile-time memory management
+- Easy-to-use generics, hygienic macros
+- Pattern matching and tail-calls
+- Clean and familiar syntax
+- Built-in build system and package management
 
 ## Goals
-- Not multi-paradigm, rather a blend of paradigms
-- Familiar to both functional and imperative programmers
-- Interop with C, C++ and Python
-- Full ecosystem with tooling and packaging
+- Easy to pick up from other compiled languages like C, C++, Rust and Go
+- More memory-safe than C, more approachable than Rust, more peformant than Go
+- Small standard library with a strong ecosystem of external packages

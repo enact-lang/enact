@@ -1,2 +1,0 @@
-var boof int = 7
-var boof any = 2.0

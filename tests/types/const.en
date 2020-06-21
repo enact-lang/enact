@@ -1,4 +1,0 @@
-// This program does not pass semantic analysis.
-
-const foo = 21
-foo = 30 // Analysis error!

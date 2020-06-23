@@ -31,24 +31,23 @@ namespace enact {
         virtual void accept(ExprVisitor<void> *visitor) = 0;
     };
 
-    class AllotExpr;
-    class AnyExpr;
-    class ArrayExpr;
     class AssignExpr;
     class BinaryExpr;
+    class BlockExpr;
     class BooleanExpr;
     class CallExpr;
     class FloatExpr;
+    class ForExpr;
     class GetExpr;
+    class IfExpr;
     class IntegerExpr;
     class LogicalExpr;
-    class NilExpr;
     class SetExpr;
     class StringExpr;
-    class SubscriptExpr;
-    class TernaryExpr;
+    class SwitchExpr;
+    class SymbolExpr;
     class UnaryExpr;
-    class VariableExpr;
+    class WhileExpr;
 
     template<class R>
     class ExprVisitor {

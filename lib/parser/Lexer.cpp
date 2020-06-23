@@ -41,8 +41,6 @@ namespace enact {
                 return makeToken(TokenType::CARAT);
             case ',':
                 return makeToken(TokenType::COMMA);
-            case '.':
-                return makeToken(TokenType::DOT);
             case '#':
                 return makeToken(TokenType::HASH);
             case '-':
@@ -89,6 +87,16 @@ namespace enact {
                     return makeToken(TokenType::LESS_LESS);
                 }
                 return makeToken(TokenType::LESS);
+
+            // 1, 2 or 3 character tokens.
+            case '.':
+                if (match('.')) {
+                    if (match('.')) {
+                        return makeToken(TokenType::DOT_DOT_DOT);
+                    }
+                    return makeToken(TokenType::DOT_DOT);
+                }
+                return makeToken(TokenType::DOT);
 
             case '"':
                 return string();

@@ -11,8 +11,8 @@ namespace enact {
         LEFT_PAREN, RIGHT_PAREN,
         LEFT_BRACE, RIGHT_BRACE,
         LEFT_SQUARE, RIGHT_SQUARE,
-        AMPERSAND, APOSTROPHE, CARAT, COMMA, DOT,
-        HASH, MINUS, PIPE, PLUS, QUESTION, SEMICOLON,
+        AMPERSAND, APOSTROPHE, CARAT, COMMA, HASH,
+        MINUS, PIPE, PLUS, QUESTION, SEMICOLON,
         SLASH, STAR, TILDE,
 
         // 1 or 2 character tokens.
@@ -20,6 +20,9 @@ namespace enact {
         EQUAL, EQUAL_EQUAL, EQUAL_GREATER,
         GREATER, GREATER_EQUAL, GREATER_GREATER,
         LESS, LESS_EQUAL, LESS_LESS,
+
+        // 1, 2, or 3 character tokens.
+        DOT, DOT_DOT, DOT_DOT_DOT,
 
         // Literals.
         IDENTIFIER, INTEGER, FLOAT,

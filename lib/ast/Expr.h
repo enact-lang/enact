@@ -42,7 +42,6 @@ namespace enact {
     class IfExpr;
     class IntegerExpr;
     class LogicalExpr;
-    class SetExpr;
     class StringExpr;
     class SwitchExpr;
     class SymbolExpr;
@@ -56,83 +55,23 @@ namespace enact {
             return expr.accept(*this);
         }
 
-        virtual R visitAllotExpr(AllotExpr &expr) = 0;
-        virtual R visitAnyExpr(AnyExpr &expr) = 0;
-        virtual R visitArrayExpr(ArrayExpr &expr) = 0;
         virtual R visitAssignExpr(AssignExpr &expr) = 0;
         virtual R visitBinaryExpr(BinaryExpr &expr) = 0;
+        virtual R visitBlockExpr(BlockExpr &expr) = 0;
         virtual R visitBooleanExpr(BooleanExpr &expr) = 0;
         virtual R visitCallExpr(CallExpr &expr) = 0;
         virtual R visitFloatExpr(FloatExpr &expr) = 0;
+        virtual R visitForExpr(ForExpr &expr) = 0;
         virtual R visitGetExpr(GetExpr &expr) = 0;
+        virtual R visitIfExpr(IfExpr &expr) = 0;
         virtual R visitIntegerExpr(IntegerExpr &expr) = 0;
         virtual R visitLogicalExpr(LogicalExpr &expr) = 0;
-        virtual R visitNilExpr(NilExpr &expr) = 0;
         virtual R visitSetExpr(SetExpr &expr) = 0;
         virtual R visitStringExpr(StringExpr &expr) = 0;
-        virtual R visitSubscriptExpr(SubscriptExpr &expr) = 0;
-        virtual R visitTernaryExpr(TernaryExpr &expr) = 0;
+        virtual R visitSwitchExpr(SwitchExpr &expr) = 0;
+        virtual R visitSymbolExpr(SymbolExpr &expr) = 0;
         virtual R visitUnaryExpr(UnaryExpr &expr) = 0;
-        virtual R visitVariableExpr(VariableExpr &expr) = 0;
-    };
-
-    class AllotExpr : public Expr {
-    public:
-        std::unique_ptr<SubscriptExpr> target;
-        std::unique_ptr<Expr> value;
-        Token oper;
-
-        AllotExpr(std::unique_ptr<SubscriptExpr> target, std::unique_ptr<Expr> value, Token oper) :
-                target{std::move(target)},
-                value{std::move(value)},
-                oper{oper} {}
-
-        ~AllotExpr() override = default;
-
-        std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitAllotExpr(*this);
-        }
-
-        void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitAllotExpr(*this);
-        }
-    };
-
-    class AnyExpr : public Expr {
-    public:
-        AnyExpr() = default;
-
-        ~AnyExpr() override = default;
-
-        std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitAnyExpr(*this);
-        }
-
-        void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitAnyExpr(*this);
-        }
-    };
-
-    class ArrayExpr : public Expr {
-    public:
-        std::vector<std::unique_ptr<Expr>> value;
-        Token square;
-        std::unique_ptr<const Typename> typeName;
-
-        ArrayExpr(std::vector<std::unique_ptr<Expr>> value, Token square, std::unique_ptr<const Typename> typeName) :
-                value{std::move(value)},
-                square{square},
-                typeName{std::move(typeName)} {}
-
-        ~ArrayExpr() override = default;
-
-        std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitArrayExpr(*this);
-        }
-
-        void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitArrayExpr(*this);
-        }
+        virtual R visitWhileExpr(WhileExpr &expr) = 0;
     };
 
     class AssignExpr : public Expr {
@@ -177,6 +116,10 @@ namespace enact {
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitBinaryExpr(*this);
         }
+    };
+
+    class BlockExpr : public Expr {
+
     };
 
     class BooleanExpr : public Expr {
@@ -237,6 +180,10 @@ namespace enact {
         }
     };
 
+    class ForExpr : public Expr {
+
+    };
+
     class GetExpr : public Expr {
     public:
         std::unique_ptr<Expr> object;
@@ -257,6 +204,10 @@ namespace enact {
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitGetExpr(*this);
         }
+    };
+
+    class IfExpr : public Expr {
+
     };
 
     class IntegerExpr : public Expr {
@@ -286,7 +237,7 @@ namespace enact {
         LogicalExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Token oper) :
                 left{std::move(left)},
                 right{std::move(right)},
-                oper{oper} {}
+                oper{std::move(oper)} {}
 
         ~LogicalExpr() override = default;
 
@@ -296,43 +247,6 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitLogicalExpr(*this);
-        }
-    };
-
-    class NilExpr : public Expr {
-    public:
-        NilExpr() = default;
-
-        ~NilExpr() override = default;
-
-        std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitNilExpr(*this);
-        }
-
-        void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitNilExpr(*this);
-        }
-    };
-
-    class SetExpr : public Expr {
-    public:
-        std::unique_ptr<GetExpr> target;
-        std::unique_ptr<Expr> value;
-        Token oper;
-
-        SetExpr(std::unique_ptr<GetExpr> target, std::unique_ptr<Expr> value, Token oper) :
-                target{std::move(target)},
-                value{std::move(value)},
-                oper{oper} {}
-
-        ~SetExpr() override = default;
-
-        std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitSetExpr(*this);
-        }
-
-        void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitSetExpr(*this);
         }
     };
 
@@ -354,50 +268,25 @@ namespace enact {
         }
     };
 
-    class SubscriptExpr : public Expr {
-    public:
-        std::unique_ptr<Expr> object;
-        std::unique_ptr<Expr> index;
-        Token square;
-
-        SubscriptExpr(std::unique_ptr<Expr> object, std::unique_ptr<Expr> index, Token square) :
-                object{std::move(object)},
-                index{std::move(index)},
-                square{square} {}
-
-        ~SubscriptExpr() override = default;
-
-        std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitSubscriptExpr(*this);
-        }
-
-        void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitSubscriptExpr(*this);
-        }
+    class SwitchExpr : public Expr {
+        
     };
 
-    class TernaryExpr : public Expr {
+    class SymbolExpr : public Expr {
     public:
-        std::unique_ptr<Expr> condition;
-        std::unique_ptr<Expr> thenExpr;
-        std::unique_ptr<Expr> elseExpr;
-        Token oper;
+        Token name;
 
-        TernaryExpr(std::unique_ptr<Expr> condition, std::unique_ptr<Expr> thenExpr, std::unique_ptr<Expr> elseExpr,
-                    Token oper) :
-                condition{std::move(condition)},
-                thenExpr{std::move(thenExpr)},
-                elseExpr{std::move(elseExpr)},
-                oper{oper} {}
+        SymbolExpr(Token name) :
+                name{std::move(name)} {}
 
-        ~TernaryExpr() override = default;
+        ~SymbolExpr() override = default;
 
         std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitTernaryExpr(*this);
+            return visitor->visitSymbolExpr(*this);
         }
 
         void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitTernaryExpr(*this);
+            return visitor->visitSymbolExpr(*this);
         }
     };
 
@@ -418,24 +307,6 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitUnaryExpr(*this);
-        }
-    };
-
-    class VariableExpr : public Expr {
-    public:
-        Token name;
-
-        VariableExpr(Token name) :
-                name{name} {}
-
-        ~VariableExpr() override = default;
-
-        std::string accept(ExprVisitor<std::string> *visitor) override {
-            return visitor->visitVariableExpr(*this);
-        }
-
-        void accept(ExprVisitor<void> *visitor) override {
-            return visitor->visitVariableExpr(*this);
         }
     };
 }

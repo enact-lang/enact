@@ -325,6 +325,12 @@ namespace enact {
         }
     };
 
+    struct SwitchCase {
+        std::unique_ptr<Pattern> pattern;
+        std::unique_ptr<Expr> predicate;
+        std::unique_ptr<BlockExpr> body;
+    };
+
     class SwitchExpr : public Expr {
     public:
         std::unique_ptr<Expr> value;

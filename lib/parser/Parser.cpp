@@ -6,197 +6,138 @@ namespace enact {
     Parser::Parser(CompileContext &context) : m_context{context} {
     }
 
-    const ParseRule &Parser::getParseRule(TokenType type) {
-        return m_parseRules[(size_t) type];
+    std::vector<std::unique_ptr<Stmt>> Parser::parse() {
+        m_scanner = Lexer{m_context.source};
+        advance();
+
+        std::vector<std::unique_ptr<Stmt>> ast{};
+        while (!isAtEnd()) {
+            std::unique_ptr<Stmt> stmt = declaration();
+            if (stmt) ast.push_back(std::move(stmt));
+        }
+
+        return ast;
     }
 
-    std::unique_ptr<Expr> Parser::parsePrecedence(Precedence precedence) {
+    bool Parser::hadError() const {
+        return m_hadError;
+    }
+
+    std::unique_ptr<Expr> Parser::parseAtPrecedence(Precedence precedence) {
         advance();
-        PrefixFn prefixRule = getParseRule(m_previous.type).prefix;
+
+        const PrefixFn prefixRule = getParseRule(m_previous.type).prefix;
         if (prefixRule == nullptr) {
-            if (m_previous.type == TokenType::NEWLINE) return parsePrecedence(precedence);
+            if (m_previous.type == TokenType::SEMICOLON) {
+                return parseAtPrecedence(precedence);
+            }
             throw error("Expected expression.");
-            return nullptr;
         }
 
         std::unique_ptr<Expr> expr = (this->*(prefixRule))();
 
         while (precedence <= getParseRule(m_current.type).precedence) {
             advance();
-            InfixFn infixRule = getParseRule(m_previous.type).infix;
+            const InfixFn infixRule = getParseRule(m_previous.type).infix;
             expr = (this->*(infixRule))(std::move(expr));
         }
 
         return expr;
     }
 
-    std::unique_ptr<Expr> Parser::expression() {
-        return parsePrecedence(Precedence::ASSIGNMENT);
+    std::unique_ptr<Expr> Parser::parseExpression() {
+        return parseAtPrecedence(Precedence::ASSIGNMENT);
     }
 
-    std::unique_ptr<Expr> Parser::grouping() {
-        std::unique_ptr<Expr> expr = expression();
+    std::unique_ptr<Expr> Parser::parseGroupingExpr() {
+        std::unique_ptr<Expr> expr = parseExpression();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");
         return expr;
     }
 
-    std::unique_ptr<Expr> Parser::variable() {
-        if (m_previous.lexeme != "_") {
-            return std::make_unique<VariableExpr>(m_previous);
-        } else {
-            return std::make_unique<AnyExpr>();
-        }
-    }
-
-    std::unique_ptr<Expr> Parser::number() {
-        if (m_previous.type == TokenType::INTEGER) {
-            int value = std::stoi(m_previous.lexeme);
-            return std::make_unique<IntegerExpr>(value);
-        }
-        double value = std::stod(m_previous.lexeme);
-        return std::make_unique<FloatExpr>(value);
-    }
-
-    std::unique_ptr<Expr> Parser::literal() {
+    std::unique_ptr<Expr> Parser::parseLiteralExpr() {
         switch (m_previous.type) {
+            case TokenType::INTEGER:
+                return std::make_unique<IntegerExpr>(std::stoi(m_previous.lexeme));
+            case TokenType::FLOAT:
+                return std::make_unique<FloatExpr>(std::stod(m_previous.lexeme));
             case TokenType::TRUE:
                 return std::make_unique<BooleanExpr>(true);
             case TokenType::FALSE:
                 return std::make_unique<BooleanExpr>(false);
-            case TokenType::NIL:
-                return std::make_unique<NilExpr>();
+            case TokenType::STRING:
+                return std::make_unique<StringExpr>(std::move(m_previous.lexeme));
+            case TokenType::IDENTIFIER:
+                return std::make_unique<SymbolExpr>(m_previous);
+            default:
+                ENACT_UNREACHABLE();
         }
     }
 
-    std::unique_ptr<Expr> Parser::string() {
-        return std::make_unique<StringExpr>(m_previous.lexeme.substr(1, m_previous.lexeme.size() - 2));
-    }
-
-    std::unique_ptr<Expr> Parser::array() {
-        Token square = m_previous;
-
-        std::unique_ptr<const Typename> typeName;
-
-        std::vector<std::unique_ptr<Expr>> elements;
-        if (!consume(TokenType::RIGHT_SQUARE)) {
-            do {
-                elements.push_back(expression());
-            } while (consume(TokenType::COMMA));
-
-            expect(TokenType::RIGHT_SQUARE, "Expected end of array.");
-
-            // Typename can be empty
-            typeName = expectTypename(true);
-        } else {
-            // Typename cannot be empty
-            typeName = expectTypename();
-        }
-
-        return std::make_unique<ArrayExpr>(std::move(elements), square, std::move(typeName));
-    }
-
-    std::unique_ptr<Expr> Parser::unary() {
+    std::unique_ptr<Expr> Parser::parseUnaryExpr() {
         Token oper = m_previous;
 
-        std::unique_ptr<Expr> expr = parsePrecedence(Precedence::UNARY);
+        std::unique_ptr<Expr> expr = parseAtPrecedence(Precedence::UNARY);
 
-        return std::make_unique<UnaryExpr>(std::move(expr), oper);
+        return std::make_unique<UnaryExpr>(std::move(expr), std::move(oper));
     }
 
-    std::unique_ptr<Expr> Parser::call(std::unique_ptr<Expr> callee) {
+    std::unique_ptr<Expr> Parser::parseCallExpr(std::unique_ptr<Expr> callee) {
         Token leftParen = m_previous;
         std::vector<std::unique_ptr<Expr>> arguments;
 
         if (!consume(TokenType::RIGHT_PAREN)) {
             do {
-                arguments.push_back(expression());
+                arguments.push_back(parseExpression());
             } while (consume(TokenType::COMMA));
 
             expect(TokenType::RIGHT_PAREN, "Expected end of argument list.");
         }
 
-        if (arguments.size() > 255) throw errorAt(leftParen, "Too many arguments. Max is 255.");
+        if (arguments.size() > 255) {
+            throw errorAt(leftParen,
+                    std::to_string(arguments.size()) +
+                    " arguments in function call; maximum is 255.");
+        }
 
-        return std::make_unique<CallExpr>(std::move(callee), std::move(arguments), leftParen);
+        return std::make_unique<CallExpr>(std::move(callee), std::move(arguments), std::move(leftParen));
     }
 
-    std::unique_ptr<Expr> Parser::subscript(std::unique_ptr<Expr> object) {
-        Token square = m_previous;
-        std::unique_ptr<Expr> index = expression();
-        expect(TokenType::RIGHT_SQUARE, "Expected ']' after subscript index.");
-
-        return std::make_unique<SubscriptExpr>(std::move(object), std::move(index), square);
-    }
-
-    std::unique_ptr<Expr> Parser::binary(std::unique_ptr<Expr> left) {
+    std::unique_ptr<Expr> Parser::parseBinaryExpr(std::unique_ptr<Expr> left) {
         Token oper = m_previous;
 
-        const ParseRule &rule = getParseRule(oper.type);
-        std::unique_ptr<Expr> right = parsePrecedence((Precedence) ((int) rule.precedence + 1));
+        const ParseRule& rule = getParseRule(oper.type);
+        std::unique_ptr<Expr> right = parseAtPrecedence(static_cast<Precedence>(static_cast<int>(rule.precedence) + 1)));
 
         switch (oper.type) {
+            case TokenType::EQUAL:
+                return std::make_unique<AssignExpr>(std::move(left), std::move(right), std::move(oper));
+
             case TokenType::AND:
             case TokenType::OR:
-                return std::make_unique<LogicalExpr>(std::move(left), std::move(right), oper);
+                return std::make_unique<LogicalExpr>(std::move(left), std::move(right), std::move(oper));
 
             default:
-                return std::make_unique<BinaryExpr>(std::move(left), std::move(right), oper);
+                return std::make_unique<BinaryExpr>(std::move(left), std::move(right), std::move(oper));
         }
     }
 
-    std::unique_ptr<Expr> Parser::assignment(std::unique_ptr<Expr> target) {
-        Token oper = m_previous;
-
-        std::unique_ptr<Expr> value = parsePrecedence(Precedence::ASSIGNMENT);
-
-        if (typeid(*target) == typeid(VariableExpr)) {
-            auto variableTarget = std::unique_ptr<VariableExpr>{
-                    static_cast<VariableExpr *>(target.release())
-            };
-            return std::make_unique<AssignExpr>(std::move(variableTarget), std::move(value), oper);
-        } else if (typeid(*target) == typeid(SubscriptExpr)) {
-            auto subscriptTarget = std::unique_ptr<SubscriptExpr>{
-                    static_cast<SubscriptExpr *>(target.release())
-            };
-            return std::make_unique<AllotExpr>(std::move(subscriptTarget), std::move(value), oper);
-        } else if (typeid(*target) == typeid(GetExpr)) {
-            auto getTarget = std::unique_ptr<GetExpr>{
-                    static_cast<GetExpr *>(target.release())
-            };
-            return std::make_unique<SetExpr>(std::move(getTarget), std::move(value), oper);
-        }
-
-        throw errorAt(oper, "Invalid assignment target.");
-    }
-
-    std::unique_ptr<Expr> Parser::field(std::unique_ptr<Expr> object) {
+    std::unique_ptr<Expr> Parser::parseFieldExpr(std::unique_ptr<Expr> object) {
         Token oper = m_previous;
         expect(TokenType::IDENTIFIER, "Expected field name after '.'.");
         Token name = m_previous;
 
-        return std::make_unique<GetExpr>(std::move(object), name, oper);
+        return std::make_unique<GetExpr>(std::move(object), std::move(name), std::move(oper));
     }
 
-    std::unique_ptr<Expr> Parser::ternary(std::unique_ptr<Expr> condition) {
-        std::unique_ptr<Expr> thenBranch = parsePrecedence(Precedence::CONDITIONAL);
-
-        expect(TokenType::COLON, "Expected ':' after then value of conditional expression.");
-        Token oper = m_previous;
-
-        std::unique_ptr<Expr> elseBranch = parsePrecedence(Precedence::ASSIGNMENT);
-
-        return std::make_unique<TernaryExpr>(std::move(condition), std::move(thenBranch), std::move(elseBranch), oper);
-    }
-
-    std::unique_ptr<Stmt> Parser::declaration() {
-        consumeSeparator();
+    std::unique_ptr<Stmt> Parser::parseDeclaration() {
         try {
-            if (consume(TokenType::FUN)) return functionDeclaration();
-            if (consume(TokenType::STRUCT)) return structDeclaration();
-            if (consume(TokenType::TRAIT)) return traitDeclaration();
-            if (consume(TokenType::VAR)) return variableDeclaration(false);
-            if (consume(TokenType::CONST)) return variableDeclaration(true);
-            return statement();
+            if (consume(TokenType::FUNC))   return parseFunctionStmt();
+            if (consume(TokenType::STRUCT)) return parseStructStmt();
+            if (consume(TokenType::TRAIT))  return parseTraitStmt();
+            if (consume(TokenType::IMM))    return parseVariableStmt(true);
+            if (consume(TokenType::MUT))    return parseVariableStmt(false);
+            return parseStatement();
         } catch (ParseError &error) {
             synchronise();
             return nullptr;
@@ -559,18 +500,7 @@ namespace enact {
         return std::make_unique<ExpressionStmt>(std::move(expr));
     }
 
-    std::vector<std::unique_ptr<Stmt>> Parser::parse() {
-        m_scanner = Lexer{m_context.source};
-        advance();
 
-        std::vector<std::unique_ptr<Stmt>> ast{};
-        while (!isAtEnd()) {
-            std::unique_ptr<Stmt> stmt = declaration();
-            if (stmt) ast.push_back(std::move(stmt));
-        }
-
-        return ast;
-    }
 
     Parser::ParseError Parser::errorAt(const Token &token, const std::string &message) {
         m_context.reportErrorAt(token, message);
@@ -712,7 +642,7 @@ namespace enact {
         return m_current.type == TokenType::ENDFILE;
     }
 
-    bool Parser::hadError() {
-        return m_hadError;
+    const ParseRule &Parser::getParseRule(TokenType type) {
+        return m_parseRules[static_cast<std::size_t>(type)];
     }
 }

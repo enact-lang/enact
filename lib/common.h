@@ -21,6 +21,9 @@
 #define ENACT_ABORT(msg) \
         _abort(msg, __FILE__, __LINE__)
 
+#define ENACT_UNREACHABLE() \
+        ENACT_ABORT("Unreachable!")
+
 namespace enact {
     inline void _assert(bool expr, std::string exprString, std::string msg, std::string file, int line) {
         if (!expr) {

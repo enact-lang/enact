@@ -59,7 +59,7 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> parse();
 
-        bool hadError();
+        bool hadError() const;
 
     private:
         std::unique_ptr<Expr> parseAtPrecedence(Precedence precedence);

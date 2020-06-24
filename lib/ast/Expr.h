@@ -8,22 +8,18 @@
 #include <vector>
 
 #include "../parser/Typename.h"
-#include "../type/Type.h"
+
+#include "Pattern.h"
 
 namespace enact {
     template<class R>
     class ExprVisitor;
 
     class Expr {
-        Type m_type = nullptr;
     public:
-        virtual ~Expr() = default;
+        //SemaInfo semaInfo{};
 
-        virtual void setType(Type t) { m_type = t; }
-        virtual const Type &getType() {
-            ENACT_ASSERT(m_type != nullptr, "Expr::getType(): Tried to get uninitialized type.");
-            return m_type;
-        }
+        virtual ~Expr() = default;
 
         // We need to overload for every possible visitor return type here, as we cannot
         // have a templated virtual member function.
@@ -66,7 +62,6 @@ namespace enact {
         virtual R visitIfExpr(IfExpr &expr) = 0;
         virtual R visitIntegerExpr(IntegerExpr &expr) = 0;
         virtual R visitLogicalExpr(LogicalExpr &expr) = 0;
-        virtual R visitSetExpr(SetExpr &expr) = 0;
         virtual R visitStringExpr(StringExpr &expr) = 0;
         virtual R visitSwitchExpr(SwitchExpr &expr) = 0;
         virtual R visitSymbolExpr(SymbolExpr &expr) = 0;
@@ -76,11 +71,11 @@ namespace enact {
 
     class AssignExpr : public Expr {
     public:
-        std::unique_ptr<VariableExpr> target;
+        std::unique_ptr<Expr> target;
         std::unique_ptr<Expr> value;
         Token oper;
 
-        AssignExpr(std::unique_ptr<VariableExpr> target, std::unique_ptr<Expr> value, Token oper) :
+        AssignExpr(std::unique_ptr<Expr> target, std::unique_ptr<Expr> value, Token oper) :
                 target{std::move(target)},
                 value{std::move(value)},
                 oper{oper} {}
@@ -212,11 +207,11 @@ namespace enact {
 
         ~ForExpr() override = default;
 
-        std::string accept(StmtVisitor<std::string> *visitor) override {
+        std::string accept(ExprVisitor<std::string> *visitor) override {
             return visitor->visitForExpr(*this);
         }
 
-        void accept(StmtVisitor<void> *visitor) override {
+        void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitForExpr(*this);
         }
     };

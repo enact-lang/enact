@@ -110,17 +110,14 @@ namespace enact {
         std::unique_ptr<const Typename> returnTypename;
         std::vector<Param> params;
         std::vector<std::unique_ptr<Stmt>> body;
-        Type type;
         bool isMut;
 
         FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
-                     std::vector<std::unique_ptr<Stmt>> body, Type type, bool isMut) :
+                     std::vector<std::unique_ptr<Stmt>> body) :
                 name{name},
                 returnTypename{std::move(returnTypename)},
                 params{std::move(params)},
-                body{std::move(body)},
-                type{type},
-                isMut{isMut} {}
+                body{std::move(body)} {}
 
         ~FunctionStmt() override = default;
 
@@ -160,18 +157,15 @@ namespace enact {
         std::vector<Field> fields;
         std::vector<std::unique_ptr<FunctionStmt>> methods;
         std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
-        std::shared_ptr<const ConstructorType> constructorType;
 
         StructStmt(Token name, std::vector<Token> traits, std::vector<Field> &&fields,
                    std::vector<std::unique_ptr<FunctionStmt>> methods,
-                   std::vector<std::unique_ptr<FunctionStmt>> assocFunctions,
-                   std::shared_ptr<const ConstructorType> constructorType) :
+                   std::vector<std::unique_ptr<FunctionStmt>> assocFunctions) :
                 name{name},
                 traits{traits},
                 fields{std::move(fields)},
                 methods{std::move(methods)},
-                assocFunctions{std::move(assocFunctions)},
-                constructorType{constructorType} {}
+                assocFunctions{std::move(assocFunctions)} {}
 
         ~StructStmt() override = default;
 
@@ -210,12 +204,10 @@ namespace enact {
         std::unique_ptr<const Typename> typeName;
         std::unique_ptr<Expr> initializer;
 
-        VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer,
-                     Mutability mutability) :
+        VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer) :
                 name{name},
                 typeName{std::move(typeName)},
-                initializer{std::move(initializer)},
-                mutability{mutability} {}
+                initializer{std::move(initializer)} {}
 
         ~VariableStmt() override = default;
 

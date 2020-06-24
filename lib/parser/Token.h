@@ -29,13 +29,14 @@ namespace enact {
         STRING, INTERPOLATION,
 
         // Reserved words.
-        AND, AS, ASSOC, BREAK, CONTINUE,
-        ELSE, ENUM, FALSE, FUNC, FOR,
-        IF, IMM, IMPL, IN, IS,
-        MUT, NOT, OR, PUB, RETURN,
-        STRUCT, TRAIT, TRUE, WHILE,
+        AND, AS, ASSOC, BREAK, CASE,
+        CONTINUE, DEFAULT, ELSE, ENUM, FALSE,
+        FUNC, FOR, IF, IMM, IMPL,
+        IN, IS, MUT, NOT, OR,
+        PUB, RETURN, STRUCT, SWITCH, TRAIT,
+        TRUE, WHEN, WHILE,
 
-        ERROR, END_OF_FILE, MAX,
+        ERROR, END_OF_FILE, ENUM_MAX,
     };
 
     struct Token {

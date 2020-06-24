@@ -87,10 +87,10 @@ namespace enact {
         // Declaration statements
         std::unique_ptr<Stmt> parseDeclaration();
 
-        std::unique_ptr<Stmt> parseFunctionStmt(bool mustParseBody = true, bool isMut = false);
+        std::unique_ptr<Stmt> parseFunctionStmt(bool mustParseBody = true);
         std::unique_ptr<Stmt> parseStructStmt();
         std::unique_ptr<Stmt> parseTraitStmt();
-        std::unique_ptr<Stmt> parseVariableStmt(bool isConst, bool mustExpectSeparator = true);
+        std::unique_ptr<Stmt> parseVariableStmt(bool isMut);
 
         // Statements
         std::unique_ptr<Stmt> parseStatement();

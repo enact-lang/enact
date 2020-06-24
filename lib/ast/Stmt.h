@@ -112,7 +112,7 @@ namespace enact {
         std::vector<std::unique_ptr<Stmt>> body;
 
         FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
-                     std::vector<std::unique_ptr<Stmt>> body) :
+                     std::unique_ptr<BlockExpr> body) :
                 name{std::move(name)},
                 returnTypename{std::move(returnTypename)},
                 params{std::move(params)},

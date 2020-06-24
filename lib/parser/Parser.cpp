@@ -135,8 +135,8 @@ namespace enact {
             if (consume(TokenType::FUNC))   return parseFunctionStmt();
             if (consume(TokenType::STRUCT)) return parseStructStmt();
             if (consume(TokenType::TRAIT))  return parseTraitStmt();
-            if (consume(TokenType::IMM))    return parseVariableStmt(true);
-            if (consume(TokenType::MUT))    return parseVariableStmt(false);
+            if (consume(TokenType::IMM))    return parseVariableStmt(false);
+            if (consume(TokenType::MUT))    return parseVariableStmt(true);
             return parseStatement();
         } catch (ParseError &error) {
             synchronise();
@@ -144,7 +144,7 @@ namespace enact {
         }
     }
 
-    std::unique_ptr<Stmt> Parser::functionDeclaration(bool mustParseBody, bool isMut) {
+    std::unique_ptr<Stmt> Parser::parseFunctionStmt(bool mustParseBody) {
         expect(TokenType::IDENTIFIER, "Expected function name.");
         Token name = m_previous;
 
@@ -163,26 +163,16 @@ namespace enact {
         // Get the return type
         std::unique_ptr<const Typename> returnTypename = expectTypename(true);
 
-        std::vector<std::unique_ptr<Stmt>> body;
-
-        if (!mustParseBody && consumeSeparator()) {
-            return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body),
-                                                  nullptr, isMut);
+        if (!mustParseBody && check(TokenType::SEMICOLON)) {
+            return std::make_unique<FunctionStmt>(name,
+                    std::move(returnTypename),
+                    std::move(params),
+                    std::make_unique<BlockExpr>(std::vector<std::unique_ptr<Stmt>>{},
+                            std::make_unique<UnitExpr>()));
         }
 
-        expect(TokenType::COLON, "Expected ':' before function body.");
-        consumeSeparator();
-
-        while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(declaration());
-        }
-
-        expect(TokenType::END, "Expected 'end' at end of function declaration.");
-
-        expectSeparator("Expected newline or ';' after function declaration.");
-
-        return std::make_unique<FunctionStmt>(name, std::move(returnTypename), std::move(params), std::move(body),
-                                              nullptr, isMut);
+        std::unique_ptr<BlockExpr> body = static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
+        return std::make_unique<FunctionStmt>(std::move(name), std::move(returnTypename), std::move(params), std::move(body));
     }
 
     std::unique_ptr<Stmt> Parser::structDeclaration() {

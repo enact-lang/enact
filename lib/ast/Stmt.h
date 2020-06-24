@@ -90,7 +90,7 @@ namespace enact {
     public:
         std::unique_ptr<Expr> expr;
 
-        ExpressionStmt(std::unique_ptr<Expr> expr) :
+        explicit ExpressionStmt(std::unique_ptr<Expr> expr) :
                 expr{std::move(expr)} {}
 
         ~ExpressionStmt() override = default;
@@ -110,11 +110,10 @@ namespace enact {
         std::unique_ptr<const Typename> returnTypename;
         std::vector<Param> params;
         std::vector<std::unique_ptr<Stmt>> body;
-        bool isMut;
 
         FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
                      std::vector<std::unique_ptr<Stmt>> body) :
-                name{name},
+                name{std::move(name)},
                 returnTypename{std::move(returnTypename)},
                 params{std::move(params)},
                 body{std::move(body)} {}
@@ -136,7 +135,7 @@ namespace enact {
         std::unique_ptr<Expr> value;
 
         ReturnStmt(Token keyword, std::unique_ptr<Expr> value) :
-                keyword{keyword},
+                keyword{std::move(keyword)},
                 value{std::move(value)} {}
 
         ~ReturnStmt() override = default;
@@ -161,8 +160,8 @@ namespace enact {
         StructStmt(Token name, std::vector<Token> traits, std::vector<Field> &&fields,
                    std::vector<std::unique_ptr<FunctionStmt>> methods,
                    std::vector<std::unique_ptr<FunctionStmt>> assocFunctions) :
-                name{name},
-                traits{traits},
+                name{std::move(name)},
+                traits{std::move(traits)},
                 fields{std::move(fields)},
                 methods{std::move(methods)},
                 assocFunctions{std::move(assocFunctions)} {}
@@ -184,7 +183,7 @@ namespace enact {
         std::vector<std::unique_ptr<FunctionStmt>> methods;
 
         TraitStmt(Token name, std::vector<std::unique_ptr<FunctionStmt>> methods) :
-                name{name},
+                name{std::move(name)},
                 methods{std::move(methods)} {}
 
         ~TraitStmt() override = default;
@@ -205,7 +204,7 @@ namespace enact {
         std::unique_ptr<Expr> initializer;
 
         VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer) :
-                name{name},
+                name{std::move(name)},
                 typeName{std::move(typeName)},
                 initializer{std::move(initializer)} {}
 

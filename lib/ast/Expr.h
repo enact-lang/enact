@@ -78,7 +78,7 @@ namespace enact {
         AssignExpr(std::unique_ptr<Expr> target, std::unique_ptr<Expr> value, Token oper) :
                 target{std::move(target)},
                 value{std::move(value)},
-                oper{oper} {}
+                oper{std::move(oper)} {}
 
         ~AssignExpr() override = default;
 
@@ -100,7 +100,7 @@ namespace enact {
         BinaryExpr(std::unique_ptr<Expr> left, std::unique_ptr<Expr> right, Token oper) :
                 left{std::move(left)},
                 right{std::move(right)},
-                oper{oper} {}
+                oper{std::move(oper)} {}
 
         ~BinaryExpr() override = default;
 
@@ -140,7 +140,7 @@ namespace enact {
     public:
         bool value;
 
-        BooleanExpr(bool value) :
+        explicit BooleanExpr(bool value) :
                 value{value} {}
 
         ~BooleanExpr() override = default;
@@ -163,7 +163,7 @@ namespace enact {
         CallExpr(std::unique_ptr<Expr> callee, std::vector<std::unique_ptr<Expr>> arguments, Token paren) :
                 callee{std::move(callee)},
                 arguments{std::move(arguments)},
-                paren{paren} {}
+                paren{std::move(paren)} {}
 
         ~CallExpr() override = default;
 
@@ -180,7 +180,7 @@ namespace enact {
     public:
         double value;
 
-        FloatExpr(double value) :
+        explicit FloatExpr(double value) :
                 value{value} {}
 
         ~FloatExpr() override = default;
@@ -201,7 +201,7 @@ namespace enact {
         std::unique_ptr<BlockExpr> body;
 
         ForExpr(Token name, std::unique_ptr<Expr> object, std::unique_ptr<BlockExpr> body) :
-                name{name},
+                name{std::move(name)},
                 object{std::move(object)},
                 body{std::move(body)} {}
 
@@ -224,8 +224,8 @@ namespace enact {
 
         GetExpr(std::unique_ptr<Expr> object, Token name, Token oper) :
                 object{std::move(object)},
-                name{name},
-                oper{oper} {}
+                name{std::move(name)},
+                oper{std::move(oper)} {}
 
         ~GetExpr() override = default;
 
@@ -266,7 +266,7 @@ namespace enact {
     public:
         int value;
 
-        IntegerExpr(int value) :
+        explicit IntegerExpr(int value) :
                 value{value} {}
 
         ~IntegerExpr() override = default;
@@ -306,8 +306,8 @@ namespace enact {
     public:
         std::string value;
 
-        StringExpr(std::string value) :
-                value{value} {}
+        explicit StringExpr(std::string value) :
+                value{std::move(value)} {}
 
         ~StringExpr() override = default;
 
@@ -350,7 +350,7 @@ namespace enact {
     public:
         Token name;
 
-        SymbolExpr(Token name) :
+        explicit SymbolExpr(Token name) :
                 name{std::move(name)} {}
 
         ~SymbolExpr() override = default;
@@ -371,7 +371,7 @@ namespace enact {
 
         UnaryExpr(std::unique_ptr<Expr> operand, Token oper) :
                 operand{std::move(operand)},
-                oper{oper} {}
+                oper{std::move(oper)} {}
 
         ~UnaryExpr() override = default;
 

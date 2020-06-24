@@ -6,7 +6,7 @@
 #include "../value/Object.h"
 
 namespace enact {
-    class Context;
+    class CompileContext;
 
     struct Local {
         Token name;
@@ -28,7 +28,7 @@ namespace enact {
     class Compiler : private StmtVisitor<void>, private ExprVisitor<void> {
         friend class GC;
 
-        Context &m_context;
+        CompileContext &m_context;
 
         Compiler *m_enclosing = nullptr;
 
@@ -183,7 +183,7 @@ namespace enact {
         void visitVariableExpr(VariableExpr &expr) override;
 
     public:
-        Compiler(Context &context, Compiler *enclosing = nullptr);
+        Compiler(CompileContext &context, Compiler *enclosing = nullptr);
 
         ~Compiler() = default;
 

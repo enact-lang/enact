@@ -1,9 +1,9 @@
-#include "../context/Context.h"
+#include "../context/CompileContext.h"
 
 #include "Token.h"
 
 namespace enact {
-    Parser::Parser(Context &context) : m_context{context} {
+    Parser::Parser(CompileContext &context) : m_context{context} {
     }
 
     const ParseRule &Parser::getParseRule(TokenType type) {

@@ -1,4 +1,4 @@
-#include "../context/Context.h"
+#include "../context/CompileContext.h"
 
 namespace enact {
     GC::GC(Context &context) : m_context{context} {

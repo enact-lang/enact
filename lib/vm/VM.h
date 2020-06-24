@@ -10,9 +10,9 @@
 #include "../value/Value.h"
 
 namespace enact {
-    class Context;
+    class CompileContext;
 
-    enum class InterpretResult;
+    enum class CompileResult;
 
     constexpr size_t FRAMES_MAX = 64;
 
@@ -25,7 +25,7 @@ namespace enact {
     class VM {
         friend class GC;
 
-        Context &m_context;
+        CompileContext &m_context;
 
         std::vector<Value> m_stack{};
 
@@ -40,9 +40,9 @@ namespace enact {
         void executionLoop(FunctionObject *function);
 
     public:
-        explicit VM(Context &context);
+        explicit VM(CompileContext &context);
 
-        InterpretResult run(FunctionObject *function);
+        CompileResult run(FunctionObject *function);
 
         inline void callFunction(ClosureObject *closure, uint8_t argCount);
 

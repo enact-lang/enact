@@ -5,12 +5,12 @@
 #include "../type/Type.h"
 
 namespace enact {
-    class Context;
+    class CompileContext;
 
 // Walks the AST and assigns a Type to each node.
 
     class Analyser : private StmtVisitor<void>, private ExprVisitor<void> {
-        Context &m_context;
+        CompileContext &m_context;
 
         std::unordered_map<std::string, Type> m_types{
                 std::pair("int", INT_TYPE),
@@ -95,7 +95,7 @@ namespace enact {
         void visitVariableExpr(VariableExpr &expr) override;
 
     public:
-        Analyser(Context &context);
+        Analyser(CompileContext &context);
         ~Analyser() = default;
 
         std::vector<std::unique_ptr<Stmt>> analyse(std::vector<std::unique_ptr<Stmt>> ast);

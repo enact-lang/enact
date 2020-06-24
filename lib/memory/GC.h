@@ -6,12 +6,12 @@
 #include "../value/Object.h"
 
 namespace enact {
-    class Context;
+    class CompileContext;
 
     constexpr size_t GC_HEAP_GROW_FACTOR = 2;
 
     class GC {
-        Context &m_context;
+        CompileContext &m_context;
 
         size_t m_bytesAllocated = 0;
         size_t m_nextRun = 1024 * 1024;
@@ -38,7 +38,7 @@ namespace enact {
         void sweep();
 
     public:
-        explicit GC(Context &context);
+        explicit GC(CompileContext &context);
 
         ~GC();
 

@@ -13,7 +13,7 @@
 #include "Typename.h"
 
 namespace enact {
-    class Context;
+    class CompileContext;
 
     enum class Precedence {
         NONE,
@@ -44,7 +44,7 @@ namespace enact {
 
     class Parser {
     private:
-        Context &m_context;
+        CompileContext &m_context;
 
         Lexer m_scanner{""};
 
@@ -153,7 +153,7 @@ namespace enact {
         void synchronise();
 
     public:
-        Parser(Context &context);
+        Parser(CompileContext &context);
 
         ~Parser() = default;
 

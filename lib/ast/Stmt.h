@@ -51,9 +51,11 @@ namespace enact {
     class BreakStmt : public Stmt {
     public:
         Token keyword;
+        std::unique_ptr<Expr> value;
 
         BreakStmt(Token keyword) :
-                keyword{keyword} {}
+                keyword{std::move(keyword)},
+                value{std::move(value)} {}
 
         ~BreakStmt() override = default;
 

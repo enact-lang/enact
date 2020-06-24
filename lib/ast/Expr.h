@@ -119,7 +119,26 @@ namespace enact {
     };
 
     class BlockExpr : public Expr {
+    public:
+        // Statements preceeding the final expression
+        std::vector<std::unique_ptr<Stmt>> stmts;
 
+        // The final expression
+        std::unique_ptr<Expr> expr;
+
+        BlockExpr(std::vector<std::unique_ptr<Stmt>> stmts, std::unique_ptr<Expr> expr) :
+                stmts{std::move(stmts)},
+                expr{std::move(expr)} {}
+
+        ~BlockExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitBlockExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitBlockExpr(*this);
+        }
     };
 
     class BooleanExpr : public Expr {
@@ -181,7 +200,25 @@ namespace enact {
     };
 
     class ForExpr : public Expr {
+    public:
+        Token name;
+        std::unique_ptr<Expr> object;
+        std::unique_ptr<BlockExpr> body;
 
+        ForExpr(Token name, std::unique_ptr<Expr> object, std::unique_ptr<BlockExpr> body) :
+                name{name},
+                object{std::move(object)},
+                body{std::move(body)} {}
+
+        ~ForExpr() override = default;
+
+        std::string accept(StmtVisitor<std::string> *visitor) override {
+            return visitor->visitForExpr(*this);
+        }
+
+        void accept(StmtVisitor<void> *visitor) override {
+            return visitor->visitForExpr(*this);
+        }
     };
 
     class GetExpr : public Expr {
@@ -207,7 +244,27 @@ namespace enact {
     };
 
     class IfExpr : public Expr {
+    public:
+        std::unique_ptr<Expr> condition;
+        std::unique_ptr<BlockExpr> thenBody;
+        std::unique_ptr<BlockExpr> elseBody;
 
+        IfExpr(std::unique_ptr<Expr> condition,
+                std::unique_ptr<BlockExpr> thenBody,
+                std::unique_ptr<BlockExpr> elseBody) :
+                condition{std::move(condition)},
+                thenBody{std::move(thenBody)},
+                elseBody{std::move(elseBody)} {}
+
+        ~IfExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitIfExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitIfExpr(*this);
+        }
     };
 
     class IntegerExpr : public Expr {
@@ -269,7 +326,23 @@ namespace enact {
     };
 
     class SwitchExpr : public Expr {
-        
+    public:
+        std::unique_ptr<Expr> value;
+        std::vector<SwitchCase> cases;
+
+        SwitchExpr(std::unique_ptr<Expr> value, std::vector<SwitchCase>&& cases) :
+                value{std::move(value)},
+                cases{std::move(cases)} {}
+
+        ~SwitchExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitSwitchExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitSwitchExpr(*this);
+        }
     };
 
     class SymbolExpr : public Expr {
@@ -307,6 +380,25 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitUnaryExpr(*this);
+        }
+    };
+
+    class WhileExpr : public Expr {
+        std::unique_ptr<Expr> condition;
+        std::unique_ptr<BlockExpr> body;
+
+        WhileExpr(std::unique_ptr<Expr> condition, std::unique_ptr<BlockExpr> body) :
+                condition{std::move(condition)},
+                body{std::move(body)} {}
+
+        ~WhileExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitWhileExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitWhileExpr(*this);
         }
     };
 }

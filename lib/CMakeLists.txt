@@ -23,8 +23,8 @@ set(ENACT_SRC
         ${VALUE_SRC}
         ${VM_SRC}
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/AstSerialize.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/AstSerialize.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/AstSerialise.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/AstSerialise.h
         ${CMAKE_CURRENT_SOURCE_DIR}/common.h
         ${CMAKE_CURRENT_SOURCE_DIR}/InsertionOrderMap.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Natives.cpp

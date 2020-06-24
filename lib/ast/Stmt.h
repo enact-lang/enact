@@ -53,7 +53,7 @@ namespace enact {
         Token keyword;
         std::unique_ptr<Expr> value;
 
-        BreakStmt(Token keyword) :
+        BreakStmt(Token keyword, std::unique_ptr<Expr> value) :
                 keyword{std::move(keyword)},
                 value{std::move(value)} {}
 
@@ -72,8 +72,8 @@ namespace enact {
     public:
         Token keyword;
 
-        ContinueStmt(Token keyword) :
-                keyword{keyword} {}
+        explicit ContinueStmt(Token keyword) :
+                keyword{std::move(keyword)} {}
 
         ~ContinueStmt() override = default;
 

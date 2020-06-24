@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include "../AstSerialize.h"
+#include "../AstSerialise.h"
 
 namespace enact {
     CompileContext::CompileContext(Options options) : options{std::move(options)} {

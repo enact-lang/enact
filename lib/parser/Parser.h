@@ -164,7 +164,7 @@ namespace enact {
     private:
         const ParseRule &getParseRule(TokenType type);
 
-        std::array<ParseRule, (size_t) TokenType::MAX> m_parseRules = {
+        std::array<ParseRule, (size_t) TokenType::ENUM_MAX> m_parseRules = {
                 ParseRule{&Parser::grouping, &Parser::call, Precedence::CALL}, // LEFT_PAREN
                 ParseRule{nullptr, nullptr, Precedence::NONE}, // RIGHT_PAREN
                 ParseRule{&Parser::array, &Parser::subscript, Precedence::CALL}, // LEFT_SQUARE

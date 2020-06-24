@@ -3,11 +3,7 @@
 
 #include <list>
 
-#include "../analyser/Analyser.h"
-#include "../compiler/Compiler.h"
-#include "../memory/GC.h"
 #include "../parser/Parser.h"
-#include "../vm/VM.h"
 
 #include "Options.h"
 

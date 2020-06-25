@@ -269,7 +269,7 @@ namespace enact {
         return std::to_string(expr.value);
     }
 
-    std::string AstSerialise::visitGetExpr(GetExpr &expr) {
+    std::string AstSerialise::visitGetExpr(FieldExpr &expr) {
         return "(. " + visitExpr(*expr.object) + " " + expr.name.lexeme + ")";
     }
 

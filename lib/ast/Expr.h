@@ -37,7 +37,7 @@ namespace enact {
     class CallExpr;
     class FloatExpr;
     class ForExpr;
-    class GetExpr;
+    class FieldExpr;
     class IfExpr;
     class IntegerExpr;
     class LogicalExpr;
@@ -62,7 +62,7 @@ namespace enact {
         virtual R visitCallExpr(CallExpr &expr) = 0;
         virtual R visitFloatExpr(FloatExpr &expr) = 0;
         virtual R visitForExpr(ForExpr &expr) = 0;
-        virtual R visitGetExpr(GetExpr &expr) = 0;
+        virtual R visitGetExpr(FieldExpr &expr) = 0;
         virtual R visitIfExpr(IfExpr &expr) = 0;
         virtual R visitIntegerExpr(IntegerExpr &expr) = 0;
         virtual R visitLogicalExpr(LogicalExpr &expr) = 0;
@@ -221,18 +221,18 @@ namespace enact {
         }
     };
 
-    class GetExpr : public Expr {
+    class FieldExpr : public Expr {
     public:
         std::unique_ptr<Expr> object;
         Token name;
         Token oper;
 
-        GetExpr(std::unique_ptr<Expr> object, Token name, Token oper) :
+        FieldExpr(std::unique_ptr<Expr> object, Token name, Token oper) :
                 object{std::move(object)},
                 name{std::move(name)},
                 oper{std::move(oper)} {}
 
-        ~GetExpr() override = default;
+        ~FieldExpr() override = default;
 
         std::string accept(ExprVisitor<std::string> *visitor) override {
             return visitor->visitGetExpr(*this);

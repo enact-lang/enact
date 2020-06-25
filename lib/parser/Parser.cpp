@@ -248,33 +248,29 @@ namespace enact {
         expect(TokenType::IDENTIFIER, "Expected trait name.");
         Token name = m_previous;
 
-        expect(TokenType::COLON, "Expected ':' after trait name.");
-        consumeSeparator();
+        expect(TokenType::LEFT_BRACE, "Expected '{' before trait body.");
 
         std::vector<std::unique_ptr<FunctionStmt>> methods;
-        while (!check(TokenType::END) && !isAtEnd()) {
-            consumeSeparator();
-            if (consume(TokenType::FUN)) {
-                auto method = std::unique_ptr<FunctionStmt>{
-                        static_cast<FunctionStmt *>(functionDeclaration(false).release())
-                };
-                methods.push_back(std::move(method));
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            if (consume(TokenType::FUNC)) {
+                methods.push_back(
+                        static_unique_ptr_cast<FunctionStmt>(
+                                parseFunctionStmt(false)));
             } else {
-                throw errorAtCurrent("Expected method declaration.");
+                throw errorAtCurrent("Expected method declaration or definition in trait body.");
             }
         }
 
-        expect(TokenType::END, "Expected 'end' at end of trait declaration.");
-        expectSeparator("Expected newline or ';' after 'end'.");
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after trait body.");
 
         return std::make_unique<TraitStmt>(name, std::move(methods));
     }
 
     std::unique_ptr<Stmt> Parser::parseImplStmt() {
-
+        
     }
 
-    std::unique_ptr<Stmt> Parser::parseVariableStmt(bool isConst, bool mustExpectSeparator) {
+    std::unique_ptr<Stmt> Parser::parseVariableStmt(bool isMut) {
         expect(TokenType::IDENTIFIER, "Expected variable name.");
         Token name = m_previous;
 

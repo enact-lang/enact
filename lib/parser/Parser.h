@@ -75,7 +75,6 @@ namespace enact {
         std::unique_ptr<Expr> parseCallExpr(std::unique_ptr<Expr> callee);
         std::unique_ptr<Expr> parseFieldExpr(std::unique_ptr<Expr> object);
         std::unique_ptr<Expr> parseBinaryExpr(std::unique_ptr<Expr> left);
-        std::unique_ptr<Expr> parseAssignmentExpr(std::unique_ptr<Expr> target);
 
         // Complex prefix expressions
         std::unique_ptr<Expr> parseBlockExpr();
@@ -94,7 +93,7 @@ namespace enact {
         std::unique_ptr<Stmt> parseImplStmt();
         std::unique_ptr<Stmt> parseVariableStmt(bool isMut);
 
-        // Statements
+        // Other statements
         std::unique_ptr<Stmt> parseStatement();
 
         std::unique_ptr<Stmt> parseReturnStmt();

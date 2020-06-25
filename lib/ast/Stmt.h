@@ -97,9 +97,11 @@ namespace enact {
             std::unique_ptr<const Typename> typename_;
         };
 
+        Token name;
         std::vector<Variant> variants;
 
-        explicit EnumStmt(std::vector<Variant>&& variants) :
+        explicit EnumStmt(Token name, std::vector<Variant>&& variants) :
+                name{std::move(name)},
                 variants{std::move(variants)} {}
 
         ~EnumStmt() override = default;

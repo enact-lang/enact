@@ -134,7 +134,9 @@ namespace enact {
         try {
             if (consume(TokenType::FUNC))   return parseFunctionStmt();
             if (consume(TokenType::STRUCT)) return parseStructStmt();
+            if (consume(TokenType::ENUM))   return parseEnumStmt();
             if (consume(TokenType::TRAIT))  return parseTraitStmt();
+            if (consume(TokenType::IMPL))   return parseImplStmt();
             if (consume(TokenType::IMM))    return parseVariableStmt(false);
             if (consume(TokenType::MUT))    return parseVariableStmt(true);
             return parseStatement();
@@ -150,11 +152,11 @@ namespace enact {
 
         expect(TokenType::LEFT_PAREN, "Expected '(' after function name.");
 
-        std::vector<Param> params;
+        std::vector<FunctionStmt::Param> params;
         if (!consume(TokenType::RIGHT_PAREN)) {
             do {
                 expect(TokenType::IDENTIFIER, "Expected parameter name.");
-                params.push_back(Param{m_previous, expectTypename()});
+                params.push_back(FunctionStmt::Param{m_previous, expectTypename()});
             } while (consume(TokenType::COMMA));
 
             expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
@@ -163,12 +165,12 @@ namespace enact {
         // Get the return type
         std::unique_ptr<const Typename> returnTypename = expectTypename(true);
 
-        if (!mustParseBody && check(TokenType::SEMICOLON)) {
+        if (!mustParseBody && consume(TokenType::SEMICOLON)) {
             return std::make_unique<FunctionStmt>(name,
                     std::move(returnTypename),
                     std::move(params),
                     std::make_unique<BlockExpr>(std::vector<std::unique_ptr<Stmt>>{},
-                            std::make_unique<UnitExpr>()));
+                            std::make_unique<UnitExpr>(m_previous)));
         }
 
         std::unique_ptr<BlockExpr> body = static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
@@ -219,10 +221,30 @@ namespace enact {
     }
 
     std::unique_ptr<Stmt> Parser::parseEnumStmt() {
+        expect(TokenType::IDENTIFIER, "Expected enum name.");
+        Token name = m_previous;
 
+        expect(TokenType::LEFT_BRACE, "Expected '{' before enum body.");
+
+        std::vector<EnumStmt::Variant> variants;
+
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            expect(TokenType::IDENTIFIER, "Expected variant declaration in struct body.");
+            // Field declaration
+            Token variantName = m_previous;
+            std::unique_ptr<const Typename> variantType = expectTypename(true);
+
+            variants.push_back(EnumStmt::Variant{std::move(variantName), std::move(variantType)});
+
+            expect(TokenType::SEMICOLON, "Expected ';' after enum variant declaration.");
+        }
+
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after enum body.");
+
+        return std::make_unique<EnumStmt>(std::move(name), std::move(variants));
     }
 
-    std::unique_ptr<Stmt> Parser::traitDeclaration() {
+    std::unique_ptr<Stmt> Parser::parseTraitStmt() {
         expect(TokenType::IDENTIFIER, "Expected trait name.");
         Token name = m_previous;
 
@@ -248,7 +270,11 @@ namespace enact {
         return std::make_unique<TraitStmt>(name, std::move(methods));
     }
 
-    std::unique_ptr<Stmt> Parser::variableDeclaration(bool isConst, bool mustExpectSeparator) {
+    std::unique_ptr<Stmt> Parser::parseImplStmt() {
+
+    }
+
+    std::unique_ptr<Stmt> Parser::parseVariableStmt(bool isConst, bool mustExpectSeparator) {
         expect(TokenType::IDENTIFIER, "Expected variable name.");
         Token name = m_previous;
 

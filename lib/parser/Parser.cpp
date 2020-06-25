@@ -7,7 +7,7 @@ namespace enact {
     }
 
     std::vector<std::unique_ptr<Stmt>> Parser::parse() {
-        m_scanner = Lexer{m_context.source};
+        m_scanner = Lexer{m_context.getSource()};
         advance();
 
         std::vector<std::unique_ptr<Stmt>> ast{};
@@ -45,12 +45,12 @@ namespace enact {
         return expr;
     }
 
-    std::unique_ptr<Expr> Parser::parseExpression() {
+    std::unique_ptr<Expr> Parser::parseExpr() {
         return parseAtPrecedence(Precedence::ASSIGNMENT);
     }
 
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
-        std::unique_ptr<Expr> expr = parseExpression();
+        std::unique_ptr<Expr> expr = parseExpr();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");
         return expr;
     }
@@ -88,7 +88,7 @@ namespace enact {
 
         if (!consume(TokenType::RIGHT_PAREN)) {
             do {
-                arguments.push_back(parseExpression());
+                arguments.push_back(parseExpr());
             } while (consume(TokenType::COMMA));
 
             expect(TokenType::RIGHT_PAREN, "Expected end of argument list.");
@@ -257,7 +257,7 @@ namespace enact {
                         static_unique_ptr_cast<FunctionStmt>(
                                 parseFunctionStmt(false)));
             } else {
-                throw errorAtCurrent("Expected method declaration or definition in trait body.");
+                throw errorAtCurrent("Expected method declaration in trait body.");
             }
         }
 
@@ -267,22 +267,53 @@ namespace enact {
     }
 
     std::unique_ptr<Stmt> Parser::parseImplStmt() {
-        
+        std::unique_ptr<const Typename> firstTypename = expectTypename("Expected typename after 'impl'.");
+        std::unique_ptr<const Typename> secondTypename = consume(TokenType::FOR)
+                ? expectTypename("Expected typename after 'impl'..'for'.")
+                : nullptr;
+
+        expect(TokenType::LEFT_BRACE, "Expected '{' before impl body.");
+
+        std::vector<std::unique_ptr<FunctionStmt>> methods;
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            if (consume(TokenType::FUNC)) {
+                methods.push_back(
+                        static_unique_ptr_cast<FunctionStmt>(
+                                parseFunctionStmt()));
+            } else {
+                throw errorAtCurrent("Expected method declaration in impl body.");
+            }
+        }
+
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after impl body.");
+
+        if (secondTypename == nullptr) {
+            // Inherent impl
+            return std::make_unique<ImplStmt>(std::move(firstTypename), std::move(secondTypename), std::move(methods));
+        }
+        // Trait impl
+        return std::make_unique<ImplStmt>(std::move(secondTypename), std::move(firstTypename), std::move(methods));
     }
 
-    std::unique_ptr<Stmt> Parser::parseVariableStmt(bool isMut) {
+    std::unique_ptr<Stmt> Parser::parseVariableStmt() {
+        Token keyword = m_previous;
         expect(TokenType::IDENTIFIER, "Expected variable name.");
         Token name = m_previous;
 
-        std::unique_ptr<const Typename> typeName{expectTypename(true)};
+        std::unique_ptr<const Typename> typeName{
+            expectTypename("Expected typename after variable name.", true)};
 
         expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
 
-        std::unique_ptr<Expr> initializer = expression();
+        std::unique_ptr<Expr> initializer = parseExpr();
 
-        if (mustExpectSeparator) expectSeparator("Expected newline or ';' after variable declaration.");
+        expect(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
 
-        return std::make_unique<VariableStmt>(name, std::move(typeName), std::move(initializer), isConst);
+        return std::make_unique<VariableStmt>(
+                std::move(keyword),
+                std::move(name),
+                std::move(typeName),
+                std::move(initializer));
     }
 
     std::unique_ptr<Stmt> Parser::statement() {
@@ -562,7 +593,7 @@ namespace enact {
         throw errorAtCurrent(message);
     }
 
-    std::unique_ptr<const Typename> Parser::expectTypename(bool emptyAllowed) {
+    std::unique_ptr<const Typename> Parser::expectTypename(const std::string& msg, bool emptyAllowed) {
         std::unique_ptr<const Typename> typeName;
 
         bool isEnclosed = consume(TokenType::LEFT_PAREN);
@@ -572,12 +603,12 @@ namespace enact {
             return std::make_unique<ConstructorTypename>(std::make_unique<BasicTypename>(m_previous));
         }
 
-        if (consume(TokenType::FUN)) {
+        if (consume(TokenType::FUNC)) {
             typeName = expectFunctionTypename();
         } else if (consume(TokenType::IDENTIFIER)) {
             typeName = std::make_unique<BasicTypename>(m_previous);
         } else if (!emptyAllowed) {
-            throw error("Expected a typename.");
+            throw error(msg);
         }
 
         if (typeName && consume(TokenType::LEFT_SQUARE)) {

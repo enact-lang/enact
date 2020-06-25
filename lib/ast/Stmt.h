@@ -254,11 +254,17 @@ namespace enact {
 
     class VariableStmt : public Stmt {
     public:
+        Token keyword;
         Token name;
         std::unique_ptr<const Typename> typeName;
         std::unique_ptr<Expr> initializer;
 
-        VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer) :
+        VariableStmt(
+                Token keyword,
+                Token name,
+                std::unique_ptr<const Typename> typeName,
+                std::unique_ptr<Expr> initializer) :
+                keyword{std::move(keyword)},
                 name{std::move(name)},
                 typeName{std::move(typeName)},
                 initializer{std::move(initializer)} {}

@@ -64,7 +64,7 @@ namespace enact {
     private:
         std::unique_ptr<Expr> parseAtPrecedence(Precedence precedence);
 
-        std::unique_ptr<Expr> parseExpression();
+        std::unique_ptr<Expr> parseExpr();
 
         // Prefix parse rules
         std::unique_ptr<Expr> parseGroupingExpr();
@@ -84,17 +84,17 @@ namespace enact {
         std::unique_ptr<Expr> parseSwitchExpr();
 
         // Declaration statements
-        std::unique_ptr<Stmt> parseDeclaration();
+        std::unique_ptr<Stmt> parseDeclarationStmt();
 
         std::unique_ptr<Stmt> parseFunctionStmt(bool mustParseBody = true);
         std::unique_ptr<Stmt> parseStructStmt();
         std::unique_ptr<Stmt> parseEnumStmt();
         std::unique_ptr<Stmt> parseTraitStmt();
         std::unique_ptr<Stmt> parseImplStmt();
-        std::unique_ptr<Stmt> parseVariableStmt(bool isMut);
+        std::unique_ptr<Stmt> parseVariableStmt();
 
         // Other statements
-        std::unique_ptr<Stmt> parseStatement();
+        std::unique_ptr<Stmt> parseStmt();
 
         std::unique_ptr<Stmt> parseReturnStmt();
         std::unique_ptr<Stmt> parseBreakStmt();
@@ -107,7 +107,7 @@ namespace enact {
         void expect(TokenType type, const std::string &message);
         bool isAtEnd();
 
-        std::unique_ptr<const Typename> expectTypename(bool emptyAllowed = false);
+        std::unique_ptr<const Typename> expectTypename(const std::string& msg, bool emptyAllowed = false);
         std::unique_ptr<const Typename> expectFunctionTypename();
 
         ParseError errorAt(const Token &token, const std::string &message);

@@ -89,7 +89,9 @@ namespace enact {
 
         std::unique_ptr<Stmt> parseFunctionStmt(bool mustParseBody = true);
         std::unique_ptr<Stmt> parseStructStmt();
+        std::unique_ptr<Stmt> parseEnumStmt();
         std::unique_ptr<Stmt> parseTraitStmt();
+        std::unique_ptr<Stmt> parseImplStmt();
         std::unique_ptr<Stmt> parseVariableStmt(bool isMut);
 
         // Statements

@@ -175,42 +175,26 @@ namespace enact {
         return std::make_unique<FunctionStmt>(std::move(name), std::move(returnTypename), std::move(params), std::move(body));
     }
 
-    std::unique_ptr<Stmt> Parser::structDeclaration() {
+    std::unique_ptr<Stmt> Parser::parseStructStmt() {
         expect(TokenType::IDENTIFIER, "Expected struct name.");
         Token name = m_previous;
 
-        std::vector<Token> traits;
-        if (consume(TokenType::IS)) {
-            expect(TokenType::IDENTIFIER, "Expected trait name.");
-            traits.push_back(m_previous);
-
-            while (consume(TokenType::COMMA)) {
-                expect(TokenType::IDENTIFIER, "Expected trait name.");
-                traits.push_back(m_previous);
-            }
-        }
-
-        expect(TokenType::COLON, "Expected ':' before struct body.");
-        consumeSeparator();
+        expect(TokenType::LEFT_BRACE, "Expected '{' before struct body.");
 
         std::vector<Field> fields;
-        std::vector<std::unique_ptr<FunctionStmt>> methods;
-        std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
 
-        while (!check(TokenType::END) && !isAtEnd()) {
-            consumeSeparator();
-            if (consume(TokenType::IDENTIFIER)) {
-                // Field declaration
-                Token fieldName = m_previous;
-                std::unique_ptr<const Typename> fieldType = expectTypename();
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            expect(TokenType::IDENTIFIER, "Expected field declaration in struct body.");
+            // Field declaration
+            Token fieldName = m_previous;
+            std::unique_ptr<const Typename> fieldType = expectTypename();
 
-                fields.push_back(Field{fieldName, std::move(fieldType)});
+            fields.push_back(Field{std::move(fieldName), std::move(fieldType)});
 
-                expectSeparator("Expected newline or ';' after field declaration.");
-                continue;
-            }
+            expect(TokenType::SEMICOLON, "Expected ';' after struct field declaration.");
+        }
 
-            if (consume(TokenType::ASSOC)) {
+            /*if (consume(TokenType::ASSOC)) {
                 // Associated function declaration
                 auto function = std::unique_ptr<FunctionStmt>{
                         static_cast<FunctionStmt *>(functionDeclaration().release())
@@ -227,14 +211,15 @@ namespace enact {
             auto method = std::unique_ptr<FunctionStmt>{
                     static_cast<FunctionStmt *>(functionDeclaration(true, isMut).release())
             };
-            methods.push_back(std::move(method));
-        }
+            methods.push_back(std::move(method));*/
 
-        expect(TokenType::END, "Expected 'end' at end of struct declaration.");
-        expectSeparator("Expected newline or ';' after 'end'.");
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after struct body.");
 
-        return std::make_unique<StructStmt>(name, traits, std::move(fields), std::move(methods),
-                                            std::move(assocFunctions), nullptr);
+        return std::make_unique<StructStmt>(name, std::move(fields));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseEnumStmt() {
+
     }
 
     std::unique_ptr<Stmt> Parser::traitDeclaration() {

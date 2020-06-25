@@ -12,6 +12,9 @@
 #include "Pattern.h"
 
 namespace enact {
+    // From "Stmt.h":
+    class Stmt;
+
     template<class R>
     class ExprVisitor;
 

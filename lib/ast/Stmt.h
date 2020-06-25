@@ -24,8 +24,10 @@ namespace enact {
 
     class BreakStmt;
     class ContinueStmt;
+    class EnumStmt;
     class ExpressionStmt;
     class FunctionStmt;
+    class ImplStmt;
     class ReturnStmt;
     class StructStmt;
     class TraitStmt;
@@ -40,8 +42,10 @@ namespace enact {
 
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;
         virtual R visitContinueStmt(ContinueStmt &stmt) = 0;
+        virtual R visitEnumStmt(EnumStmt& stmt) = 0;
         virtual R visitExpressionStmt(ExpressionStmt &stmt) = 0;
         virtual R visitFunctionStmt(FunctionStmt &stmt) = 0;
+        virtual R visitImplStmt(ImplStmt& stmt) = 0;
         virtual R visitReturnStmt(ReturnStmt &stmt) = 0;
         virtual R visitStructStmt(StructStmt &stmt) = 0;
         virtual R visitTraitStmt(TraitStmt &stmt) = 0;
@@ -86,6 +90,29 @@ namespace enact {
         }
     };
 
+    class EnumStmt : public Stmt {
+    public:
+        struct Variant {
+            Token name;
+            std::unique_ptr<const Typename> typename_;
+        };
+
+        std::vector<Variant> variants;
+
+        explicit EnumStmt(std::vector<Variant>&& variants) :
+                variants{std::move(variants)} {}
+
+        ~EnumStmt() override = default;
+
+        std::string accept(StmtVisitor<std::string> *visitor) override {
+            return visitor->visitEnumStmt(*this);
+        }
+
+        void accept(StmtVisitor<void> *visitor) override {
+            return visitor->visitEnumStmt(*this);
+        }
+    };
+
     class ExpressionStmt : public Stmt {
     public:
         std::unique_ptr<Expr> expr;
@@ -106,10 +133,15 @@ namespace enact {
 
     class FunctionStmt : public Stmt {
     public:
+        struct Param {
+            Token name;
+            std::unique_ptr<const Typename> typename_;
+        };
+
         Token name;
         std::unique_ptr<const Typename> returnTypename;
         std::vector<Param> params;
-        std::vector<std::unique_ptr<Stmt>> body;
+        std::unique_ptr<BlockExpr> body;
 
         FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
                      std::unique_ptr<BlockExpr> body) :
@@ -126,6 +158,30 @@ namespace enact {
 
         void accept(StmtVisitor<void> *visitor) override {
             return visitor->visitFunctionStmt(*this);
+        }
+    };
+
+    class ImplStmt : public Stmt {
+    public:
+        std::unique_ptr<const Typename> typename_;
+        std::unique_ptr<const Typename> traitTypename;
+        std::vector<std::unique_ptr<FunctionStmt>> methods;
+
+        ImplStmt(std::unique_ptr<const Typename> typename_,
+                std::unique_ptr<const Typename> traitTypename,
+                std::vector<std::unique_ptr<FunctionStmt>> methods) :
+                typename_{std::move(typename_)},
+                traitTypename{std::move(traitTypename)},
+                methods{std::move(methods)} {}
+
+        ~ImplStmt() override = default;
+
+        std::string accept(StmtVisitor<std::string> *visitor) override {
+            return visitor->visitImplStmt(*this);
+        }
+
+        void accept(StmtVisitor<void> *visitor) override {
+            return visitor->visitImplStmt(*this);
         }
     };
 
@@ -151,20 +207,17 @@ namespace enact {
 
     class StructStmt : public Stmt {
     public:
-        Token name;
-        std::vector<Token> traits;
-        std::vector<Field> fields;
-        std::vector<std::unique_ptr<FunctionStmt>> methods;
-        std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
+        struct Field {
+            Token name;
+            std::unique_ptr<const Typename> typename_;
+        };
 
-        StructStmt(Token name, std::vector<Token> traits, std::vector<Field> &&fields,
-                   std::vector<std::unique_ptr<FunctionStmt>> methods,
-                   std::vector<std::unique_ptr<FunctionStmt>> assocFunctions) :
+        Token name;
+        std::vector<Field> fields;
+
+        StructStmt(Token name, std::vector<Field>&& fields) :
                 name{std::move(name)},
-                traits{std::move(traits)},
-                fields{std::move(fields)},
-                methods{std::move(methods)},
-                assocFunctions{std::move(assocFunctions)} {}
+                fields{std::move(fields)} {}
 
         ~StructStmt() override = default;
 

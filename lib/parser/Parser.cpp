@@ -181,7 +181,7 @@ namespace enact {
 
         expect(TokenType::LEFT_BRACE, "Expected '{' before struct body.");
 
-        std::vector<Field> fields;
+        std::vector<StructStmt::Field> fields;
 
         while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
             expect(TokenType::IDENTIFIER, "Expected field declaration in struct body.");
@@ -189,7 +189,7 @@ namespace enact {
             Token fieldName = m_previous;
             std::unique_ptr<const Typename> fieldType = expectTypename();
 
-            fields.push_back(Field{std::move(fieldName), std::move(fieldType)});
+            fields.push_back(StructStmt::Field{std::move(fieldName), std::move(fieldType)});
 
             expect(TokenType::SEMICOLON, "Expected ';' after struct field declaration.");
         }

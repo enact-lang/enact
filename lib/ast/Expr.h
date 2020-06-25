@@ -45,6 +45,7 @@ namespace enact {
     class SwitchExpr;
     class SymbolExpr;
     class UnaryExpr;
+    class UnitExpr;
     class WhileExpr;
 
     template<class R>
@@ -69,6 +70,7 @@ namespace enact {
         virtual R visitSwitchExpr(SwitchExpr &expr) = 0;
         virtual R visitSymbolExpr(SymbolExpr &expr) = 0;
         virtual R visitUnaryExpr(UnaryExpr &expr) = 0;
+        virtual R visitUnitExpr(UnitExpr& expr) = 0;
         virtual R visitWhileExpr(WhileExpr &expr) = 0;
     };
 
@@ -384,6 +386,24 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitUnaryExpr(*this);
+        }
+    };
+
+    class UnitExpr : public Expr {
+    public:
+        Token token;
+
+        UnitExpr(Token token) :
+                token{std::move(token)} {}
+
+        ~UnitExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitUnitExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitUnitExpr(*this);
         }
     };
 

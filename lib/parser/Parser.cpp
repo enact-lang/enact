@@ -371,6 +371,35 @@ namespace enact {
         return expr;
     }
 
+    std::unique_ptr<Expr> Parser::parsePrecBitwiseShift() {
+        std::unique_ptr<Expr> expr = parsePrecUnary();
+
+        while (consume(TokenType::LESS_LESS) ||
+               consume(TokenType::GREATER_GREATER)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecUnary();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecUnary() {
+        if (consume(TokenType::MINUS) ||
+            consume(TokenType::TILDE) ||
+            consume(TokenType::STAR) ||
+            consume(TokenType::NOT)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> expr = parsePrecUnary(); // Right recursion
+            return std::make_unique<UnaryExpr>(std::move(expr), std::move(oper));
+        }
+
+        if (consume(TokenType::AMPERSAND)) {
+            throw error("Reference expressions are not yet implemented.");
+        }
+    }
+}
+
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
         std::unique_ptr<Expr> expr = parseExpr();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");

@@ -31,8 +31,7 @@ namespace enact {
         MULTIPLY,      // * / %
         BITWISE_SHIFT, // << >>
         UNARY,         // - not ~ & *
-        CALL,          // ()
-        WITH_BLOCK,    // if while for {} =>
+        CALL,          // () .
         PRIMARY,
     };
 
@@ -104,7 +103,7 @@ namespace enact {
         void advance();
         bool check(TokenType expected);
         bool consume(TokenType expected);
-        void expect(TokenType type, const std::string &message);
+        Token expect(TokenType type, const std::string &message);
         bool isAtEnd();
 
         std::unique_ptr<const Typename> expectTypename(const std::string& msg, bool emptyAllowed = false);

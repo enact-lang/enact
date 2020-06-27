@@ -45,6 +45,11 @@ namespace enact {
         return std::unique_ptr<R>(static_cast<R*>(ptr.release()));
     }
 
+    template <typename R, typename T>
+    inline std::unique_ptr<R> dynamic_unique_ptr_cast(std::unique_ptr<T> ptr) {
+        return std::unique_ptr<R>(dynamic_cast<R*>(ptr.release()));
+    }
+
     typedef int index_t;
     typedef uint32_t line_t;
     typedef uint16_t col_t;

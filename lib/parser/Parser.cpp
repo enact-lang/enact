@@ -245,6 +245,18 @@ namespace enact {
         return parsePrecAssignment();
     }
 
+    std::unique_ptr<Expr> Parser::parsePrecAssignment() {
+        std::unique_ptr<Expr> expr = parsePrecLogicalOr();
+
+        if (consume(TokenType::EQUAL)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecAssignment(); // Right-associative
+            return std::make_unique<AssignExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
         std::unique_ptr<Expr> expr = parseExpr();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");

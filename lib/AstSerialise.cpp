@@ -198,13 +198,11 @@ namespace enact {
 
         s << m_ident << "(Expr::If " << visitExpr(*expr.condition) << " (\n";
         m_ident += "    ";
-        s << visitExpr(*expr.thenBody);
 
-        s << m_ident.substr(4) << ") (\n";
-        s << visitExpr(*expr.elseBody);
+        s << visitExpr(*expr.thenBody) << '\n';
+        s << visitExpr(*expr.elseBody) << ')';
 
         m_ident.erase(0, 4);
-        s << m_ident << ")";
 
         return s.str();
     }

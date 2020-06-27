@@ -148,10 +148,9 @@ namespace enact {
         for (auto &statement : expr.stmts) {
             s << visitStmt(*statement) << '\n';
         }
-        s << visitExpr(*expr.expr) << '\n';
+        s << m_ident << visitExpr(*expr.expr) << ')';
 
         m_ident.erase(0, 4);
-        s << m_ident << ")";
 
         return s.str();
     }

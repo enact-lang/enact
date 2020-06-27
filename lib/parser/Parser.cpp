@@ -184,8 +184,6 @@ namespace enact {
 
         std::unique_ptr<Expr> initializer = parseExpr();
 
-        expect(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
-
         return std::make_unique<VariableStmt>(
                 std::move(keyword),
                 std::move(name),
@@ -243,25 +241,27 @@ namespace enact {
         Token start = m_previous;
 
         std::vector<std::unique_ptr<Stmt>> body{};
-        std::unique_ptr<Expr> end;
+        std::unique_ptr<Expr> end{std::make_unique<UnitExpr>(m_previous)};
 
         if (start.type == TokenType::EQUAL_GREATER) {
             end = parseExpr();
         } else if (start.type == TokenType::LEFT_BRACE) {
             while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
                 std::unique_ptr<Stmt> current = parseStmt();
-                Token lastSemicolon;
+
                 if (consume(TokenType::SEMICOLON)) {
                     body.push_back(std::move(current));
-                    lastSemicolon = m_previous;
+                    if (check(TokenType::RIGHT_BRACE)) break;
                 } else {
-                    auto exprStmt = dynamic_unique_ptr_cast<ExpressionStmt>(std::move(current));
-                    if (exprStmt == nullptr) {
-                        end = std::make_unique<UnitExpr>(std::move(lastSemicolon));
+                    if (auto exprStmt = dynamic_unique_ptr_cast<ExpressionStmt>(std::move(current))) {
+                        end = std::move(exprStmt->expr);
+                    } else {
+                        throw error("Expected expression or ';' at end of block.");
                     }
-                    end = std::move(exprStmt->expr);
+                    break;
                 }
             }
+
             expect(TokenType::RIGHT_BRACE, "Expected '}' at end of block.");
         }
 
@@ -693,7 +693,7 @@ namespace enact {
     }
 
     std::unique_ptr<BlockExpr> Parser::expectBlock(const std::string &msg) {
-        if (!consume(TokenType::EQUAL_GREATER) && !consume(TokenType::RIGHT_BRACE)) {
+        if (!consume(TokenType::EQUAL_GREATER) && !consume(TokenType::LEFT_BRACE)) {
             throw errorAtCurrent(msg);
         }
         return static_unique_ptr_cast<BlockExpr>(parseBlockExpr());

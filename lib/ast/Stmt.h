@@ -37,7 +37,7 @@ namespace enact {
     class StmtVisitor {
     public:
         R visitStmt(Stmt& stmt) {
-            return stmt.accept(*this);
+            return stmt.accept(this);
         };
 
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;

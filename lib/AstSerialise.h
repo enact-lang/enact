@@ -11,8 +11,10 @@ namespace enact {
 
         std::string visitBreakStmt(BreakStmt& stmt) override;
         std::string visitContinueStmt(ContinueStmt& stmt) override;
+        std::string visitEnumStmt(EnumStmt& stmt) override;
         std::string visitExpressionStmt(ExpressionStmt& stmt) override;
-        std::string visitFunctionStmt(FunctionStmt& decl) override;
+        std::string visitFunctionStmt(FunctionStmt& stmt) override;
+        std::string visitImplStmt(ImplStmt& stmt) override;
         std::string visitReturnStmt(ReturnStmt& stmt) override;
         std::string visitStructStmt(StructStmt& stmt) override;
         std::string visitTraitStmt(TraitStmt& stmt) override;
@@ -33,7 +35,11 @@ namespace enact {
         std::string visitSwitchExpr(SwitchExpr &expr) override;
         std::string visitSymbolExpr(SymbolExpr &expr) override;
         std::string visitUnaryExpr(UnaryExpr& expr) override;
+        std::string visitUnitExpr(UnitExpr& expr) override;
         std::string visitWhileExpr(WhileExpr &expr) override;
+
+        std::string visitValuePattern(ValuePattern& pattern) override;
+        std::string visitWildcardPattern(WildcardPattern& pattern) override;
 
     public:
         std::string operator()(Stmt& stmt);

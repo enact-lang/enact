@@ -13,6 +13,11 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> ast = m_parser.parse();
         // TODO: serialise and print AST
+
+        AstSerialise serialise{};
+        for (const std::unique_ptr<Stmt>& stmt : ast) {
+            std::cout << serialise(*stmt) << '\n';
+        }
     }
 
     std::string CompileContext::getSourceLine(line_t line) {

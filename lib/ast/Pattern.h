@@ -25,7 +25,7 @@ namespace enact {
     class PatternVisitor {
     public:
         R visitPattern(Pattern &pattern) {
-            return pattern.accept(*this);
+            return pattern.accept(this);
         }
 
         virtual R visitValuePattern(ValuePattern& pattern) = 0;

@@ -5,8 +5,7 @@ add_executable(enact-cli
         ${CMAKE_CURRENT_SOURCE_DIR}/../lib/parser/Typename.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../lib/context/CompileContext.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../lib/context/Options.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/../lib/AstSerialise.cpp
-        )
+        ${CMAKE_CURRENT_SOURCE_DIR}/../lib/AstSerialise.cpp)
 #target_link_libraries(enact-cli enact)
 
 set_target_properties(enact-cli PROPERTIES OUTPUT_NAME enact)

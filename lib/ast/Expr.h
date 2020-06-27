@@ -52,7 +52,7 @@ namespace enact {
     class ExprVisitor {
     public:
         R visitExpr(Expr& expr) {
-            return expr.accept(*this);
+            return expr.accept(this);
         }
 
         virtual R visitAssignExpr(AssignExpr &expr) = 0;

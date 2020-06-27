@@ -11,22 +11,6 @@ namespace enact {
         return visitExpr(expr);
     }
 
-    std::string AstSerialise::visitBlockStmt(BlockStmt &stmt) {
-        std::stringstream s;
-
-        s << m_ident << "(Stmt::Block (\n";
-        m_ident += "    ";
-
-        for (auto &statement : stmt.statements) {
-            s << visitStmt(*statement) << "\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
-        s << m_ident << ")";
-
-        return s.str();
-    }
-
     std::string AstSerialise::visitBreakStmt(BreakStmt &stmt) {
         return m_ident + "(Stmt::Break)";
     }
@@ -35,18 +19,19 @@ namespace enact {
         return m_ident + "(Stmt::Continue)";
     }
 
-    std::string AstSerialise::visitEachStmt(EachStmt &stmt) {
+    std::string AstSerialise::visitEnumStmt(EnumStmt &stmt) {
         std::stringstream s;
+        s << "(Stmt::Enum " << stmt.name.lexeme << " (";
 
-        s << m_ident << "(Stmt::Each (" << stmt.name.lexeme << " " << visitExpr(*stmt.object) << ") (\n";
+        s << ") (\n";
         m_ident += "    ";
 
-        for (auto &statement : stmt.body) {
-            s << visitStmt(*statement) << "\n";
+        for (const EnumStmt::Variant& variant : stmt.variants) {
+            s << m_ident << "(" << variant.name.lexeme << " " << variant.typename_->name() << ")\n";
         }
 
-        m_ident.erase(m_ident.back() - 5);
-        s << m_ident << ")";
+        m_ident.erase(0, 4);
+        s << ")";
 
         return s.str();
     }
@@ -55,87 +40,46 @@ namespace enact {
         return "(Stmt::Expression " + visitExpr(*stmt.expr) + ")";
     }
 
-    std::string AstSerialise::visitForStmt(ForStmt &stmt) {
-        std::stringstream s;
-
-        s << m_ident << "(Stmt::For (" <<
-                visitStmt(*stmt.initializer) << " " <<
-                visitExpr(*stmt.condition) << " " <<
-                visitExpr(*stmt.increment) << ") (\n";
-        m_ident += "    ";
-
-        for (auto &statement : stmt.body) {
-            s << visitStmt(*statement) << "\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
-        s << m_ident << ")";
-
-        return s.str();
-    }
-
     std::string AstSerialise::visitFunctionStmt(FunctionStmt &stmt) {
         std::stringstream s;
 
         s << "(Stmt::Function " << stmt.name.lexeme << " (";
 
         for (auto &param : stmt.params) {
-            s << param.name.lexeme << " " << param.typeName->name();
+            s << param.name.lexeme << " " << param.typename_->name();
         }
 
         s << ") " << stmt.returnTypename->name() << " (\n";
         m_ident += "    ";
 
-        for (auto &statement : stmt.body) {
+        for (auto &statement : stmt.body->stmts) {
             s << visitStmt(*statement) << "\n";
         }
+        s << visitExpr(*stmt.body->expr);
 
-        m_ident.erase(m_ident.back() - 5);
+        m_ident.erase(0, 4);
         s << ")";
 
         return s.str();
     }
 
-    std::string AstSerialise::visitGivenStmt(GivenStmt &stmt) {
+    std::string AstSerialise::visitImplStmt(ImplStmt &stmt) {
         std::stringstream s;
+        s << "(Stmt::Impl " << stmt.typename_->name() << ' ';
 
-        s << m_ident << "(Stmt::Given " << visitExpr(*stmt.value) << " (\n";
+        if (stmt.traitTypename != nullptr) {
+            s << stmt.traitTypename->name() << ' ';
+        }
+
+        s << "(\n";
         m_ident += "    ";
 
-        for (auto &case_ : stmt.cases) {
-            s << m_ident << "(" << visitExpr(*case_.value) << " (\n";
-            m_ident += "    ";
-
-            for (auto &statement: case_.body) {
-                s << visitStmt(*statement) << "\n";
-            }
-
-            m_ident.erase(m_ident.back() - 5);
-            s << m_ident << ")\n";
+        for (const std::unique_ptr<FunctionStmt>& method : stmt.methods) {
+            s << visitFunctionStmt(*method);
         }
 
-        m_ident.erase(m_ident.back() - 5);
-        s << m_ident << ")";
-
-        return s.str();
-    }
-
-    std::string AstSerialise::visitIfStmt(IfStmt &stmt) {
-        std::stringstream s;
-
-        s << m_ident << "(Stmt::If " << visitExpr(*stmt.condition) << " (\n";
-        m_ident += "    ";
-
-        for (auto &statement : stmt.thenBlock) {
-            s << visitStmt(*statement) << "\n";
-        }
-        s << m_ident.substr(4) << ") (\n";
-        for (auto &statement : stmt.elseBlock) {
-            s << visitStmt(*statement) << "\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
-        s << m_ident << ")";
+        m_ident.erase(0, 4);
+        s << ")";
 
         return s.str();
     }
@@ -148,26 +92,14 @@ namespace enact {
         std::stringstream s;
         s << "(Stmt::Struct " << stmt.name.lexeme << " (";
 
-        for (auto &trait : stmt.traits) {
-            s << trait.lexeme;
-        }
-
         s << ") (\n";
         m_ident += "    ";
 
         for (auto &field : stmt.fields) {
-            s << m_ident << "(" << field.name.lexeme << " " << field.typeName->name() << ")\n";
+            s << m_ident << "(" << field.name.lexeme << " " << field.typename_->name() << ")\n";
         }
 
-        for (auto &method : stmt.methods) {
-            s << m_ident << visitStmt(*method) << "\n";
-        }
-
-        for (auto &function : stmt.assocFunctions) {
-            s << m_ident << "(assoc " << visitStmt(*function) << ")\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
+        m_ident.erase(0, 4);
         s << ")";
 
         return s.str();
@@ -183,7 +115,7 @@ namespace enact {
             s << m_ident << visitStmt(*method) << "\n";
         }
 
-        m_ident.erase(m_ident.back() - 5);
+        m_ident.erase(0, 4);
         s << ")";
 
         return s.str();
@@ -193,51 +125,9 @@ namespace enact {
         std::stringstream s;
 
         s << "(Stmt::Variable ";
-        switch (stmt.mutability) {
-            case Mutability::NONE:  s << "val "; break;
-            case Mutability::BOXED: s << "let "; break;
-            case Mutability::FULL:  s << "var "; break;
-        }
+        s << stmt.keyword.lexeme << ' ';
         s << stmt.name.lexeme + " " + visitExpr(*stmt.initializer) << ")";
 
-        return s.str();
-    }
-
-    std::string AstSerialise::visitWhileStmt(WhileStmt &stmt) {
-        std::stringstream s;
-
-        s << m_ident << "(Stmt::While " << visitExpr(*stmt.condition) << " (\n";
-        m_ident += "    ";
-
-        for (auto &statement : stmt.body) {
-            s << visitStmt(*statement) << "\n";
-        }
-
-        m_ident.erase(m_ident.back() - 5);
-        s << m_ident << ")";
-
-        return s.str();
-    }
-
-    std::string AstSerialise::visitAllotExpr(AllotExpr &expr) {
-        return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
-    }
-
-    std::string AstSerialise::visitAnyExpr(AnyExpr &expr) {
-        return "_";
-    }
-
-    std::string AstSerialise::visitArrayExpr(ArrayExpr &expr) {
-        std::stringstream s;
-        s << "[";
-
-        std::string separator;
-        for (auto &element : expr.value) {
-            s << separator << visitExpr(*element);
-            separator = ", ";
-        }
-
-        s << "]";
         return s.str();
     }
 
@@ -247,6 +137,23 @@ namespace enact {
 
     std::string AstSerialise::visitBinaryExpr(BinaryExpr &expr) {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
+    }
+
+    std::string AstSerialise::visitBlockExpr(BlockExpr &expr) {
+        std::stringstream s;
+
+        s << m_ident << "(Expr::Block (\n";
+        m_ident += "    ";
+
+        for (auto &statement : expr.stmts) {
+            s << visitStmt(*statement) << '\n';
+        }
+        s << visitExpr(*expr.expr) << '\n';
+
+        m_ident.erase(0, 4);
+        s << m_ident << ")";
+
+        return s.str();
     }
 
     std::string AstSerialise::visitBooleanExpr(BooleanExpr &expr) {
@@ -269,8 +176,38 @@ namespace enact {
         return std::to_string(expr.value);
     }
 
+    std::string AstSerialise::visitForExpr(ForExpr& expr) {
+        std::stringstream s;
+
+        s << m_ident << "(Stmt::For (" << expr.name.lexeme << " " << visitExpr(*expr.object) << ") (\n";
+        m_ident += "    ";
+
+        s << visitExpr(*expr.body);
+
+        m_ident.erase(0, 4);
+        s << m_ident << ")";
+
+        return s.str();
+    }
+
     std::string AstSerialise::visitGetExpr(FieldExpr &expr) {
         return "(. " + visitExpr(*expr.object) + " " + expr.name.lexeme + ")";
+    }
+
+    std::string AstSerialise::visitIfExpr(IfExpr& expr) {
+        std::stringstream s;
+
+        s << m_ident << "(Expr::If " << visitExpr(*expr.condition) << " (\n";
+        m_ident += "    ";
+        s << visitExpr(*expr.thenBody);
+
+        s << m_ident.substr(4) << ") (\n";
+        s << visitExpr(*expr.elseBody);
+
+        m_ident.erase(0, 4);
+        s << m_ident << ")";
+
+        return s.str();
     }
 
     std::string AstSerialise::visitIntegerExpr(IntegerExpr &expr) {
@@ -281,36 +218,66 @@ namespace enact {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
     }
 
-    std::string AstSerialise::visitNilExpr(NilExpr &expr) {
-        return "nil";
-    }
-
-    std::string AstSerialise::visitSetExpr(SetExpr &expr) {
-        return "(= " + visitExpr(*expr.target) + " " + visitExpr(*expr.value) + ")";
-    }
-
     std::string AstSerialise::visitStringExpr(StringExpr &expr) {
         std::stringstream s;
         s << "\"" << expr.value << "\"";
         return s.str();
     }
 
-    std::string AstSerialise::visitSubscriptExpr(SubscriptExpr &expr) {
-        return "([] " + visitExpr(*expr.object) + " " + visitExpr(*expr.index) + ")";
+    std::string AstSerialise::visitSwitchExpr(SwitchExpr& expr) {
+        std::stringstream s;
+
+        s << m_ident << "(Expr::Switch " << visitExpr(*expr.value) << " (\n";
+        m_ident += "    ";
+
+        for (auto &case_ : expr.cases) {
+            s << m_ident << "(" << visitPattern(*case_.pattern) << " " <<
+                    visitExpr(*case_.predicate) << " (\n";
+            m_ident += "    ";
+
+            s << visitExpr(*case_.body);
+
+            m_ident.erase(0, 4);
+            s << m_ident << ")\n";
+        }
+
+        m_ident.erase(0, 4);
+        s << m_ident << ")";
+
+        return s.str();
     }
 
-    std::string AstSerialise::visitTernaryExpr(TernaryExpr &expr) {
-        return "(?: " +
-                visitExpr(*expr.condition) + " " +
-                visitExpr(*expr.thenExpr) + " " +
-                visitExpr(*expr.elseExpr) + ")";
+    std::string AstSerialise::visitSymbolExpr(SymbolExpr& expr) {
+        return expr.name.lexeme;
     }
 
     std::string AstSerialise::visitUnaryExpr(UnaryExpr &expr) {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.operand) + ")";
     }
 
-    std::string AstSerialise::visitVariableExpr(VariableExpr &expr) {
-        return expr.name.lexeme;
+    std::string AstSerialise::visitUnitExpr(UnitExpr &expr) {
+        return "()";
+    }
+
+    std::string AstSerialise::visitWhileExpr(WhileExpr& expr) {
+        std::stringstream s;
+
+        s << m_ident << "(Expr::While " << visitExpr(*expr.condition) << " (\n";
+        m_ident += "    ";
+
+        s << visitExpr(*expr.body);
+
+        m_ident.erase(0, 4);
+        s << m_ident << ")";
+
+        return s.str();
+    }
+
+    std::string AstSerialise::visitValuePattern(ValuePattern &pattern) {
+        return visitExpr(*pattern.value);
+    }
+
+    std::string AstSerialise::visitWildcardPattern(WildcardPattern &pattern) {
+        return "_";
     }
 }

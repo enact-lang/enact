@@ -201,7 +201,7 @@ namespace enact {
         } else {
             value = parseExpr();
         }
-        
+
         return std::make_unique<ReturnStmt>(keyword, std::move(value));
     }
 
@@ -228,7 +228,7 @@ namespace enact {
 
     std::unique_ptr<Expr> Parser::parseExpr() {
         // Expression with block?
-        if (consume(TokenType::RIGHT_BRACE) ||
+        if (consume(TokenType::LEFT_BRACE) ||
             consume(TokenType::EQUAL_GREATER)) return parseBlockExpr();
         if (consume(TokenType::IF))            return parseIfExpr();
         if (consume(TokenType::WHILE))         return parseWhileExpr();
@@ -248,7 +248,7 @@ namespace enact {
         if (start.type == TokenType::EQUAL_GREATER) {
             end = parseExpr();
         } else if (start.type == TokenType::LEFT_BRACE) {
-            while (!isAtEnd()) {
+            while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
                 std::unique_ptr<Stmt> current = parseStmt();
                 Token lastSemicolon;
                 if (consume(TokenType::SEMICOLON)) {
@@ -582,9 +582,11 @@ namespace enact {
             // Tuple (expr, expr...)
             std::vector<std::unique_ptr<Expr>> exprs{};
             exprs.push_back(std::move(expr));
-            do {
+            while (consume(TokenType::COMMA)) {
                 exprs.push_back(parseExpr());
-            } while (consume(TokenType::COMMA));
+            }
+
+            expect(TokenType::RIGHT_PAREN, "Expected ')' after tuple elements.");
 
             // TODO: Return tuple expr
             throw error("Tuples are not yet implemented.");

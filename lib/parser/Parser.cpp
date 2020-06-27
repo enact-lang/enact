@@ -345,6 +345,32 @@ namespace enact {
         return expr;
     }
 
+    std::unique_ptr<Expr> Parser::parsePrecAdd() {
+        std::unique_ptr<Expr> expr = parsePrecMultiply();
+
+        while (consume(TokenType::PLUS) ||
+               consume(TokenType::MINUS)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecMultiply();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecMultiply() {
+        std::unique_ptr<Expr> expr = parsePrecBitwiseShift();
+
+        while (consume(TokenType::STAR) ||
+               consume(TokenType::SLASH)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecBitwiseShift();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
         std::unique_ptr<Expr> expr = parseExpr();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");

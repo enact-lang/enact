@@ -413,10 +413,12 @@ namespace enact {
     class WhileExpr : public Expr {
         std::unique_ptr<Expr> condition;
         std::unique_ptr<BlockExpr> body;
+        Token keyword;
 
-        WhileExpr(std::unique_ptr<Expr> condition, std::unique_ptr<BlockExpr> body) :
+        WhileExpr(std::unique_ptr<Expr> condition, std::unique_ptr<BlockExpr> body, Token keyword) :
                 condition{std::move(condition)},
-                body{std::move(body)} {}
+                body{std::move(body)},
+                keyword{std::move(keyword)} {}
 
         ~WhileExpr() override = default;
 

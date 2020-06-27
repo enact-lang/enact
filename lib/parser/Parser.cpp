@@ -278,7 +278,7 @@ namespace enact {
         Token keyword = m_previous;
 
         std::unique_ptr<Expr> condition = parseExpr();
-        std::unique_ptr<BlockExpr> thenBlock = expectBlock("Expected '{' or '=>' after 'if'.");
+        std::unique_ptr<BlockExpr> thenBlock = expectBlock("Expected '{' or '=>' before if expression body.");
 
         std::unique_ptr<BlockExpr> elseBlock = std::make_unique<BlockExpr>(
                 std::vector<std::unique_ptr<Stmt>>{},
@@ -293,37 +293,22 @@ namespace enact {
             }
         }
 
-        return std::make_unique<IfExpr>(std::move(condition), std::move(thenBlock), std::move(elseBlock), keyword);
+        return std::make_unique<IfExpr>(
+                std::move(condition),
+                std::move(thenBlock),
+                std::move(elseBlock),
+                std::move(keyword));
     }
 
-    std::unique_ptr<Stmt> Parser::ifStatement() {
+    std::unique_ptr<Expr> Parser::parseWhileExpr() {
         Token keyword = m_previous;
 
-        std::unique_ptr<Expr> condition = expression();
-        expect(TokenType::COLON, "Expected ':' after if condition.");
-        consumeSeparator();
+        std::unique_ptr<Expr> condition = parseExpr();
+        std::unique_ptr<BlockExpr> body = expectBlock("Expected '{' or '=>' before while loop body.");
 
-        std::vector<std::unique_ptr<Stmt>> thenBlock;
-        while (!check(TokenType::END) && !check(TokenType::ELSE) && !isAtEnd()) {
-            thenBlock.push_back(declaration());
-        }
-
-        std::vector<std::unique_ptr<Stmt>> elseBlock;
-
-        if (consume(TokenType::ELSE)) {
-            expect(TokenType::COLON, "Expected ':' after start of else block.");
-            consumeSeparator();
-            while (!check(TokenType::END) && !isAtEnd()) {
-                elseBlock.push_back(declaration());
-            }
-        }
-
-        expect(TokenType::END, "Expected 'end' at end of if statement.");
-        expectSeparator("Expected newline or ';' after 'end'.");
-
-        return std::make_unique<IfStmt>(std::move(condition), std::move(thenBlock), std::move(elseBlock), keyword);
+        return std::make_unique<WhileExpr>(std::move(condition), std::move(body), std::move(keyword));
     }
-
+    
     std::unique_ptr<Stmt> Parser::whileStatement() {
         Token keyword = m_previous;
 

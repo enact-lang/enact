@@ -12,7 +12,7 @@ namespace enact {
 
         std::vector<std::unique_ptr<Stmt>> ast{};
         while (!isAtEnd()) {
-            std::unique_ptr<Stmt> stmt = declaration();
+            std::unique_ptr<Stmt> stmt = parseStmt();
             if (stmt) ast.push_back(std::move(stmt));
         }
 
@@ -52,14 +52,14 @@ namespace enact {
         if (!consume(TokenType::RIGHT_PAREN)) {
             do {
                 expect(TokenType::IDENTIFIER, "Expected parameter name.");
-                params.push_back(FunctionStmt::Param{m_previous, expectTypename()});
+                params.push_back(FunctionStmt::Param{m_previous, expectTypename("Expected parameter typename.")});
             } while (consume(TokenType::COMMA));
 
             expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
         }
 
         // Get the return type
-        std::unique_ptr<const Typename> returnTypename = expectTypename(true);
+        std::unique_ptr<const Typename> returnTypename = expectTypename("Expected return typename.", true);
 
         if (!mustParseBody && consume(TokenType::SEMICOLON)) {
             return std::make_unique<FunctionStmt>(name,
@@ -85,7 +85,7 @@ namespace enact {
             expect(TokenType::IDENTIFIER, "Expected field declaration in struct body.");
             // Field declaration
             Token fieldName = m_previous;
-            std::unique_ptr<const Typename> fieldType = expectTypename();
+            std::unique_ptr<const Typename> fieldType = expectTypename("Expected field typename.");
 
             fields.push_back(StructStmt::Field{std::move(fieldName), std::move(fieldType)});
 
@@ -201,8 +201,7 @@ namespace enact {
         } else {
             value = parseExpr();
         }
-
-        expect(TokenType::SEMICOLON, "Expected ';' after return statement.");
+        
         return std::make_unique<ReturnStmt>(keyword, std::move(value));
     }
 
@@ -215,20 +214,15 @@ namespace enact {
             value = parseExpr();
         }
 
-        expect(TokenType::SEMICOLON, "Expected ';' after break statement.");
         return std::make_unique<BreakStmt>(std::move(keyword), std::move(value));
     }
 
     std::unique_ptr<Stmt> Parser::parseContinueStmt() {
-        expect(TokenType::SEMICOLON, "Expected ';' after continue statement.");
         return std::make_unique<ContinueStmt>(m_previous);
     }
 
     std::unique_ptr<Stmt> Parser::parseExpressionStmt() {
         std::unique_ptr<Expr> expr = parseExpr();
-        if (m_previous.type != TokenType::RIGHT_BRACE) {
-            expect(TokenType::SEMICOLON, "Expected ';' after expression statement.");
-        }
         return std::make_unique<ExpressionStmt>(std::move(expr));
     }
 
@@ -409,14 +403,14 @@ namespace enact {
     }
 
     std::unique_ptr<Expr> Parser::parsePrecComparison() {
-        std::unique_ptr<Expr> expr = parsePrecCast();
+        std::unique_ptr<Expr> expr = parsePrecBitwiseOr();
 
         while (consume(TokenType::LESS) ||
                consume(TokenType::LESS_EQUAL) ||
                consume(TokenType::GREATER) ||
                consume(TokenType::GREATER_EQUAL)) {
             Token oper = m_previous;
-            std::unique_ptr<Expr> rightExpr = parsePrecCast();
+            std::unique_ptr<Expr> rightExpr = parsePrecBitwiseOr();
             expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
         }
 
@@ -586,7 +580,8 @@ namespace enact {
             if (consume(TokenType::RIGHT_PAREN)) return expr;
 
             // Tuple (expr, expr...)
-            std::vector<std::unique_ptr<Expr>> exprs{std::move(expr)};
+            std::vector<std::unique_ptr<Expr>> exprs{};
+            exprs.push_back(std::move(expr));
             do {
                 exprs.push_back(parseExpr());
             } while (consume(TokenType::COMMA));
@@ -637,7 +632,8 @@ namespace enact {
 
     Token Parser::expect(TokenType type, const std::string &message) {
         if (m_current.type == type) {
-            return advance();
+            advance();
+            return m_current;
         } else {
             throw errorAtCurrent(message);
         }
@@ -689,7 +685,7 @@ namespace enact {
             expect(TokenType::RIGHT_PAREN, "Expected end of parameter list in function type.");
         }
 
-        std::unique_ptr<const Typename> returnTypename = expectTypename(true);
+        std::unique_ptr<const Typename> returnTypename = expectTypename("Expected return typename in function type.", true);
 
         return std::make_unique<FunctionTypename>(std::move(returnTypename), std::move(argumentTypenames));
     }
@@ -706,20 +702,14 @@ namespace enact {
 
         while (!isAtEnd()) {
             switch (m_current.type) {
-                case TokenType::BREAK:
-                case TokenType::CONTINUE:
                 case TokenType::ENUM:
                 case TokenType::FOR:
                 case TokenType::FUNC:
-                case TokenType::IF:
                 case TokenType::IMM:
                 case TokenType::IMPL:
                 case TokenType::MUT:
-                case TokenType::RETURN:
-                case TokenType::SEMICOLON:
                 case TokenType::STRUCT:
                 case TokenType::TRAIT:
-                case TokenType::WHILE:
                     return;
             }
 
@@ -729,9 +719,5 @@ namespace enact {
 
     bool Parser::isAtEnd() {
         return m_current.type == TokenType::END_OF_FILE;
-    }
-
-    const ParseRule &Parser::getParseRule(TokenType type) {
-        return m_parseRules[static_cast<std::size_t>(type)];
     }
 }

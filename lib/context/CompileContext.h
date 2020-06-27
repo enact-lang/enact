@@ -1,8 +1,6 @@
 #ifndef ENACT_COMPILECONTEXT_H
 #define ENACT_COMPILECONTEXT_H
 
-#include <list>
-
 #include "../parser/Parser.h"
 
 #include "Options.h"
@@ -33,7 +31,7 @@ namespace enact {
         std::string m_source;
         Options m_options;
 
-        Parser parser{*this};
+        Parser m_parser{*this};
     };
 }
 

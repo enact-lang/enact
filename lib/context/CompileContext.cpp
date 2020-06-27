@@ -5,17 +5,18 @@
 #include "../AstSerialise.h"
 
 namespace enact {
-    CompileContext::CompileContext(Options options) : options{std::move(options)} {
+    CompileContext::CompileContext(Options options) : m_options{std::move(options)} {
     }
 
     CompileResult CompileContext::compile(std::string source) {
         m_source = std::move(source);
 
-        // TODO: parse and print AST
+        std::vector<std::unique_ptr<Stmt>> ast = m_parser.parse();
+        // TODO: serialise and print AST
     }
 
     std::string CompileContext::getSourceLine(line_t line) {
-        std::istringstream stream{source};
+        std::istringstream stream{m_source};
         line_t lineNumber{1};
         std::string lineContents;
 
@@ -29,7 +30,7 @@ namespace enact {
     void CompileContext::reportErrorAt(const Token &token, const std::string &msg) {
         std::cerr << "[line " << token.line << "] Error";
 
-        if (token.type == TokenType::ENDFILE) {
+        if (token.type == TokenType::END_OF_FILE) {
             std::cerr << " at end: " << msg << "\n\n";
         } else {
             if (token.type == TokenType::ERROR) {

@@ -61,7 +61,7 @@ namespace enact {
         // Get the return type
         std::unique_ptr<const Typename> returnTypename = expectTypename("Expected return typename.", true);
 
-        if (!mustParseBody && consume(TokenType::SEMICOLON)) {
+        if (!mustParseBody && check(TokenType::SEMICOLON)) {
             return std::make_unique<FunctionStmt>(name,
                                                   std::move(returnTypename),
                                                   std::move(params),
@@ -69,7 +69,7 @@ namespace enact {
                                                                               std::make_unique<UnitExpr>(m_previous)));
         }
 
-        std::unique_ptr<BlockExpr> body = static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
+        std::unique_ptr<BlockExpr> body = expectBlock("Expected '{' or '=>' before function body.");
         return std::make_unique<FunctionStmt>(std::move(name), std::move(returnTypename), std::move(params), std::move(body));
     }
 

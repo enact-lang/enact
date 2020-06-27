@@ -45,20 +45,19 @@ namespace enact {
 
         s << "(Stmt::Function " << stmt.name.lexeme << " (";
 
+        std::string separator;
         for (auto &param : stmt.params) {
-            s << param.name.lexeme << " " << param.typename_->name();
+            s << separator << param.name.lexeme << ' ' << param.typename_->name();
+            separator = " ";
         }
 
         s << ") " << stmt.returnTypename->name() << " (\n";
         m_ident += "    ";
 
-        for (auto &statement : stmt.body->stmts) {
-            s << visitStmt(*statement) << "\n";
-        }
-        s << visitExpr(*stmt.body->expr);
+        s << visitExpr(*stmt.body);
 
         m_ident.erase(0, 4);
-        s << ")";
+        s << ')';
 
         return s.str();
     }

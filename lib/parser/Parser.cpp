@@ -309,6 +309,42 @@ namespace enact {
         return expr;
     }
 
+    std::unique_ptr<Expr> Parser::parsePrecBitwiseOr() {
+        std::unique_ptr<Expr> expr = parsePrecBitwiseXor();
+
+        while (consume(TokenType::PIPE)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecBitwiseXor();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecBitwiseXor() {
+        std::unique_ptr<Expr> expr = parsePrecBitwiseAnd();
+
+        while (consume(TokenType::CARAT)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecBitwiseAnd();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecBitwiseAnd() {
+        std::unique_ptr<Expr> expr = parsePrecAdd();
+
+        while (consume(TokenType::AMPERSAND)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecAdd();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
         std::unique_ptr<Expr> expr = parseExpr();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");

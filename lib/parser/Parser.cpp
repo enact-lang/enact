@@ -321,46 +321,42 @@ namespace enact {
         return std::make_unique<ForExpr>(std::move(name), std::move(iterator), std::move(body));
     }
 
-    std::unique_ptr<Stmt> Parser::givenStatement() {
-        std::unique_ptr<Expr> value = expression();
-        expect(TokenType::COLON, "Expected ':' before given statement body.");
+    std::unique_ptr<Expr> Parser::parseSwitchExpr() {
+        std::unique_ptr<Expr> value = parseExpr();
+        expect(TokenType::LEFT_BRACE, "Expected '{' before switch expression body.");
 
-        std::vector<GivenCase> cases;
-        while (!check(TokenType::END) && !isAtEnd()) {
-            consumeSeparator();
-
-            if (consume(TokenType::WHEN)) {
+        std::vector<SwitchCase> cases;
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            if (consume(TokenType::CASE)) {
                 Token keyword = m_previous;
 
-                std::unique_ptr<Expr> caseValue = expression();
-                expect(TokenType::COLON, "Expected ':' before case body");
+                // TODO: add more pattern types
+                std::unique_ptr<Pattern> casePattern = std::make_unique<ValuePattern>(parseExpr());
+                std::unique_ptr<Expr> casePredicate = consume(TokenType::WHEN)
+                                                    ? parseExpr()
+                                                    : std::make_unique<BooleanExpr>(true);
+                std::unique_ptr<BlockExpr> caseBody = expectBlock("Expected '{' or '=>' before switch case body.");
 
-                std::vector<std::unique_ptr<Stmt>> caseBody;
-                while (!check(TokenType::WHEN) && !check(TokenType::ELSE) && !check(TokenType::END) && !isAtEnd()) {
-                    caseBody.push_back(declaration());
-                }
-
-                cases.push_back(GivenCase{std::move(caseValue), std::move(caseBody), keyword});
-            } else if (consume(TokenType::ELSE)) {
+                cases.push_back(SwitchCase{std::move(casePattern), std::move(casePredicate), std::move(caseBody), std::move(keyword)});
+            } else if (consume(TokenType::DEFAULT)) {
                 Token keyword = m_previous;
 
-                expect(TokenType::COLON, "Expected ':' before 'else' case body.");
+                std::unique_ptr<Pattern> casePattern = std::make_unique<WildcardPattern>(keyword);
+                std::unique_ptr<Expr> casePredicate = consume(TokenType::WHEN)
+                                                      ? parseExpr()
+                                                      : std::make_unique<BooleanExpr>(true);
+                std::unique_ptr<BlockExpr> caseBody = expectBlock("Expected '{' or '=>' before default switch case body.");
 
-                std::vector<std::unique_ptr<Stmt>> caseBody;
-                while (!check(TokenType::WHEN) && !check(TokenType::END) && !isAtEnd()) {
-                    caseBody.push_back(declaration());
-                }
-
-                std::unique_ptr<Expr> caseValue = std::make_unique<AnyExpr>();
-
-                cases.push_back(GivenCase{std::move(caseValue), std::move(caseBody), keyword});
+                cases.push_back(SwitchCase{std::move(casePattern),
+                                           std::move(casePredicate),
+                                           std::move(caseBody),
+                                           std::move(keyword)});
             }
         }
 
-        expect(TokenType::END, "Expected 'end' at end of given statement.");
-        expectSeparator("Expected newline or ';' after 'end'.");
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after switch expression body.");
 
-        return std::make_unique<GivenStmt>(std::move(value), std::move(cases));
+        return std::make_unique<SwitchExpr>(std::move(value), std::move(cases));
     }
 
     std::unique_ptr<Expr> Parser::parsePrecAssignment() {

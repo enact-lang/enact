@@ -23,6 +23,7 @@ namespace enact {
 
         CompileResult compile(std::string source);
 
+        const std::string& getSource() const { return m_source; }
         const Options& getOptions() const { return m_options; }
 
         std::string getSourceLine(line_t line);

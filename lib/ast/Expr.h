@@ -332,6 +332,7 @@ namespace enact {
         std::unique_ptr<Pattern> pattern;
         std::unique_ptr<Expr> predicate;
         std::unique_ptr<BlockExpr> body;
+        Token keyword;
     };
 
     class SwitchExpr : public Expr {
@@ -411,6 +412,7 @@ namespace enact {
     };
 
     class WhileExpr : public Expr {
+    public:
         std::unique_ptr<Expr> condition;
         std::unique_ptr<BlockExpr> body;
         Token keyword;

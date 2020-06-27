@@ -63,7 +63,6 @@ namespace enact {
         bool hadError() const;
 
     private:
-
         std::unique_ptr<Stmt> parseStmt();
 
         std::unique_ptr<Stmt> parseFunctionStmt(bool mustParseBody = true);
@@ -77,7 +76,7 @@ namespace enact {
         std::unique_ptr<Stmt> parseContinueStmt();
         std::unique_ptr<Stmt> parseExpressionStmt();
 
-        std::unique_ptr<Stmt> parseExpr();
+        std::unique_ptr<Expr> parseExpr();
 
         std::unique_ptr<Expr> parseBlockExpr();
         std::unique_ptr<Expr> parseIfExpr();

@@ -23,30 +23,226 @@ namespace enact {
         return m_hadError;
     }
 
-    std::unique_ptr<Expr> Parser::parseAtPrecedence(Precedence precedence) {
-        advance();
+    std::unique_ptr<Stmt> Parser::parseStmt() {
+        try {
+            if (consume(TokenType::FUNC))     return parseFunctionStmt();
+            if (consume(TokenType::STRUCT))   return parseStructStmt();
+            if (consume(TokenType::ENUM))     return parseEnumStmt();
+            if (consume(TokenType::TRAIT))    return parseTraitStmt();
+            if (consume(TokenType::IMPL))     return parseImplStmt();
+            if (consume(TokenType::IMM) ||
+                consume(TokenType::MUT))      return parseVariableStmt();
+            if (consume(TokenType::RETURN))   return parseReturnStmt();
+            if (consume(TokenType::BREAK))    return parseBreakStmt();
+            if (consume(TokenType::CONTINUE)) return parseContinueStmt();
+            return parseExpressionStmt();
+        } catch (ParseError &error) {
+            synchronise();
+            return nullptr;
+        }
+    }
 
-        const PrefixFn prefixRule = getParseRule(m_previous.type).prefix;
-        if (prefixRule == nullptr) {
-            if (m_previous.type == TokenType::SEMICOLON) {
-                return parseAtPrecedence(precedence);
+    std::unique_ptr<Stmt> Parser::parseFunctionStmt(bool mustParseBody) {
+        expect(TokenType::IDENTIFIER, "Expected function name.");
+        Token name = m_previous;
+
+        expect(TokenType::LEFT_PAREN, "Expected '(' after function name.");
+
+        std::vector<FunctionStmt::Param> params;
+        if (!consume(TokenType::RIGHT_PAREN)) {
+            do {
+                expect(TokenType::IDENTIFIER, "Expected parameter name.");
+                params.push_back(FunctionStmt::Param{m_previous, expectTypename()});
+            } while (consume(TokenType::COMMA));
+
+            expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
+        }
+
+        // Get the return type
+        std::unique_ptr<const Typename> returnTypename = expectTypename(true);
+
+        if (!mustParseBody && consume(TokenType::SEMICOLON)) {
+            return std::make_unique<FunctionStmt>(name,
+                                                  std::move(returnTypename),
+                                                  std::move(params),
+                                                  std::make_unique<BlockExpr>(std::vector<std::unique_ptr<Stmt>>{},
+                                                                              std::make_unique<UnitExpr>(m_previous)));
+        }
+
+        std::unique_ptr<BlockExpr> body = static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
+        return std::make_unique<FunctionStmt>(std::move(name), std::move(returnTypename), std::move(params), std::move(body));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseStructStmt() {
+        expect(TokenType::IDENTIFIER, "Expected struct name.");
+        Token name = m_previous;
+
+        expect(TokenType::LEFT_BRACE, "Expected '{' before struct body.");
+
+        std::vector<StructStmt::Field> fields;
+
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            expect(TokenType::IDENTIFIER, "Expected field declaration in struct body.");
+            // Field declaration
+            Token fieldName = m_previous;
+            std::unique_ptr<const Typename> fieldType = expectTypename();
+
+            fields.push_back(StructStmt::Field{std::move(fieldName), std::move(fieldType)});
+
+            expect(TokenType::SEMICOLON, "Expected ';' after struct field declaration.");
+        }
+
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after struct body.");
+
+        return std::make_unique<StructStmt>(name, std::move(fields));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseEnumStmt() {
+        expect(TokenType::IDENTIFIER, "Expected enum name.");
+        Token name = m_previous;
+
+        expect(TokenType::LEFT_BRACE, "Expected '{' before enum body.");
+
+        std::vector<EnumStmt::Variant> variants;
+
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            expect(TokenType::IDENTIFIER, "Expected variant declaration in struct body.");
+            // Field declaration
+            Token variantName = m_previous;
+            std::unique_ptr<const Typename> variantType = expectTypename("Expected typename after variant name.", true);
+
+            variants.push_back(EnumStmt::Variant{std::move(variantName), std::move(variantType)});
+
+            expect(TokenType::SEMICOLON, "Expected ';' after enum variant declaration.");
+        }
+
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after enum body.");
+
+        return std::make_unique<EnumStmt>(std::move(name), std::move(variants));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseTraitStmt() {
+        expect(TokenType::IDENTIFIER, "Expected trait name.");
+        Token name = m_previous;
+
+        expect(TokenType::LEFT_BRACE, "Expected '{' before trait body.");
+
+        std::vector<std::unique_ptr<FunctionStmt>> methods;
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            if (consume(TokenType::FUNC)) {
+                methods.push_back(
+                        static_unique_ptr_cast<FunctionStmt>(
+                                parseFunctionStmt(false)));
+            } else {
+                throw errorAtCurrent("Expected method declaration in trait body.");
             }
-            throw error("Expected expression.");
         }
 
-        std::unique_ptr<Expr> expr = (this->*(prefixRule))();
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after trait body.");
 
-        while (precedence <= getParseRule(m_current.type).precedence) {
-            advance();
-            const InfixFn infixRule = getParseRule(m_previous.type).infix;
-            expr = (this->*(infixRule))(std::move(expr));
+        return std::make_unique<TraitStmt>(name, std::move(methods));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseImplStmt() {
+        std::unique_ptr<const Typename> firstTypename = expectTypename("Expected typename after 'impl'.");
+        std::unique_ptr<const Typename> secondTypename = consume(TokenType::FOR)
+                                                         ? expectTypename("Expected typename after 'impl'..'for'.")
+                                                         : nullptr;
+
+        expect(TokenType::LEFT_BRACE, "Expected '{' before impl body.");
+
+        std::vector<std::unique_ptr<FunctionStmt>> methods;
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            if (consume(TokenType::FUNC)) {
+                methods.push_back(
+                        static_unique_ptr_cast<FunctionStmt>(
+                                parseFunctionStmt()));
+            } else {
+                throw errorAtCurrent("Expected method declaration in impl body.");
+            }
         }
 
-        return expr;
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after impl body.");
+
+        if (secondTypename == nullptr) {
+            // Inherent impl
+            return std::make_unique<ImplStmt>(std::move(firstTypename), std::move(secondTypename), std::move(methods));
+        }
+        // Trait impl
+        return std::make_unique<ImplStmt>(std::move(secondTypename), std::move(firstTypename), std::move(methods));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseVariableStmt() {
+        Token keyword = m_previous;
+        expect(TokenType::IDENTIFIER, "Expected variable name.");
+        Token name = m_previous;
+
+        std::unique_ptr<const Typename> typeName{
+                expectTypename("Expected typename after variable name.", true)};
+
+        expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
+
+        std::unique_ptr<Expr> initializer = parseExpr();
+
+        expect(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
+
+        return std::make_unique<VariableStmt>(
+                std::move(keyword),
+                std::move(name),
+                std::move(typeName),
+                std::move(initializer));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseReturnStmt() {
+        Token keyword = m_previous;
+        std::unique_ptr<Expr> value;
+        if (check(TokenType::SEMICOLON)) {
+            value = std::make_unique<UnitExpr>(m_current);
+        } else {
+            value = parseExpr();
+        }
+
+        expect(TokenType::SEMICOLON, "Expected ';' after return statement.");
+        return std::make_unique<ReturnStmt>(keyword, std::move(value));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseBreakStmt() {
+        Token keyword = m_previous;
+        std::unique_ptr<Expr> value;
+        if (check(TokenType::SEMICOLON)) {
+            value = std::make_unique<UnitExpr>(m_current);
+        } else {
+            value = parseExpr();
+        }
+
+        expect(TokenType::SEMICOLON, "Expected ';' after break statement.");
+        return std::make_unique<BreakStmt>(std::move(keyword), std::move(value));
+    }
+
+    std::unique_ptr<Stmt> Parser::parseContinueStmt() {
+        expect(TokenType::SEMICOLON, "Expected ';' after continue statement.");
+        return std::make_unique<ContinueStmt>(m_previous);
+    }
+
+    std::unique_ptr<Stmt> Parser::parseExpressionStmt() {
+        std::unique_ptr<Expr> expr = parseExpr();
+        if (m_previous.type != TokenType::RIGHT_BRACE) {
+            expect(TokenType::SEMICOLON, "Expected ';' after expression statement.");
+        }
+        return std::make_unique<ExpressionStmt>(std::move(expr));
     }
 
     std::unique_ptr<Expr> Parser::parseExpr() {
-        return parseAtPrecedence(Precedence::ASSIGNMENT);
+        // Expression with block?
+        if (consume(TokenType::RIGHT_BRACE) ||
+            consume(TokenType::EQUAL_GREATER)) return parseBlockExpr();
+        if (consume(TokenType::IF))            return parseIfExpr();
+        if (consume(TokenType::WHILE))         return parseWhileExpr();
+        if (consume(TokenType::FOR))           return parseForExpr();
+        if (consume(TokenType::SWITCH))        return parseSwitchExpr();
+
+        // Expression without block. Start at the lowest precedence.
+        return parsePrecAssignment();
     }
 
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
@@ -310,218 +506,7 @@ namespace enact {
         return std::make_unique<GivenStmt>(std::move(value), std::move(cases));
     }
 
-    std::unique_ptr<Stmt> Parser::parseDeclarationStmt() {
-        try {
-            if (consume(TokenType::FUNC))   return parseFunctionStmt();
-            if (consume(TokenType::STRUCT)) return parseStructStmt();
-            if (consume(TokenType::ENUM))   return parseEnumStmt();
-            if (consume(TokenType::TRAIT))  return parseTraitStmt();
-            if (consume(TokenType::IMPL))   return parseImplStmt();
-            if (consume(TokenType::IMM))    return parseVariableStmt();
-            if (consume(TokenType::MUT))    return parseVariableStmt();
-            return parseStmt();
-        } catch (ParseError &error) {
-            synchronise();
-            return nullptr;
-        }
-    }
 
-    std::unique_ptr<Stmt> Parser::parseFunctionStmt(bool mustParseBody) {
-        expect(TokenType::IDENTIFIER, "Expected function name.");
-        Token name = m_previous;
-
-        expect(TokenType::LEFT_PAREN, "Expected '(' after function name.");
-
-        std::vector<FunctionStmt::Param> params;
-        if (!consume(TokenType::RIGHT_PAREN)) {
-            do {
-                expect(TokenType::IDENTIFIER, "Expected parameter name.");
-                params.push_back(FunctionStmt::Param{m_previous, expectTypename()});
-            } while (consume(TokenType::COMMA));
-
-            expect(TokenType::RIGHT_PAREN, "Expected end of parameter list.");
-        }
-
-        // Get the return type
-        std::unique_ptr<const Typename> returnTypename = expectTypename(true);
-
-        if (!mustParseBody && consume(TokenType::SEMICOLON)) {
-            return std::make_unique<FunctionStmt>(name,
-                    std::move(returnTypename),
-                    std::move(params),
-                    std::make_unique<BlockExpr>(std::vector<std::unique_ptr<Stmt>>{},
-                            std::make_unique<UnitExpr>(m_previous)));
-        }
-
-        std::unique_ptr<BlockExpr> body = static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
-        return std::make_unique<FunctionStmt>(std::move(name), std::move(returnTypename), std::move(params), std::move(body));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseStructStmt() {
-        expect(TokenType::IDENTIFIER, "Expected struct name.");
-        Token name = m_previous;
-
-        expect(TokenType::LEFT_BRACE, "Expected '{' before struct body.");
-
-        std::vector<StructStmt::Field> fields;
-
-        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-            expect(TokenType::IDENTIFIER, "Expected field declaration in struct body.");
-            // Field declaration
-            Token fieldName = m_previous;
-            std::unique_ptr<const Typename> fieldType = expectTypename();
-
-            fields.push_back(StructStmt::Field{std::move(fieldName), std::move(fieldType)});
-
-            expect(TokenType::SEMICOLON, "Expected ';' after struct field declaration.");
-        }
-
-        expect(TokenType::RIGHT_BRACE, "Expected '}' after struct body.");
-
-        return std::make_unique<StructStmt>(name, std::move(fields));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseEnumStmt() {
-        expect(TokenType::IDENTIFIER, "Expected enum name.");
-        Token name = m_previous;
-
-        expect(TokenType::LEFT_BRACE, "Expected '{' before enum body.");
-
-        std::vector<EnumStmt::Variant> variants;
-
-        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-            expect(TokenType::IDENTIFIER, "Expected variant declaration in struct body.");
-            // Field declaration
-            Token variantName = m_previous;
-            std::unique_ptr<const Typename> variantType = expectTypename("Expected typename after variant name.", true);
-
-            variants.push_back(EnumStmt::Variant{std::move(variantName), std::move(variantType)});
-
-            expect(TokenType::SEMICOLON, "Expected ';' after enum variant declaration.");
-        }
-
-        expect(TokenType::RIGHT_BRACE, "Expected '}' after enum body.");
-
-        return std::make_unique<EnumStmt>(std::move(name), std::move(variants));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseTraitStmt() {
-        expect(TokenType::IDENTIFIER, "Expected trait name.");
-        Token name = m_previous;
-
-        expect(TokenType::LEFT_BRACE, "Expected '{' before trait body.");
-
-        std::vector<std::unique_ptr<FunctionStmt>> methods;
-        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-            if (consume(TokenType::FUNC)) {
-                methods.push_back(
-                        static_unique_ptr_cast<FunctionStmt>(
-                                parseFunctionStmt(false)));
-            } else {
-                throw errorAtCurrent("Expected method declaration in trait body.");
-            }
-        }
-
-        expect(TokenType::RIGHT_BRACE, "Expected '}' after trait body.");
-
-        return std::make_unique<TraitStmt>(name, std::move(methods));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseImplStmt() {
-        std::unique_ptr<const Typename> firstTypename = expectTypename("Expected typename after 'impl'.");
-        std::unique_ptr<const Typename> secondTypename = consume(TokenType::FOR)
-                ? expectTypename("Expected typename after 'impl'..'for'.")
-                : nullptr;
-
-        expect(TokenType::LEFT_BRACE, "Expected '{' before impl body.");
-
-        std::vector<std::unique_ptr<FunctionStmt>> methods;
-        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-            if (consume(TokenType::FUNC)) {
-                methods.push_back(
-                        static_unique_ptr_cast<FunctionStmt>(
-                                parseFunctionStmt()));
-            } else {
-                throw errorAtCurrent("Expected method declaration in impl body.");
-            }
-        }
-
-        expect(TokenType::RIGHT_BRACE, "Expected '}' after impl body.");
-
-        if (secondTypename == nullptr) {
-            // Inherent impl
-            return std::make_unique<ImplStmt>(std::move(firstTypename), std::move(secondTypename), std::move(methods));
-        }
-        // Trait impl
-        return std::make_unique<ImplStmt>(std::move(secondTypename), std::move(firstTypename), std::move(methods));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseVariableStmt() {
-        Token keyword = m_previous;
-        expect(TokenType::IDENTIFIER, "Expected variable name.");
-        Token name = m_previous;
-
-        std::unique_ptr<const Typename> typeName{
-            expectTypename("Expected typename after variable name.", true)};
-
-        expect(TokenType::EQUAL, "Expected '=' after variable name/type.");
-
-        std::unique_ptr<Expr> initializer = parseExpr();
-
-        expect(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
-
-        return std::make_unique<VariableStmt>(
-                std::move(keyword),
-                std::move(name),
-                std::move(typeName),
-                std::move(initializer));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseStmt() {
-        if (consume(TokenType::RETURN))   return parseReturnStmt();
-        if (consume(TokenType::BREAK))    return parseBreakStmt();
-        if (consume(TokenType::CONTINUE)) return parseContinueStmt();
-        return parseExpressionStmt();
-    }
-
-    std::unique_ptr<Stmt> Parser::parseReturnStmt() {
-        Token keyword = m_previous;
-        std::unique_ptr<Expr> value;
-        if (check(TokenType::SEMICOLON)) {
-            value = std::make_unique<UnitExpr>(m_current);
-        } else {
-            value = parseExpr();
-        }
-
-        expect(TokenType::SEMICOLON, "Expected ';' after return statement.");
-        return std::make_unique<ReturnStmt>(keyword, std::move(value));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseBreakStmt() {
-        Token keyword = m_previous;
-        std::unique_ptr<Expr> value;
-        if (check(TokenType::SEMICOLON)) {
-            value = std::make_unique<UnitExpr>(m_current);
-        } else {
-            value = parseExpr();
-        }
-
-        expect(TokenType::SEMICOLON, "Expected ';' after break statement.");
-        return std::make_unique<BreakStmt>(std::move(keyword), std::move(value));
-    }
-
-    std::unique_ptr<Stmt> Parser::parseContinueStmt() {
-        expect(TokenType::SEMICOLON, "Expected ';' after continue statement.");
-        return std::make_unique<ContinueStmt>(m_previous);
-    }
-
-    std::unique_ptr<Stmt> Parser::parseExpressionStmt() {
-        std::unique_ptr<Expr> expr = parseExpr();
-        if (m_previous.type != TokenType::RIGHT_BRACE) {
-            expect(TokenType::SEMICOLON, "Expected ';' after expression statement.");
-        }
-        return std::make_unique<ExpressionStmt>(std::move(expr));
-    }
 
     ParseError Parser::errorAt(const Token &token, const std::string &message) {
         m_context.reportErrorAt(token, message);

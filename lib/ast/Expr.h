@@ -248,13 +248,16 @@ namespace enact {
         std::unique_ptr<Expr> condition;
         std::unique_ptr<BlockExpr> thenBody;
         std::unique_ptr<BlockExpr> elseBody;
+        Token keyword;
 
         IfExpr(std::unique_ptr<Expr> condition,
                 std::unique_ptr<BlockExpr> thenBody,
-                std::unique_ptr<BlockExpr> elseBody) :
+                std::unique_ptr<BlockExpr> elseBody,
+                Token keyword) :
                 condition{std::move(condition)},
                 thenBody{std::move(thenBody)},
-                elseBody{std::move(elseBody)} {}
+                elseBody{std::move(elseBody)},
+                keyword{std::move(keyword)} {}
 
         ~IfExpr() override = default;
 

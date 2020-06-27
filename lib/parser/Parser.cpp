@@ -274,6 +274,28 @@ namespace enact {
         return std::make_unique<BlockExpr>(std::move(body), std::move(end));
     }
 
+    std::unique_ptr<Expr> Parser::parseIfExpr() {
+        Token keyword = m_previous;
+
+        std::unique_ptr<Expr> condition = parseExpr();
+        std::unique_ptr<BlockExpr> thenBlock = expectBlock("Expected '{' or '=>' after 'if'.");
+
+        std::unique_ptr<BlockExpr> elseBlock = std::make_unique<BlockExpr>(
+                std::vector<std::unique_ptr<Stmt>>{},
+                std::make_unique<UnitExpr>(m_previous));
+
+        if (consume(TokenType::ELSE)) {
+            // Special case, so we can type 'else if' instead of 'else => if'
+            if (consume(TokenType::IF)) {
+                elseBlock->expr = parseIfExpr();
+            } else {
+                elseBlock = expectBlock("Expected '{' or '=>' after 'else'.");
+            }
+        }
+
+        return std::make_unique<IfExpr>(std::move(condition), std::move(thenBlock), std::move(elseBlock), keyword);
+    }
+
     std::unique_ptr<Stmt> Parser::ifStatement() {
         Token keyword = m_previous;
 
@@ -766,6 +788,13 @@ namespace enact {
         std::unique_ptr<const Typename> returnTypename = expectTypename(true);
 
         return std::make_unique<FunctionTypename>(std::move(returnTypename), std::move(argumentTypenames));
+    }
+
+    std::unique_ptr<BlockExpr> Parser::expectBlock(const std::string &msg) {
+        if (!consume(TokenType::EQUAL_GREATER) && !consume(TokenType::RIGHT_BRACE)) {
+            throw errorAtCurrent(msg);
+        }
+        return static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
     }
 
     void Parser::synchronise() {

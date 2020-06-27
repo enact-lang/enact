@@ -109,6 +109,8 @@ namespace enact {
         std::unique_ptr<const Typename> expectTypename(const std::string& msg, bool emptyAllowed = false);
         std::unique_ptr<const Typename> expectFunctionTypename(const std::string& msg);
 
+        std::unique_ptr<BlockExpr> expectBlock(const std::string& msg);
+
         ParseError errorAt(const Token &token, const std::string &message);
         ParseError errorAtCurrent(const std::string &message);
         ParseError error(const std::string &message);

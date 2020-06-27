@@ -257,6 +257,30 @@ namespace enact {
         return expr;
     }
 
+    std::unique_ptr<Expr> Parser::parsePrecLogicalOr() {
+        std::unique_ptr<Expr> expr = parsePrecLogicalAnd();
+
+        while (consume(TokenType::OR)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecLogicalAnd();
+            expr = std::make_unique<LogicalExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecLogicalAnd() {
+        std::unique_ptr<Expr> expr = parsePrecEquality();
+
+        while (consume(TokenType::AND)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecEquality();
+            expr = std::make_unique<LogicalExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
         std::unique_ptr<Expr> expr = parseExpr();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");

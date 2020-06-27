@@ -515,7 +515,7 @@ namespace enact {
         while (true) {
             if (consume(TokenType::LEFT_PAREN)) {
                 std::vector<std::unique_ptr<Expr>> args;
-                if (!consume(TokenType::RIGHT_PAREN)) {
+                if (!check(TokenType::RIGHT_PAREN)) {
                     do {
                         args.push_back(parseExpr());
                     } while (consume(TokenType::COMMA));

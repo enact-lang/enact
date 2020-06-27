@@ -130,17 +130,23 @@ namespace enact {
         return std::make_unique<FieldExpr>(std::move(object), std::move(name), std::move(oper));
     }
 
-    std::unique_ptr<Stmt> Parser::blockStatement() {
-        expect(TokenType::COLON, "Expected ':' before block body.");
-        consumeSeparator();
-
-        std::vector<std::unique_ptr<Stmt>> statements;
-        while (!check(TokenType::END) && !isAtEnd()) {
-            statements.push_back(declaration());
+    std::unique_ptr<Expr> Parser::parseBlockExpr() {
+        // Single-expression block?
+        if (m_previous.type == TokenType::EQUAL_GREATER) {
+            return std::make_unique<BlockExpr>(std::vector<std::unique_ptr<Stmt>>{}, parseExpr());
         }
 
-        expect(TokenType::END, "Expected 'end' at end of block.");
-        expectSeparator("Expected newline or ';' after 'end'.");
+        std::vector<std::unique_ptr<Stmt>> stmts;
+        do {
+            stmts.push_back(parseDeclarationStmt());
+        } while (m_previous.type == TokenType::SEMICOLON && !isAtEnd());
+
+        if (check(TokenType::RIGHT_BRACE)) {
+        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+            stmts.push_back(parseDeclarationStmt());
+        }
+
+        expect(TokenType::RIGHT_BRACE, "Expected '}' after block body.");
 
         return std::make_unique<BlockStmt>(std::move(statements));
     }

@@ -281,6 +281,34 @@ namespace enact {
         return expr;
     }
 
+    std::unique_ptr<Expr> Parser::parsePrecEquality() {
+        std::unique_ptr<Expr> expr = parsePrecComparison();
+
+        while (consume(TokenType::EQUAL_EQUAL) ||
+               consume(TokenType::BANG_EQUAL)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecComparison();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecComparison() {
+        std::unique_ptr<Expr> expr = parsePrecCast();
+
+        while (consume(TokenType::LESS) ||
+               consume(TokenType::LESS_EQUAL) ||
+               consume(TokenType::GREATER) ||
+               consume(TokenType::GREATER_EQUAL)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecCast();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
     std::unique_ptr<Expr> Parser::parseGroupingExpr() {
         std::unique_ptr<Expr> expr = parseExpr();
         expect(TokenType::RIGHT_PAREN, "Expected ')' after expression.");

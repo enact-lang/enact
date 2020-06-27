@@ -308,94 +308,17 @@ namespace enact {
 
         return std::make_unique<WhileExpr>(std::move(condition), std::move(body), std::move(keyword));
     }
-    
-    std::unique_ptr<Stmt> Parser::whileStatement() {
-        Token keyword = m_previous;
 
-        std::unique_ptr<Expr> condition = expression();
-
-        expect(TokenType::COLON, "Expected ':' after while condition.");
-        consumeSeparator();
-
-        std::vector<std::unique_ptr<Stmt>> body;
-        while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(declaration());
-        }
-
-        expect(TokenType::END, "Expected 'end' at end of while loop.");
-        expectSeparator("Expected newline or ';' after 'end'.");
-
-        return std::make_unique<WhileStmt>(std::move(condition), std::move(body), keyword);
-    }
-
-    std::unique_ptr<Stmt> Parser::forStatement() {
-        Token keyword = m_previous;
-
-        std::unique_ptr<Stmt> initializer;
-        if (check(TokenType::SEPARATOR)) {
-            initializer = std::make_unique<ExpressionStmt>(std::make_unique<NilExpr>());
-        } else if (consume(TokenType::VAR)) {
-            initializer = variableDeclaration(false, false);
-        } else if (consume(TokenType::CONST)) {
-            initializer = variableDeclaration(true, false);
-        } else {
-            initializer = std::make_unique<ExpressionStmt>(expression());
-        }
-
-        expect(TokenType::SEPARATOR, "Expected '|' after for loop initializer.");
-
-        std::unique_ptr<Expr> condition;
-        if (!check(TokenType::SEPARATOR)) {
-            condition = expression();
-        } else {
-            condition = std::make_unique<BooleanExpr>(true);
-        }
-
-        expect(TokenType::SEPARATOR, "Expected '|' after for loop condition.");
-
-        std::unique_ptr<Expr> increment;
-        if (!check(TokenType::COLON)) {
-            increment = expression();
-        } else {
-            increment = std::make_unique<NilExpr>();
-        }
-
-        expect(TokenType::COLON, "Expected ':' before body of for loop.");
-
-        consumeSeparator();
-
-        std::vector<std::unique_ptr<Stmt>> body;
-        while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(declaration());
-        }
-
-        expect(TokenType::END, "Expected 'end' at end of for loop.");
-        expectSeparator("Expected newline or ';' after 'end'.");
-
-        return std::make_unique<ForStmt>(std::move(initializer), std::move(condition), std::move(increment),
-                                         std::move(body), keyword);
-    }
-
-    std::unique_ptr<Stmt> Parser::eachStatement() {
-        expect(TokenType::IDENTIFIER, "Expected item name after 'each'.");
+    std::unique_ptr<Expr> Parser::parseForExpr() {
+        expect(TokenType::IDENTIFIER, "Expected item name after 'for'.");
         Token name = m_previous;
 
-        expect(TokenType::IN, "Expected 'in' after each loop item name.");
+        expect(TokenType::IN, "Expected 'in' after for loop item name.");
 
-        std::unique_ptr<Expr> object = expression();
+        std::unique_ptr<Expr> iterator = parseExpr();
+        std::unique_ptr<BlockExpr> body = expectBlock("Expected '{' or '=>' before for loop body.");
 
-        expect(TokenType::COLON, "Expected ':' before each loop body.");
-        consumeSeparator();
-
-        std::vector<std::unique_ptr<Stmt>> body;
-        while (!check(TokenType::END) && !isAtEnd()) {
-            body.push_back(declaration());
-        }
-
-        expect(TokenType::END, "Expected 'end' at end of each loop.");
-        expectSeparator("Expected newline or ';' after 'end'.");
-
-        return std::make_unique<EachStmt>(name, std::move(object), std::move(body));
+        return std::make_unique<ForExpr>(std::move(name), std::move(iterator), std::move(body));
     }
 
     std::unique_ptr<Stmt> Parser::givenStatement() {

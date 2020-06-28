@@ -40,6 +40,7 @@ namespace enact {
     class FieldExpr;
     class IfExpr;
     class IntegerExpr;
+    class InterpolationExpr;
     class LogicalExpr;
     class StringExpr;
     class SwitchExpr;
@@ -65,6 +66,7 @@ namespace enact {
         virtual R visitGetExpr(FieldExpr &expr) = 0;
         virtual R visitIfExpr(IfExpr &expr) = 0;
         virtual R visitIntegerExpr(IntegerExpr &expr) = 0;
+        virtual R visitInterpolationExpr(InterpolationExpr& expr) = 0;
         virtual R visitLogicalExpr(LogicalExpr &expr) = 0;
         virtual R visitStringExpr(StringExpr &expr) = 0;
         virtual R visitSwitchExpr(SwitchExpr &expr) = 0;
@@ -285,6 +287,31 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitIntegerExpr(*this);
+        }
+    };
+
+    class InterpolationExpr : public Expr {
+    public:
+        std::unique_ptr<StringExpr> start;
+        std::unique_ptr<Expr> interpolated;
+        std::unique_ptr<StringExpr> end;
+
+        InterpolationExpr(
+                std::unique_ptr<StringExpr> start,
+                std::unique_ptr<Expr> interpolated,
+                std::unique_ptr<StringExpr> end) :
+                start{std::move(start)},
+                interpolated{std::move(interpolated)},
+                end{std::move(end)} {}
+
+        ~InterpolationExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitInterpolationExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitInterpolationExpr(*this);
         }
     };
 

@@ -37,7 +37,7 @@ namespace enact {
     }
 
     std::string AstSerialise::visitExpressionStmt(ExpressionStmt &stmt) {
-        return "(Stmt::Expression " + visitExpr(*stmt.expr) + ")";
+        return m_ident + "(Stmt::Expression " + visitExpr(*stmt.expr) + ")";
     }
 
     std::string AstSerialise::visitFunctionStmt(FunctionStmt &stmt) {
@@ -64,7 +64,7 @@ namespace enact {
 
     std::string AstSerialise::visitImplStmt(ImplStmt &stmt) {
         std::stringstream s;
-        s << "(Stmt::Impl " << stmt.typename_->name() << ' ';
+        s << m_ident << "(Stmt::Impl " << stmt.typename_->name() << ' ';
 
         if (stmt.traitTypename != nullptr) {
             s << stmt.traitTypename->name() << ' ';
@@ -89,7 +89,7 @@ namespace enact {
 
     std::string AstSerialise::visitStructStmt(StructStmt &stmt) {
         std::stringstream s;
-        s << "(Stmt::Struct " << stmt.name.lexeme << " (";
+        s << m_ident << "(Stmt::Struct " << stmt.name.lexeme << " (";
 
         s << ") (\n";
         m_ident += "    ";
@@ -107,7 +107,7 @@ namespace enact {
     std::string AstSerialise::visitTraitStmt(TraitStmt &stmt) {
         std::stringstream s;
 
-        s << "(Stmt::Trait " << stmt.name.lexeme << " (\n";
+        s << m_ident << "(Stmt::Trait " << stmt.name.lexeme << " (\n";
         m_ident += "    ";
 
         for (auto &method : stmt.methods) {
@@ -123,7 +123,7 @@ namespace enact {
     std::string AstSerialise::visitVariableStmt(VariableStmt &stmt) {
         std::stringstream s;
 
-        s << "(Stmt::Variable ";
+        s << m_ident << "(Stmt::Variable ";
         s << stmt.keyword.lexeme << ' ';
         s << stmt.name.lexeme + " " + visitExpr(*stmt.initializer) << ")";
 
@@ -145,7 +145,7 @@ namespace enact {
         m_ident += "    ";
 
         for (auto &statement : expr.stmts) {
-            s << visitStmt(*statement) << '\n';
+            s << m_ident << visitStmt(*statement) << '\n';
         }
         s << m_ident << visitExpr(*expr.expr) << ')';
 
@@ -177,7 +177,7 @@ namespace enact {
     std::string AstSerialise::visitForExpr(ForExpr& expr) {
         std::stringstream s;
 
-        s << m_ident << "(Stmt::For (" << expr.name.lexeme << " " << visitExpr(*expr.object) << ") (\n";
+        s << m_ident << "(Expr::For (" << expr.name.lexeme << " " << visitExpr(*expr.object) << ")\n";
         m_ident += "    ";
 
         s << visitExpr(*expr.body);
@@ -195,7 +195,7 @@ namespace enact {
     std::string AstSerialise::visitIfExpr(IfExpr& expr) {
         std::stringstream s;
 
-        s << m_ident << "(Expr::If " << visitExpr(*expr.condition) << " (\n";
+        s << m_ident << "(Expr::If " << visitExpr(*expr.condition) << '\n';
         m_ident += "    ";
 
         s << visitExpr(*expr.thenBody) << '\n';
@@ -208,6 +208,10 @@ namespace enact {
 
     std::string AstSerialise::visitIntegerExpr(IntegerExpr &expr) {
         return std::to_string(expr.value);
+    }
+
+    std::string AstSerialise::visitInterpolationExpr(InterpolationExpr &expr) {
+        return visitExpr(*expr.start) + "\\(" + visitExpr(*expr.interpolated) + ")" + visitExpr(*expr.end);
     }
 
     std::string AstSerialise::visitLogicalExpr(LogicalExpr &expr) {
@@ -258,7 +262,7 @@ namespace enact {
     std::string AstSerialise::visitWhileExpr(WhileExpr& expr) {
         std::stringstream s;
 
-        s << m_ident << "(Expr::While " << visitExpr(*expr.condition) << " (\n";
+        s << m_ident << "(Expr::While " << visitExpr(*expr.condition) << '\n';
         m_ident += "    ";
 
         s << visitExpr(*expr.body);

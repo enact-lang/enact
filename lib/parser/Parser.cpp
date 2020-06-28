@@ -521,7 +521,8 @@ namespace enact {
                     } while (consume(TokenType::COMMA));
                 }
 
-                Token paren = expect(TokenType::RIGHT_PAREN, "Expected ')' after function call arguments.");
+                expect(TokenType::RIGHT_PAREN, "Expected ')' after function call arguments.");
+                Token paren = m_previous;
 
                 if (args.size() > 255) {
                     throw errorAt(paren,
@@ -533,7 +534,10 @@ namespace enact {
                 expr = std::make_unique<CallExpr>(std::move(expr), std::move(args), std::move(paren));
             } else if (consume(TokenType::DOT)) {
                 Token dot = m_previous;
-                Token name = expect(TokenType::IDENTIFIER, "Expected property name after '.'.");
+
+                expect(TokenType::IDENTIFIER, "Expected property name after '.'.");
+                Token name = m_previous;
+
                 expr = std::make_unique<FieldExpr>(std::move(expr), std::move(name), std::move(dot));
             } else {
                 break;
@@ -551,25 +555,24 @@ namespace enact {
             return std::make_unique<FloatExpr>(std::stod(m_previous.lexeme));
         }
 
-        if (consume(TokenType::TRUE))  return std::make_unique<BooleanExpr>(true);
-        if (consume(TokenType::FALSE)) return std::make_unique<BooleanExpr>(false);
+        if (consume(TokenType::TRUE))  {
+            return std::make_unique<BooleanExpr>(true);
+        }
+        if (consume(TokenType::FALSE)) {
+            return std::make_unique<BooleanExpr>(false);
+        }
 
         if (consume(TokenType::STRING)) {
             return std::make_unique<StringExpr>(m_previous.lexeme);
         }
 
         if (consume(TokenType::INTERPOLATION)) {
-            throw error("Interpolation is not yet implemented.");
-            /*Token token = m_previous;
-            std::unique_ptr<Expr> start = std::make_unique<StringExpr>(m_previous.lexeme);
-            std::unique_ptr<Expr> interpolated = parseExpr();
-            std::unique_ptr<Expr> end = std::make_unique<StringExpr>(
-                    expect(TokenType::STRING, "Expected end of string interpolation").lexeme);
-
-            return std::make_unique<InterpolationExpr>(std::move(start), std::move(interpolated), std::move(end));*/
+            return parseInterpolationExpr();
         }
 
-        if (consume(TokenType::IDENTIFIER)) return std::make_unique<SymbolExpr>(m_previous);
+        if (consume(TokenType::IDENTIFIER)) {
+            return std::make_unique<SymbolExpr>(m_previous);
+        }
 
         if (consume(TokenType::LEFT_PAREN)) {
             // Unit type ()
@@ -593,6 +596,26 @@ namespace enact {
         }
 
         throw errorAtCurrent("Expected expression.");
+    }
+
+    std::unique_ptr<Expr> Parser::parseInterpolationExpr() {
+        Token token = m_previous;
+        std::unique_ptr<StringExpr> start = std::make_unique<StringExpr>(m_previous.lexeme);
+        std::unique_ptr<Expr> interpolated = parseExpr();
+        std::unique_ptr<Expr> end;
+
+        if (consume(TokenType::INTERPOLATION)) {
+            end = parseInterpolationExpr();
+        } else {
+            expect(TokenType::STRING, "Expected end of string interpolation");
+            end = std::make_unique<StringExpr>(m_previous.lexeme);
+        }
+
+        return std::make_unique<InterpolationExpr>(
+                std::move(start),
+                std::move(interpolated),
+                std::move(end),
+                std::move(token));
     }
 
     ParseError Parser::errorAt(const Token &token, const std::string &message) {
@@ -632,10 +655,9 @@ namespace enact {
         return false;
     }
 
-    Token Parser::expect(TokenType type, const std::string &message) {
+    void Parser::expect(TokenType type, const std::string &message) {
         if (m_current.type == type) {
             advance();
-            return m_current;
         } else {
             throw errorAtCurrent(message);
         }

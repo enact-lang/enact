@@ -30,6 +30,7 @@ namespace enact {
         std::string visitGetExpr(FieldExpr& expr) override;
         std::string visitIfExpr(IfExpr &expr) override;
         std::string visitIntegerExpr(IntegerExpr& expr) override;
+        std::string visitInterpolationExpr(InterpolationExpr& expr) override;
         std::string visitLogicalExpr(LogicalExpr& expr) override;
         std::string visitStringExpr(StringExpr& expr) override;
         std::string visitSwitchExpr(SwitchExpr &expr) override;

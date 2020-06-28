@@ -294,15 +294,18 @@ namespace enact {
     public:
         std::unique_ptr<StringExpr> start;
         std::unique_ptr<Expr> interpolated;
-        std::unique_ptr<StringExpr> end;
+        std::unique_ptr<Expr> end;
+        Token token;
 
         InterpolationExpr(
                 std::unique_ptr<StringExpr> start,
                 std::unique_ptr<Expr> interpolated,
-                std::unique_ptr<StringExpr> end) :
+                std::unique_ptr<Expr> end,
+                Token token) :
                 start{std::move(start)},
                 interpolated{std::move(interpolated)},
-                end{std::move(end)} {}
+                end{std::move(end)},
+                token{std::move(token)} {}
 
         ~InterpolationExpr() override = default;
 

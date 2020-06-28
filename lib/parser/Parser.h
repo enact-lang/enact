@@ -100,10 +100,12 @@ namespace enact {
         std::unique_ptr<Expr> parsePrecCall();
         std::unique_ptr<Expr> parsePrecPrimary();
 
+        std::unique_ptr<Expr> parseInterpolationExpr();
+
         void advance();
         bool check(TokenType expected);
         bool consume(TokenType expected);
-        Token expect(TokenType type, const std::string &message);
+        void expect(TokenType type, const std::string &message);
         bool isAtEnd();
 
         std::unique_ptr<const Typename> expectTypename(const std::string& msg, bool emptyAllowed = false);

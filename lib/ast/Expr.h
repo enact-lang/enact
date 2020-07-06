@@ -31,22 +31,41 @@ namespace enact {
     };
 
     class AssignExpr;
+
     class BinaryExpr;
+
     class BlockExpr;
+
     class BooleanExpr;
+
     class CallExpr;
+
     class FloatExpr;
+
     class ForExpr;
+
     class FieldExpr;
+
     class IfExpr;
+
     class IntegerExpr;
+
     class InterpolationExpr;
+
     class LogicalExpr;
+
     class StringExpr;
+
     class SwitchExpr;
+
     class SymbolExpr;
+
+    class TupleExpr;
+
     class UnaryExpr;
+
     class UnitExpr;
+
     class WhileExpr;
 
     template<class R>
@@ -56,24 +75,25 @@ namespace enact {
             return expr.accept(this);
         }
 
-        virtual R visitAssignExpr(AssignExpr &expr) = 0;
-        virtual R visitBinaryExpr(BinaryExpr &expr) = 0;
-        virtual R visitBlockExpr(BlockExpr &expr) = 0;
-        virtual R visitBooleanExpr(BooleanExpr &expr) = 0;
-        virtual R visitCallExpr(CallExpr &expr) = 0;
-        virtual R visitFloatExpr(FloatExpr &expr) = 0;
-        virtual R visitForExpr(ForExpr &expr) = 0;
-        virtual R visitGetExpr(FieldExpr &expr) = 0;
-        virtual R visitIfExpr(IfExpr &expr) = 0;
-        virtual R visitIntegerExpr(IntegerExpr &expr) = 0;
+        virtual R visitAssignExpr(AssignExpr& expr) = 0;
+        virtual R visitBinaryExpr(BinaryExpr& expr) = 0;
+        virtual R visitBlockExpr(BlockExpr& expr) = 0;
+        virtual R visitBooleanExpr(BooleanExpr& expr) = 0;
+        virtual R visitCallExpr(CallExpr& expr) = 0;
+        virtual R visitFloatExpr(FloatExpr& expr) = 0;
+        virtual R visitForExpr(ForExpr& expr) = 0;
+        virtual R visitGetExpr(FieldExpr& expr) = 0;
+        virtual R visitIfExpr(IfExpr& expr) = 0;
+        virtual R visitIntegerExpr(IntegerExpr& expr) = 0;
         virtual R visitInterpolationExpr(InterpolationExpr& expr) = 0;
-        virtual R visitLogicalExpr(LogicalExpr &expr) = 0;
-        virtual R visitStringExpr(StringExpr &expr) = 0;
-        virtual R visitSwitchExpr(SwitchExpr &expr) = 0;
-        virtual R visitSymbolExpr(SymbolExpr &expr) = 0;
-        virtual R visitUnaryExpr(UnaryExpr &expr) = 0;
+        virtual R visitLogicalExpr(LogicalExpr& expr) = 0;
+        virtual R visitStringExpr(StringExpr& expr) = 0;
+        virtual R visitSwitchExpr(SwitchExpr& expr) = 0;
+        virtual R visitSymbolExpr(SymbolExpr& expr) = 0;
+        virtual R visitTupleExpr(TupleExpr& expr) = 0;
+        virtual R visitUnaryExpr(UnaryExpr& expr) = 0;
         virtual R visitUnitExpr(UnitExpr& expr) = 0;
-        virtual R visitWhileExpr(WhileExpr &expr) = 0;
+        virtual R visitWhileExpr(WhileExpr& expr) = 0;
     };
 
     class AssignExpr : public Expr {
@@ -253,9 +273,9 @@ namespace enact {
         Token keyword;
 
         IfExpr(std::unique_ptr<Expr> condition,
-                std::unique_ptr<BlockExpr> thenBody,
-                std::unique_ptr<BlockExpr> elseBody,
-                Token keyword) :
+               std::unique_ptr<BlockExpr> thenBody,
+               std::unique_ptr<BlockExpr> elseBody,
+               Token keyword) :
                 condition{std::move(condition)},
                 thenBody{std::move(thenBody)},
                 elseBody{std::move(elseBody)},
@@ -400,6 +420,26 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitSymbolExpr(*this);
+        }
+    };
+
+    class TupleExpr : public Expr {
+    public:
+        std::vector<std::unique_ptr<Expr>> elems;
+        Token paren;
+
+        TupleExpr(std::vector<std::unique_ptr<Expr>> elems, Token paren) :
+                elems{std::move(elems)},
+                paren{std::move(paren)} {}
+
+        ~TupleExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitTupleExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitTupleExpr(*this);
         }
     };
 

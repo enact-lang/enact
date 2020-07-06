@@ -403,12 +403,36 @@ namespace enact {
     }
 
     std::unique_ptr<Expr> Parser::parsePrecComparison() {
-        std::unique_ptr<Expr> expr = parsePrecBitwiseOr();
+        std::unique_ptr<Expr> expr = parsePrecCast();
 
         while (consume(TokenType::LESS) ||
                consume(TokenType::LESS_EQUAL) ||
                consume(TokenType::GREATER) ||
                consume(TokenType::GREATER_EQUAL)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecCast();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecCast() {
+        std::unique_ptr<Expr> expr = parsePrecRange();
+
+        while (consume(TokenType::AS) || consume(TokenType::IS)) {
+            Token oper = m_previous;
+            std::unique_ptr<Expr> rightExpr = parsePrecRange();
+            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::parsePrecRange() {
+        std::unique_ptr<Expr> expr = parsePrecBitwiseOr();
+
+        while (consume(TokenType::DOT_DOT) || consume(TokenType::DOT_DOT_DOT)) {
             Token oper = m_previous;
             std::unique_ptr<Expr> rightExpr = parsePrecBitwiseOr();
             expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
@@ -592,7 +616,7 @@ namespace enact {
             }
 
             expect(TokenType::RIGHT_PAREN, "Expected ')' after tuple elements.");
-            
+
             return std::make_unique<TupleExpr>(std::move(elems), std::move(paren));
         }
 

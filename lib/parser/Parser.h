@@ -88,8 +88,8 @@ namespace enact {
         std::unique_ptr<Expr> parsePrecLogicalAnd();
         std::unique_ptr<Expr> parsePrecEquality();
         std::unique_ptr<Expr> parsePrecComparison();
-        //std::unique_ptr<Expr> parsePrecCast();
-        //std::unique_ptr<Expr> parsePrecRange();
+        std::unique_ptr<Expr> parsePrecCast();
+        std::unique_ptr<Expr> parsePrecRange();
         std::unique_ptr<Expr> parsePrecBitwiseOr();
         std::unique_ptr<Expr> parsePrecBitwiseXor();
         std::unique_ptr<Expr> parsePrecBitwiseAnd();

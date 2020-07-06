@@ -139,7 +139,7 @@ namespace enact {
 
         TokenType type = TokenType::INTEGER;
 
-        if (peek() == '.') {
+        if (peek() == '.' && isDigit(peekNext())) {
             type = TokenType::FLOAT;
             advance();
             while (isDigit(peek())) advance();

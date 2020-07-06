@@ -31,41 +31,24 @@ namespace enact {
     };
 
     class AssignExpr;
-
     class BinaryExpr;
-
     class BlockExpr;
-
     class BooleanExpr;
-
     class CallExpr;
-
+    class CastExpr;
     class FloatExpr;
-
     class ForExpr;
-
     class FieldExpr;
-
     class IfExpr;
-
     class IntegerExpr;
-
     class InterpolationExpr;
-
     class LogicalExpr;
-
     class StringExpr;
-
     class SwitchExpr;
-
     class SymbolExpr;
-
     class TupleExpr;
-
     class UnaryExpr;
-
     class UnitExpr;
-
     class WhileExpr;
 
     template<class R>
@@ -80,6 +63,7 @@ namespace enact {
         virtual R visitBlockExpr(BlockExpr& expr) = 0;
         virtual R visitBooleanExpr(BooleanExpr& expr) = 0;
         virtual R visitCallExpr(CallExpr& expr) = 0;
+        virtual R visitCastExpr(CastExpr& expr) = 0;
         virtual R visitFloatExpr(FloatExpr& expr) = 0;
         virtual R visitForExpr(ForExpr& expr) = 0;
         virtual R visitGetExpr(FieldExpr& expr) = 0;
@@ -200,6 +184,29 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitCallExpr(*this);
+        }
+    };
+
+    class CastExpr : public Expr {
+    public:
+    public:
+        std::unique_ptr<Expr> expr;
+        std::unique_ptr<const Typename> typename_;
+        Token oper;
+
+        CastExpr(std::unique_ptr<Expr> expr, std::unique_ptr<const Typename> typename_, Token oper) :
+                expr{std::move(expr)},
+                typename_{std::move(typename_)},
+                oper{std::move(oper)} {}
+
+        ~CastExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitCastExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitCastExpr(*this);
         }
     };
 

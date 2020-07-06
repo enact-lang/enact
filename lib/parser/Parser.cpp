@@ -575,24 +575,25 @@ namespace enact {
         }
 
         if (consume(TokenType::LEFT_PAREN)) {
+            Token paren = m_previous;
+
             // Unit type ()
-            if (consume(TokenType::RIGHT_PAREN)) return std::make_unique<UnitExpr>(m_previous);
+            if (consume(TokenType::RIGHT_PAREN)) return std::make_unique<UnitExpr>(std::move(paren));
 
             // Grouping (expr)
             std::unique_ptr<Expr> expr = parseExpr();
             if (consume(TokenType::RIGHT_PAREN)) return expr;
 
             // Tuple (expr, expr...)
-            std::vector<std::unique_ptr<Expr>> exprs{};
-            exprs.push_back(std::move(expr));
+            std::vector<std::unique_ptr<Expr>> elems{};
+            elems.push_back(std::move(expr));
             while (consume(TokenType::COMMA)) {
-                exprs.push_back(parseExpr());
+                elems.push_back(parseExpr());
             }
 
             expect(TokenType::RIGHT_PAREN, "Expected ')' after tuple elements.");
-
-            // TODO: Return tuple expr
-            throw error("Tuples are not yet implemented.");
+            
+            return std::make_unique<TupleExpr>(std::move(elems), std::move(paren));
         }
 
         throw errorAtCurrent("Expected expression.");

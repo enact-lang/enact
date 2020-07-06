@@ -251,6 +251,20 @@ namespace enact {
         return expr.name.lexeme;
     }
 
+    std::string AstSerialise::visitTupleExpr(TupleExpr &expr) {
+        std::ostringstream s;
+        s << '(';
+
+        std::string separator;
+        for (const std::unique_ptr<Expr>& elem : expr.elems) {
+            s << separator << visitExpr(*elem);
+            separator = ", ";
+        }
+
+        s << ')';
+        return s.str();
+    }
+
     std::string AstSerialise::visitUnaryExpr(UnaryExpr &expr) {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.operand) + ")";
     }

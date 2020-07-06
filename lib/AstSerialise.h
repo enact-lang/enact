@@ -25,6 +25,7 @@ namespace enact {
         std::string visitBlockExpr(BlockExpr& expr) override;
         std::string visitBooleanExpr(BooleanExpr& expr) override;
         std::string visitCallExpr(CallExpr& expr) override;
+        std::string visitCastExpr(CastExpr& expr) override;
         std::string visitFloatExpr(FloatExpr& expr) override;
         std::string visitForExpr(ForExpr& expr) override;
         std::string visitGetExpr(FieldExpr& expr) override;

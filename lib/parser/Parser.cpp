@@ -420,10 +420,11 @@ namespace enact {
     std::unique_ptr<Expr> Parser::parsePrecCast() {
         std::unique_ptr<Expr> expr = parsePrecRange();
 
-        while (consume(TokenType::AS) || consume(TokenType::IS)) {
+        if (consume(TokenType::AS) || consume(TokenType::IS)) {
             Token oper = m_previous;
-            std::unique_ptr<Expr> rightExpr = parsePrecRange();
-            expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(rightExpr), std::move(oper));
+            std::unique_ptr<const Typename> typename_ = expectTypename(
+                    "Expected typename after '" + m_previous.lexeme + "'.");
+            expr = std::make_unique<CastExpr>(std::move(expr), std::move(typename_), std::move(oper));
         }
 
         return expr;

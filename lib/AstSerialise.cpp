@@ -170,6 +170,10 @@ namespace enact {
         return s.str();
     }
 
+    std::string AstSerialise::visitCastExpr(CastExpr& expr) {
+        return "(" + expr.oper.lexeme + " " + visitExpr(*expr.expr) + " " + expr.typename_->name() + ")";
+    }
+
     std::string AstSerialise::visitFloatExpr(FloatExpr &expr) {
         return std::to_string(expr.value);
     }

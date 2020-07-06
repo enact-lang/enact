@@ -57,6 +57,49 @@ namespace enact {
         return m_elementTypename->where();
     }
 
+    ReferenceTypename::ReferenceTypename(Token permission, Token region,
+            std::unique_ptr<const Typename> referringTypename) :
+            m_permission{std::move(permission)},
+            m_region{std::move(region)},
+            m_referringTypename{std::move(referringTypename)},
+            m_name{"&" + m_permission.lexeme + " " + m_region.lexeme} {
+
+    }
+
+    ReferenceTypename::ReferenceTypename(const ReferenceTypename &typename_) :
+            ReferenceTypename{
+                    typename_.m_permission,
+                    typename_.m_region,
+                    typename_.m_referringTypename->clone()} {
+    }
+
+    std::unique_ptr<Typename> ReferenceTypename::clone() const {
+        return std::make_unique<ReferenceTypename>(m_permission, m_region, m_referringTypename->clone());
+    }
+
+    Typename::Kind ReferenceTypename::kind() const {
+        return Kind::REFERENCE;
+    }
+
+    const std::string& ReferenceTypename::name() const {
+        return m_name;
+    }
+
+    const Token& ReferenceTypename::where() const {
+        return m_permission;
+    }
+
+    const Token& ReferenceTypename::permission() const {
+        return m_permission;
+    }
+
+    const Token& ReferenceTypename::region() const {
+        return m_region;
+    }
+
+    const std::unique_ptr<const Typename>& ReferenceTypename::referringTypename() const {
+        return m_referringTypename;
+    }
 
     FunctionTypename::FunctionTypename(std::unique_ptr<const Typename> returnTypename,
                                        std::vector<std::unique_ptr<const Typename>> argumentTypenames) :

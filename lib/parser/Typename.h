@@ -60,7 +60,7 @@ namespace enact {
         const std::string& name() const override;
         const Token& where() const override;
 
-        const std::unique_ptr<const Typename>& constructorTypename() const;
+        const Typename& constructorTypename() const;
         const std::vector<std::unique_ptr<const Typename>>& parameterTypenames() const;
 
     private:

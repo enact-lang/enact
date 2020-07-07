@@ -25,6 +25,10 @@
         ENACT_ABORT("Unreachable!")
 
 namespace enact {
+    typedef int index_t;
+    typedef uint32_t line_t;
+    typedef uint16_t col_t;
+
     inline void _assert(bool expr, std::string exprString, std::string msg, std::string file, int line) {
         if (!expr) {
             std::cerr << "Assertion failed: " << msg << "\n"
@@ -50,9 +54,14 @@ namespace enact {
         return std::unique_ptr<R>(dynamic_cast<R*>(ptr.release()));
     }
 
-    typedef int index_t;
-    typedef uint32_t line_t;
-    typedef uint16_t col_t;
+    template <typename Cloneable>
+    inline std::vector<std::unique_ptr<Cloneable>> cloneAll(const std::vector<std::unique_ptr<Cloneable>>& cloneables) {
+        std::vector<std::unique_ptr<Cloneable>> cloned;
+        for (const std::unique_ptr<Cloneable>& cloneable : cloneables) {
+            cloned.push_back(cloneable->clone());
+        }
+        return cloned;
+    }
 }
 
 #endif //ENACT_COMMON_H

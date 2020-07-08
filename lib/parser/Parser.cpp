@@ -59,7 +59,9 @@ namespace enact {
         }
 
         // Get the return type
-        std::unique_ptr<const Typename> returnTypename = expectTypename("Expected return typename.", true);
+        // At second-lowest precedence to force grouping of function types (because of => ambiguity)
+        std::unique_ptr<const Typename> returnTypename =
+                expectTypenamePrecUnary("Expected return typename.", true);
 
         if (!mustParseBody && check(TokenType::SEMICOLON)) {
             return std::make_unique<FunctionStmt>(name,
@@ -644,6 +646,122 @@ namespace enact {
                 std::move(token));
     }
 
+    std::unique_ptr<const Typename> Parser::expectTypename(const std::string& msg, bool emptyAllowed) {
+        return expectTypenamePrecFunction(msg, emptyAllowed);
+    }
+
+    std::unique_ptr<const Typename> Parser::expectTypenamePrecFunction(const std::string& msg, bool emptyAllowed) {
+        std::unique_ptr<const Typename> typename_ = expectTypenamePrecUnary(msg, emptyAllowed);
+
+        if (consume(TokenType::EQUAL_GREATER)) {
+            std::vector<std::unique_ptr<const Typename>> parameterTypenames;
+            if (typename_->kind() == Typename::Kind::TUPLE) {
+                parameterTypenames = cloneAll(
+                        static_unique_ptr_cast<const TupleTypename>(
+                                std::move(typename_))
+                                ->elementTypenames());
+            } else {
+                parameterTypenames.push_back(std::move(typename_));
+            }
+
+            std::unique_ptr<const Typename> returnTypename =
+                    expectTypename("Expected return typename after '=>'.");
+
+            typename_ = std::make_unique<FunctionTypename>(std::move(returnTypename), std::move(parameterTypenames));
+        }
+
+        return typename_;
+    }
+
+    std::unique_ptr<const Typename> Parser::expectTypenamePrecUnary(const std::string &msg, bool emptyAllowed) {
+        if (consume(TokenType::AMPERSAND)) {
+            std::optional<Token> permission;
+            if (consume(TokenType::MUT) || consume(TokenType::IMM)) {
+                permission = m_previous;
+            }
+
+            std::optional<Token> region;
+            if (consume(TokenType::SO) || consume(TokenType::RC) || consume(TokenType::GC)) {
+                region = m_previous;
+            }
+
+            std::unique_ptr<const Typename> referringTypename = expectTypenamePrecUnary("Expected typename after '&'.");
+
+            return std::make_unique<ReferenceTypename>(
+                    std::move(permission),
+                    std::move(region),
+                    std::move(referringTypename));
+        }
+        if (consume(TokenType::QUESTION)) {
+            return std::make_unique<OptionalTypename>(expectTypenamePrecUnary("Expected typename after '?'."));
+        }
+
+        return expectTypenamePrecParametric(msg, emptyAllowed);
+    }
+
+    std::unique_ptr<const Typename> Parser::expectTypenamePrecParametric(const std::string &msg, bool emptyAllowed) {
+        std::unique_ptr<const Typename> typename_ = expectTypenamePrecPrimary(msg, emptyAllowed);
+
+        if (consume(TokenType::LEFT_SQUARE)) {
+            std::vector<std::unique_ptr<const Typename>> parameterTypenames;
+
+            do {
+                parameterTypenames.push_back(expectTypename("Expected typename parameters after '['."));
+            } while (consume(TokenType::COMMA));
+            expect(TokenType::RIGHT_SQUARE, "Expected ']' after typename parameters.");
+
+            typename_ = std::make_unique<ParametricTypename>(std::move(typename_), std::move(parameterTypenames));
+        }
+
+        return typename_;
+    }
+
+    std::unique_ptr<const Typename> Parser::expectTypenamePrecPrimary(const std::string &msg, bool emptyAllowed) {
+        if (consume(TokenType::IDENTIFIER)) {
+            return std::make_unique<BasicTypename>(m_previous);
+        }
+
+        if (consume(TokenType::DOLLAR)) {
+            expect(TokenType::IDENTIFIER, "Expected type variable name after '$'.");
+            return std::make_unique<VariableTypename>(m_previous);
+        }
+
+        // Unit/grouped/tuple typename?
+        if (consume(TokenType::LEFT_PAREN)) {
+            Token paren = m_previous;
+
+            std::vector<std::unique_ptr<const Typename>> elementTypenames;
+
+            if (!check(TokenType::RIGHT_PAREN)) {
+                do {
+                    elementTypenames.push_back(expectTypename("Expected typename after '('."));
+                } while (consume(TokenType::COMMA));
+            }
+
+            expect(TokenType::RIGHT_PAREN, "Expected ')' after typename elements.");
+
+            // 1-tuples are equivalent to their contained type
+            if (elementTypenames.size() == 1) {
+                return std::move(elementTypenames[0]);
+            } else {
+                return std::make_unique<TupleTypename>(std::move(elementTypenames), std::move(paren));
+            }
+        }
+
+        if (emptyAllowed) {
+            return std::make_unique<BasicTypename>("", m_previous);
+        }
+
+        throw error(msg);
+    }
+
+    std::unique_ptr<BlockExpr> Parser::expectBlock(const std::string &msg) {
+        if (!consume(TokenType::EQUAL_GREATER) && !consume(TokenType::LEFT_BRACE)) {
+            throw errorAtCurrent(msg);
+        }
+        return static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
+    }
+
     ParseError Parser::errorAt(const Token &token, const std::string &message) {
         m_context.reportErrorAt(token, message);
         m_hadError = true;
@@ -687,133 +805,6 @@ namespace enact {
         } else {
             throw errorAtCurrent(message);
         }
-    }
-
-    std::unique_ptr<const Typename> Parser::expectTypename(const std::string& msg, bool emptyAllowed) {
-        std::unique_ptr<const Typename> typename_;
-
-        // Unit/grouped/tuple typename?
-        if (consume(TokenType::LEFT_PAREN)) {
-            Token paren = m_previous;
-
-            std::vector<std::unique_ptr<const Typename>> elementTypenames;
-
-            if (!check(TokenType::RIGHT_PAREN)) {
-                do {
-                    elementTypenames.push_back(expectTypename("Expected typename after '('."));
-                } while (consume(TokenType::COMMA));
-            }
-
-            expect(TokenType::RIGHT_PAREN, "Expected ')' after typename elements.");
-
-            // 1-tuples are equivalent to their contained type
-            if (elementTypenames.size() == 1) {
-                typename_ = std::move(elementTypenames[0]);
-            } else {
-                typename_ = std::make_unique<TupleTypename>(std::move(elementTypenames), std::move(paren));
-            }
-        }
-
-        // Variable typename?
-        else if (consume(TokenType::DOLLAR)) {
-            expect(TokenType::IDENTIFIER, "Expected type variable name after '$'.");
-            typename_ = std::make_unique<VariableTypename>(m_previous);
-        }
-
-        // Reference typename?
-        else if (consume(TokenType::AMPERSAND)) {
-            std::optional<Token> permission;
-            if (consume(TokenType::MUT) || consume(TokenType::IMM)) {
-                permission = m_previous;
-            }
-
-            std::optional<Token> region;
-            if (consume(TokenType::SO) || consume(TokenType::RC) || consume(TokenType::GC)) {
-                region = m_previous;
-            }
-
-            std::unique_ptr<const Typename> referringTypename = expectTypename("Expected typename after '&'.");
-
-            typename_ = std::make_unique<ReferenceTypename>(
-                    std::move(permission),
-                    std::move(region),
-                    std::move(referringTypename));
-        }
-
-        // Optional typename?
-        else if (consume(TokenType::QUESTION)) {
-            typename_ = std::make_unique<OptionalTypename>(expectTypename("Expected typename after '?'."));
-        }
-
-        // Basic typename
-        else if (consume(TokenType::IDENTIFIER)) {
-            typename_ = std::make_unique<BasicTypename>(m_previous);
-
-            // Parametric typename?
-            if (consume(TokenType::LEFT_SQUARE)) {
-                std::vector<std::unique_ptr<const Typename>> parameterTypenames;
-
-                do {
-                    parameterTypenames.push_back(expectTypename("Expected typename parameters after '['."));
-                } while (consume(TokenType::COMMA));
-
-                expect(TokenType::RIGHT_SQUARE, "Expected ']' after typename parameters.");
-                typename_ = std::make_unique<ParametricTypename>(std::move(typename_), std::move(parameterTypenames));
-            }
-        }
-
-        // Function typename
-        if (typename_ != nullptr && consume(TokenType::EQUAL_GREATER)) {
-            std::vector<std::unique_ptr<const Typename>> parameterTypenames;
-            if (typename_->kind() == Typename::Kind::TUPLE) {
-                parameterTypenames = cloneAll(
-                        static_unique_ptr_cast<const TupleTypename>(
-                                std::move(typename_))
-                                ->elementTypenames());
-            } else {
-                parameterTypenames.push_back(std::move(typename_));
-            }
-
-            std::unique_ptr<const Typename> returnTypename =
-                    expectTypename("Expected return typename after '=>'.");
-
-            typename_ = std::make_unique<FunctionTypename>(std::move(returnTypename), std::move(parameterTypenames));
-        }
-
-        // Empty typename?
-        if (!typename_) {
-            if (emptyAllowed) {
-                typename_ = std::make_unique<BasicTypename>("", m_previous);
-            } else {
-                throw error(msg);
-            }
-        }
-
-        return typename_;
-    }
-
-    std::unique_ptr<const Typename> Parser::expectFunctionTypename(const std::string& msg) {
-        expect(TokenType::LEFT_PAREN, "Expected '(' after 'fun' in function type.");
-
-        std::vector<std::unique_ptr<const Typename>> argumentTypenames;
-        if (!consume(TokenType::RIGHT_PAREN)) {
-            do {
-                argumentTypenames.push_back(expectTypename("Expected parameter type in function type parameter list."));
-            } while (consume(TokenType::COMMA));
-
-            expect(TokenType::RIGHT_PAREN, "Expected end of parameter list in function type.");
-        }
-
-        std::unique_ptr<const Typename> returnTypename = expectTypename("Expected return typename in function type.", true);
-
-        return std::make_unique<FunctionTypename>(std::move(returnTypename), std::move(argumentTypenames));
-    }
-
-    std::unique_ptr<BlockExpr> Parser::expectBlock(const std::string &msg) {
-        if (!consume(TokenType::EQUAL_GREATER) && !consume(TokenType::LEFT_BRACE)) {
-            throw errorAtCurrent(msg);
-        }
-        return static_unique_ptr_cast<BlockExpr>(parseBlockExpr());
     }
 
     void Parser::synchronise() {

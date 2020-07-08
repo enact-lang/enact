@@ -102,16 +102,20 @@ namespace enact {
 
         std::unique_ptr<Expr> parseInterpolationExpr();
 
+        std::unique_ptr<const Typename> expectTypename(const std::string& msg, bool emptyAllowed = false);
+
+        std::unique_ptr<const Typename> expectTypenamePrecFunction(const std::string& msg, bool emptyAllowed = false);
+        std::unique_ptr<const Typename> expectTypenamePrecUnary(const std::string& msg, bool emptyAllowed = false);
+        std::unique_ptr<const Typename> expectTypenamePrecParametric(const std::string& msg, bool emptyAllowed = false);
+        std::unique_ptr<const Typename> expectTypenamePrecPrimary(const std::string& msg, bool emptyAllowed = false);
+
+        std::unique_ptr<BlockExpr> expectBlock(const std::string& msg);
+
         void advance();
         bool check(TokenType expected);
         bool consume(TokenType expected);
         void expect(TokenType type, const std::string &message);
         bool isAtEnd();
-
-        std::unique_ptr<const Typename> expectTypename(const std::string& msg, bool emptyAllowed = false);
-        std::unique_ptr<const Typename> expectFunctionTypename(const std::string& msg);
-
-        std::unique_ptr<BlockExpr> expectBlock(const std::string& msg);
 
         ParseError errorAt(const Token &token, const std::string &message);
         ParseError errorAtCurrent(const std::string &message);

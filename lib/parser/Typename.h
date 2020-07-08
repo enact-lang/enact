@@ -154,7 +154,7 @@ namespace enact {
         const std::string& name() const override;
         const Token& where() const override;
 
-        const std::unique_ptr<const Typename>& wrappedTypename() const;
+        const Typename& wrappedTypename() const;
 
     private:
         std::unique_ptr<const Typename> m_wrappedTypename;

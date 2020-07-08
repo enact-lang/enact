@@ -214,5 +214,28 @@ namespace enact {
         return m_referringTypename;
     }
 
-    // TODO: OPTIONAL
+    OptionalTypename::OptionalTypename(std::unique_ptr<const Typename> wrappedTypename) :
+            m_wrappedTypename{std::move(wrappedTypename)},
+            m_name{"?" + m_wrappedTypename->name()} {
+    }
+
+    OptionalTypename::OptionalTypename(const OptionalTypename &typename_) :
+            OptionalTypename{typename_.m_wrappedTypename->clone()} {
+    }
+
+    std::unique_ptr<Typename> OptionalTypename::clone() const {
+        return std::make_unique<OptionalTypename>(*this);
+    }
+
+    const std::string& OptionalTypename::name() const {
+        return m_name;
+    }
+
+    const Token& OptionalTypename::where() const {
+        return m_wrappedTypename->where();
+    }
+
+    const Typename& OptionalTypename::wrappedTypename() const {
+        return *m_wrappedTypename;
+    }
 }

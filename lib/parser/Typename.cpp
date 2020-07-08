@@ -79,7 +79,43 @@ namespace enact {
         return m_parameterTypenames;
     }
 
-    // TODO: TUPLE
+    TupleTypename::TupleTypename(std::vector<std::unique_ptr<const Typename>> elementTypenames, Token paren) :
+            m_elementTypenames{std::move(elementTypenames)},
+            m_paren{std::move(paren)} {
+        std::ostringstream name;
+        std::string separator;
+
+        name << '(';
+        for (const auto& elementTypename : m_elementTypenames) {
+            name << separator << elementTypename->name();
+            separator = ", ";
+        }
+        name << ')';
+
+        m_name = name.str();
+    }
+
+    TupleTypename::TupleTypename(const TupleTypename &typename_) :
+            TupleTypename{
+                    cloneAll(typename_.m_elementTypenames),
+                    typename_.m_paren} {
+    }
+
+    std::unique_ptr<Typename> TupleTypename::clone() const {
+        return std::make_unique<TupleTypename>(*this);
+    }
+
+    const std::string& TupleTypename::name() const {
+        return m_name;
+    }
+
+    const Token& TupleTypename::where() const {
+        return m_paren;
+    }
+
+    const std::vector<std::unique_ptr<const Typename>>& TupleTypename::elementTypenames() const {
+        return m_elementTypenames;
+    }
 
     FunctionTypename::FunctionTypename(std::unique_ptr<const Typename> returnTypename,
                                        std::vector<std::unique_ptr<const Typename>> argumentTypenames) :

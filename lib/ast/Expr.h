@@ -43,6 +43,7 @@ namespace enact {
     class IntegerExpr;
     class InterpolationExpr;
     class LogicalExpr;
+    class SpecificationExpr;
     class StringExpr;
     class SwitchExpr;
     class SymbolExpr;
@@ -71,6 +72,7 @@ namespace enact {
         virtual R visitIntegerExpr(IntegerExpr& expr) = 0;
         virtual R visitInterpolationExpr(InterpolationExpr& expr) = 0;
         virtual R visitLogicalExpr(LogicalExpr& expr) = 0;
+        virtual R visitSpecificationExpr(SpecificationExpr& expr) = 0;
         virtual R visitStringExpr(StringExpr& expr) = 0;
         virtual R visitSwitchExpr(SwitchExpr& expr) = 0;
         virtual R visitSymbolExpr(SymbolExpr& expr) = 0;
@@ -168,12 +170,12 @@ namespace enact {
     class CallExpr : public Expr {
     public:
         std::unique_ptr<Expr> callee;
-        std::vector<std::unique_ptr<Expr>> arguments;
+        std::vector<std::unique_ptr<Expr>> args;
         Token paren;
 
-        CallExpr(std::unique_ptr<Expr> callee, std::vector<std::unique_ptr<Expr>> arguments, Token paren) :
+        CallExpr(std::unique_ptr<Expr> callee, std::vector<std::unique_ptr<Expr>> args, Token paren) :
                 callee{std::move(callee)},
-                arguments{std::move(arguments)},
+                args{std::move(args)},
                 paren{std::move(paren)} {}
 
         ~CallExpr() override = default;
@@ -364,6 +366,33 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitLogicalExpr(*this);
+        }
+    };
+
+    class SpecificationExpr : public Expr {
+    public:
+        struct TypeArg {
+            std::unique_ptr<const VariableTypename> name;
+            std::unique_ptr<const Typename> value;
+        };
+
+        std::unique_ptr<Expr> expr;
+        std::vector<TypeArg> args;
+        Token square;
+
+        SpecificationExpr(std::unique_ptr<Expr> expr, std::vector<TypeArg> args, Token square) :
+                expr{std::move(expr)},
+                args{std::move(args)},
+                square{std::move(square)} {}
+
+        ~SpecificationExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitSpecificationExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitSpecificationExpr(*this);
         }
     };
 

@@ -1,4 +1,4 @@
-#include "../context/Context.h"
+#include "../context/CompileContext.h"
 #include "../Natives.h"
 
 namespace enact {

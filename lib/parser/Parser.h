@@ -13,38 +13,116 @@
 #include "Typename.h"
 
 namespace enact {
-    class Context;
+    class CompileContext;
 
     enum class Precedence {
         NONE,
-        ASSIGNMENT,  // =
-        CONDITIONAL, // ?:
-        OR,          // or
-        AND,         // and
-        EQUALITY,    // == !=
-        COMPARISON,  // < > <= >=
-        TERM,        // + -
-        FACTOR,      // * /
-        UNARY,       // - !
-        CALL,        // () []
+        ASSIGNMENT,    // =
+        LOGICAL_OR,    // or
+        LOGICAL_AND,   // and
+        EQUALITY,      // == !=
+        COMPARISON,    // < > <= >=
+        CAST,          // as is
+        RANGE,         // .. ...
+        BITWISE_OR,    // |
+        BITWISE_XOR,   // ^
+        BITWISE_AND,   // &
+        ADD,           // + -
+        MULTIPLY,      // * / %
+        BITWISE_SHIFT, // << >>
+        UNARY,         // - not ~ & *
+        CALL,          // () .
         PRIMARY,
     };
 
     class Parser;
 
+    // For our Pratt parse table
     typedef std::unique_ptr<Expr> (Parser::*PrefixFn)();
-
     typedef std::unique_ptr<Expr> (Parser::*InfixFn)(std::unique_ptr<Expr>);
 
     struct ParseRule {
         PrefixFn prefix;
         InfixFn infix;
-        Precedence precedence;
+        Precedence parsePrecedence;
+    };
+
+    class ParseError : public std::runtime_error {
+    public:
+        ParseError() : std::runtime_error{"Uncaught ParseError: Internal"} {}
     };
 
     class Parser {
+    public:
+        explicit Parser(CompileContext &context);
+        ~Parser() = default;
+
+        std::vector<std::unique_ptr<Stmt>> parse();
+
+        bool hadError() const;
+
     private:
-        Context &m_context;
+        std::unique_ptr<Stmt> parseStmt();
+
+        std::unique_ptr<Stmt> parseFunctionStmt(bool mustParseBody = true);
+        std::unique_ptr<Stmt> parseStructStmt();
+        std::unique_ptr<Stmt> parseEnumStmt();
+        std::unique_ptr<Stmt> parseTraitStmt();
+        std::unique_ptr<Stmt> parseImplStmt();
+        std::unique_ptr<Stmt> parseVariableStmt();
+        std::unique_ptr<Stmt> parseReturnStmt();
+        std::unique_ptr<Stmt> parseBreakStmt();
+        std::unique_ptr<Stmt> parseContinueStmt();
+        std::unique_ptr<Stmt> parseExpressionStmt();
+
+        std::unique_ptr<Expr> parseExpr();
+
+        std::unique_ptr<Expr> parseBlockExpr();
+        std::unique_ptr<Expr> parseIfExpr();
+        std::unique_ptr<Expr> parseWhileExpr();
+        std::unique_ptr<Expr> parseForExpr();
+        std::unique_ptr<Expr> parseSwitchExpr();
+
+        std::unique_ptr<Expr> parsePrecAssignment();
+        std::unique_ptr<Expr> parsePrecLogicalOr();
+        std::unique_ptr<Expr> parsePrecLogicalAnd();
+        std::unique_ptr<Expr> parsePrecEquality();
+        std::unique_ptr<Expr> parsePrecComparison();
+        std::unique_ptr<Expr> parsePrecCast();
+        std::unique_ptr<Expr> parsePrecRange();
+        std::unique_ptr<Expr> parsePrecBitwiseOr();
+        std::unique_ptr<Expr> parsePrecBitwiseXor();
+        std::unique_ptr<Expr> parsePrecBitwiseAnd();
+        std::unique_ptr<Expr> parsePrecAdd();
+        std::unique_ptr<Expr> parsePrecMultiply();
+        std::unique_ptr<Expr> parsePrecBitwiseShift();
+        std::unique_ptr<Expr> parsePrecUnary();
+        std::unique_ptr<Expr> parsePrecCall();
+        std::unique_ptr<Expr> parsePrecPrimary();
+
+        std::unique_ptr<Expr> parseInterpolationExpr();
+
+        std::unique_ptr<const Typename> expectTypename(const std::string& msg, bool emptyAllowed = false);
+
+        std::unique_ptr<const Typename> expectTypenamePrecFunction(const std::string& msg, bool emptyAllowed = false);
+        std::unique_ptr<const Typename> expectTypenamePrecUnary(const std::string& msg, bool emptyAllowed = false);
+        std::unique_ptr<const Typename> expectTypenamePrecParametric(const std::string& msg, bool emptyAllowed = false);
+        std::unique_ptr<const Typename> expectTypenamePrecPrimary(const std::string& msg, bool emptyAllowed = false);
+
+        std::unique_ptr<BlockExpr> expectBlock(const std::string& msg);
+
+        void advance();
+        bool check(TokenType expected);
+        bool consume(TokenType expected);
+        void expect(TokenType type, const std::string &message);
+        bool isAtEnd();
+
+        ParseError errorAt(const Token &token, const std::string &message);
+        ParseError errorAtCurrent(const std::string &message);
+        ParseError error(const std::string &message);
+        void synchronise();
+
+        CompileContext &m_context;
 
         Lexer m_scanner{""};
 
@@ -52,178 +130,6 @@ namespace enact {
         Token m_current{};
 
         bool m_hadError = false;
-
-        std::unique_ptr<Expr> parsePrecedence(Precedence precedence);
-
-        std::unique_ptr<Expr> expression();
-
-        // Prefix parse rules
-        std::unique_ptr<Expr> grouping();
-
-        std::unique_ptr<Expr> variable();
-
-        std::unique_ptr<Expr> number();
-
-        std::unique_ptr<Expr> literal();
-
-        std::unique_ptr<Expr> string();
-
-        std::unique_ptr<Expr> array();
-
-        std::unique_ptr<Expr> unary();
-
-        // Infix parse rules
-        std::unique_ptr<Expr> call(std::unique_ptr<Expr> callee);
-
-        std::unique_ptr<Expr> subscript(std::unique_ptr<Expr> object);
-
-        std::unique_ptr<Expr> binary(std::unique_ptr<Expr> left);
-
-        std::unique_ptr<Expr> assignment(std::unique_ptr<Expr> target);
-
-        std::unique_ptr<Expr> field(std::unique_ptr<Expr> object);
-
-        std::unique_ptr<Expr> ternary(std::unique_ptr<Expr> condition);
-
-        // Declarations
-        std::unique_ptr<Stmt> declaration();
-
-        std::unique_ptr<Stmt> functionDeclaration(bool mustParseBody = true, bool isMut = false);
-
-        std::unique_ptr<Stmt> structDeclaration();
-
-        std::unique_ptr<Stmt> traitDeclaration();
-
-        std::unique_ptr<Stmt> variableDeclaration(bool isConst, bool mustExpectSeparator = true);
-
-        // Statements
-        std::unique_ptr<Stmt> statement();
-
-        std::unique_ptr<Stmt> blockStatement();
-
-        std::unique_ptr<Stmt> ifStatement();
-
-        std::unique_ptr<Stmt> whileStatement();
-
-        std::unique_ptr<Stmt> forStatement();
-
-        std::unique_ptr<Stmt> eachStatement();
-
-        std::unique_ptr<Stmt> givenStatement();
-
-        std::unique_ptr<Stmt> returnStatement();
-
-        std::unique_ptr<Stmt> breakStatement();
-
-        std::unique_ptr<Stmt> continueStatement();
-
-        std::unique_ptr<Stmt> expressionStatement();
-
-        void advance();
-
-        void undoAdvance();
-
-        bool check(TokenType expected);
-
-        bool consume(TokenType expected);
-
-        bool consumeSeparator();
-
-        void expect(TokenType type, const std::string &message);
-
-        void expectSeparator(const std::string &message);
-
-        bool isAtEnd();
-
-        std::unique_ptr<const Typename> expectTypename(bool emptyAllowed = false);
-
-        std::unique_ptr<const Typename> expectFunctionTypename();
-
-        class ParseError : public std::runtime_error {
-        public:
-            ParseError() : std::runtime_error{"Uncaught ParseError: Internal"} {}
-        };
-
-        ParseError errorAt(const Token &token, const std::string &message);
-
-        ParseError errorAtCurrent(const std::string &message);
-
-        ParseError error(const std::string &message);
-
-        void synchronise();
-
-    public:
-        Parser(Context &context);
-
-        ~Parser() = default;
-
-        std::vector<std::unique_ptr<Stmt>> parse();
-
-        bool hadError();
-
-    private:
-        const ParseRule &getParseRule(TokenType type);
-
-        std::array<ParseRule, (size_t) TokenType::MAX> m_parseRules = {
-                ParseRule{&Parser::grouping, &Parser::call, Precedence::CALL}, // LEFT_PAREN
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // RIGHT_PAREN
-                ParseRule{&Parser::array, &Parser::subscript, Precedence::CALL}, // LEFT_SQUARE
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // RIGHT_SQUARE
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // COLON
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // COMMA
-                ParseRule{nullptr, &Parser::field, Precedence::CALL}, // DOT
-                ParseRule{&Parser::unary, &Parser::binary, Precedence::TERM}, // MINUS
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // NEWLINE
-                ParseRule{nullptr, &Parser::binary, Precedence::TERM}, // PLUS
-                ParseRule{nullptr, &Parser::ternary, Precedence::CONDITIONAL}, // QUESTION
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // SEMICOLON
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // SEPARATOR
-                ParseRule{nullptr, &Parser::binary, Precedence::FACTOR}, // SLASH
-                ParseRule{nullptr, &Parser::binary, Precedence::FACTOR}, // STAR
-                ParseRule{&Parser::unary, nullptr, Precedence::UNARY}, // BANG
-                ParseRule{nullptr, &Parser::binary, Precedence::EQUALITY}, // BANG_EQUAL
-                ParseRule{nullptr, &Parser::assignment, Precedence::ASSIGNMENT}, // EQUAL
-                ParseRule{nullptr, &Parser::binary, Precedence::EQUALITY}, // EQUAL_EQUAL
-                ParseRule{nullptr, &Parser::binary, Precedence::COMPARISON}, // GREATER
-                ParseRule{nullptr, &Parser::binary, Precedence::COMPARISON}, // GREATER_EQUAL
-                ParseRule{nullptr, &Parser::binary, Precedence::COMPARISON}, // LESS
-                ParseRule{nullptr, &Parser::binary, Precedence::COMPARISON}, // LESS_EQUAL
-                ParseRule{&Parser::variable, nullptr, Precedence::NONE}, // IDENTIFIER
-                ParseRule{&Parser::string, nullptr, Precedence::NONE}, // STRING
-                ParseRule{&Parser::number, nullptr, Precedence::NONE}, // INTEGER
-                ParseRule{&Parser::number, nullptr, Precedence::NONE}, // FLOAT
-                ParseRule{nullptr, &Parser::binary, Precedence::AND}, // AND
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // ASSOC
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // BLOCK
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // BREAK
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // CLASS
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // CONST
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // CONTINUE
-                ParseRule{&Parser::unary, nullptr, Precedence::UNARY}, // COPY
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // EACH
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // ELSE
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // END
-                ParseRule{&Parser::literal, nullptr, Precedence::NONE}, // FALSE
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // FUN
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // FOR
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // GIVEN
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // IF
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // IN
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // IS
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // MUT
-                ParseRule{&Parser::literal, nullptr, Precedence::NONE}, // NIL
-                ParseRule{nullptr, &Parser::binary, Precedence::OR}, // OR
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // RETURN
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // STRUCT
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // THIS
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // TRAIT
-                ParseRule{&Parser::literal, nullptr, Precedence::NONE}, // TRUE
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // VAR
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // WHEN
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // WHILE
-                ParseRule{nullptr, nullptr, Precedence::NONE}, // ERROR
-                ParseRule{nullptr, nullptr, Precedence::NONE} // ENDFILE
-        };
     };
 }
 

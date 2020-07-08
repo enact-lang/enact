@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include "../context/Context.h"
+#include "../context/CompileContext.h"
 
 #include "VM.h"
 

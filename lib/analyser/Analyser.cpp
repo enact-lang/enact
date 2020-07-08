@@ -2,7 +2,7 @@
 #include <sstream>
 #include <vector>
 
-#include "../context/Context.h"
+#include "../context/CompileContext.h"
 
 #include "Analyser.h"
 

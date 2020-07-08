@@ -21,7 +21,14 @@
 #define ENACT_ABORT(msg) \
         _abort(msg, __FILE__, __LINE__)
 
+#define ENACT_UNREACHABLE() \
+        ENACT_ABORT("Unreachable!")
+
 namespace enact {
+    typedef int index_t;
+    typedef uint32_t line_t;
+    typedef uint16_t col_t;
+
     inline void _assert(bool expr, std::string exprString, std::string msg, std::string file, int line) {
         if (!expr) {
             std::cerr << "Assertion failed: " << msg << "\n"
@@ -37,9 +44,24 @@ namespace enact {
         abort();
     }
 
-    typedef int index_t;
-    typedef uint32_t line_t;
-    typedef uint16_t col_t;
+    template <typename R, typename T>
+    inline std::unique_ptr<R> static_unique_ptr_cast(std::unique_ptr<T> ptr) {
+        return std::unique_ptr<R>(static_cast<R*>(ptr.release()));
+    }
+
+    template <typename R, typename T>
+    inline std::unique_ptr<R> dynamic_unique_ptr_cast(std::unique_ptr<T> ptr) {
+        return std::unique_ptr<R>(dynamic_cast<R*>(ptr.release()));
+    }
+
+    template <typename Cloneable>
+    inline std::vector<std::unique_ptr<Cloneable>> cloneAll(const std::vector<std::unique_ptr<Cloneable>>& cloneables) {
+        std::vector<std::unique_ptr<Cloneable>> cloned;
+        for (const std::unique_ptr<Cloneable>& cloneable : cloneables) {
+            cloned.push_back(cloneable->clone());
+        }
+        return cloned;
+    }
 }
 
 #endif //ENACT_COMMON_H

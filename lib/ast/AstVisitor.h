@@ -5,7 +5,7 @@
 
 namespace enact {
     template<typename T>
-    class AstVisitor : private StmtVisitor<T>, private ExprVisitor<T> {
+    class AstVisitor : public StmtVisitor<T>, public ExprVisitor<T>, public PatternVisitor<T> {
     };
 }
 

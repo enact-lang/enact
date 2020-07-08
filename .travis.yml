@@ -16,4 +16,4 @@ script:
     - export CC=gcc-8
     - export CXX=g++-8
     - cmake ./
-    - cmake --build ./ --target enact -- -j 2
+    - cmake --build ./ --target enact-cli -- -j 2

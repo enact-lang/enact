@@ -22,68 +22,44 @@ namespace enact {
         virtual void accept(StmtVisitor<void> *visitor) = 0;
     };
 
-    class BlockStmt;
     class BreakStmt;
     class ContinueStmt;
-    class EachStmt;
+    class EnumStmt;
     class ExpressionStmt;
-    class ForStmt;
     class FunctionStmt;
-    class GivenStmt;
-    class IfStmt;
+    class ImplStmt;
     class ReturnStmt;
     class StructStmt;
     class TraitStmt;
-    class WhileStmt;
     class VariableStmt;
 
     template<class R>
     class StmtVisitor {
     public:
         R visitStmt(Stmt& stmt) {
-            return stmt.accept(*this);
+            return stmt.accept(this);
         };
 
-        virtual R visitBlockStmt(BlockStmt &stmt) = 0;
         virtual R visitBreakStmt(BreakStmt &stmt) = 0;
         virtual R visitContinueStmt(ContinueStmt &stmt) = 0;
-        virtual R visitEachStmt(EachStmt &stmt) = 0;
+        virtual R visitEnumStmt(EnumStmt& stmt) = 0;
         virtual R visitExpressionStmt(ExpressionStmt &stmt) = 0;
-        virtual R visitForStmt(ForStmt &stmt) = 0;
         virtual R visitFunctionStmt(FunctionStmt &stmt) = 0;
-        virtual R visitGivenStmt(GivenStmt &stmt) = 0;
-        virtual R visitIfStmt(IfStmt &stmt) = 0;
+        virtual R visitImplStmt(ImplStmt& stmt) = 0;
         virtual R visitReturnStmt(ReturnStmt &stmt) = 0;
         virtual R visitStructStmt(StructStmt &stmt) = 0;
         virtual R visitTraitStmt(TraitStmt &stmt) = 0;
-        virtual R visitWhileStmt(WhileStmt &stmt) = 0;
         virtual R visitVariableStmt(VariableStmt &stmt) = 0;
-    };
-
-    class BlockStmt : public Stmt {
-    public:
-        std::vector<std::unique_ptr<Stmt>> statements;
-
-        BlockStmt(std::vector<std::unique_ptr<Stmt>> statements) :
-                statements{std::move(statements)} {}
-
-        ~BlockStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitBlockStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitBlockStmt(*this);
-        }
     };
 
     class BreakStmt : public Stmt {
     public:
         Token keyword;
+        std::unique_ptr<Expr> value;
 
-        BreakStmt(Token keyword) :
-                keyword{keyword} {}
+        BreakStmt(Token keyword, std::unique_ptr<Expr> value) :
+                keyword{std::move(keyword)},
+                value{std::move(value)} {}
 
         ~BreakStmt() override = default;
 
@@ -100,8 +76,8 @@ namespace enact {
     public:
         Token keyword;
 
-        ContinueStmt(Token keyword) :
-                keyword{keyword} {}
+        explicit ContinueStmt(Token keyword) :
+                keyword{std::move(keyword)} {}
 
         ~ContinueStmt() override = default;
 
@@ -114,25 +90,28 @@ namespace enact {
         }
     };
 
-    class EachStmt : public Stmt {
+    class EnumStmt : public Stmt {
     public:
+        struct Variant {
+            Token name;
+            std::unique_ptr<const Typename> typename_;
+        };
+
         Token name;
-        std::unique_ptr<Expr> object;
-        std::vector<std::unique_ptr<Stmt>> body;
+        std::vector<Variant> variants;
 
-        EachStmt(Token name, std::unique_ptr<Expr> object, std::vector<std::unique_ptr<Stmt>> body) :
-                name{name},
-                object{std::move(object)},
-                body{std::move(body)} {}
+        explicit EnumStmt(Token name, std::vector<Variant>&& variants) :
+                name{std::move(name)},
+                variants{std::move(variants)} {}
 
-        ~EachStmt() override = default;
+        ~EnumStmt() override = default;
 
         std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitEachStmt(*this);
+            return visitor->visitEnumStmt(*this);
         }
 
         void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitEachStmt(*this);
+            return visitor->visitEnumStmt(*this);
         }
     };
 
@@ -140,7 +119,7 @@ namespace enact {
     public:
         std::unique_ptr<Expr> expr;
 
-        ExpressionStmt(std::unique_ptr<Expr> expr) :
+        explicit ExpressionStmt(std::unique_ptr<Expr> expr) :
                 expr{std::move(expr)} {}
 
         ~ExpressionStmt() override = default;
@@ -154,50 +133,24 @@ namespace enact {
         }
     };
 
-    class ForStmt : public Stmt {
-    public:
-        std::unique_ptr<Stmt> initializer;
-        std::unique_ptr<Expr> condition;
-        std::unique_ptr<Expr> increment;
-        std::vector<std::unique_ptr<Stmt>> body;
-        Token keyword;
-
-        ForStmt(std::unique_ptr<Stmt> initializer, std::unique_ptr<Expr> condition, std::unique_ptr<Expr> increment,
-                std::vector<std::unique_ptr<Stmt>> body, Token keyword) :
-                initializer{std::move(initializer)},
-                condition{std::move(condition)},
-                increment{std::move(increment)},
-                body{std::move(body)},
-                keyword{keyword} {}
-
-        ~ForStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitForStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitForStmt(*this);
-        }
-    };
-
     class FunctionStmt : public Stmt {
     public:
+        struct Param {
+            Token name;
+            std::unique_ptr<const Typename> typename_;
+        };
+
         Token name;
         std::unique_ptr<const Typename> returnTypename;
         std::vector<Param> params;
-        std::vector<std::unique_ptr<Stmt>> body;
-        Type type;
-        bool isMut;
+        std::unique_ptr<BlockExpr> body;
 
         FunctionStmt(Token name, std::unique_ptr<const Typename> returnTypename, std::vector<Param> &&params,
-                     std::vector<std::unique_ptr<Stmt>> body, Type type, bool isMut) :
-                name{name},
+                     std::unique_ptr<BlockExpr> body) :
+                name{std::move(name)},
                 returnTypename{std::move(returnTypename)},
                 params{std::move(params)},
-                body{std::move(body)},
-                type{type},
-                isMut{isMut} {}
+                body{std::move(body)} {}
 
         ~FunctionStmt() override = default;
 
@@ -210,48 +163,27 @@ namespace enact {
         }
     };
 
-    class GivenStmt : public Stmt {
+    class ImplStmt : public Stmt {
     public:
-        std::unique_ptr<Expr> value;
-        std::vector<GivenCase> cases;
+        std::unique_ptr<const Typename> typename_;
+        std::unique_ptr<const Typename> traitTypename;
+        std::vector<std::unique_ptr<FunctionStmt>> methods;
 
-        GivenStmt(std::unique_ptr<Expr> value, std::vector<GivenCase> &&cases) :
-                value{std::move(value)},
-                cases{std::move(cases)} {}
+        ImplStmt(std::unique_ptr<const Typename> typename_,
+                std::unique_ptr<const Typename> traitTypename,
+                std::vector<std::unique_ptr<FunctionStmt>> methods) :
+                typename_{std::move(typename_)},
+                traitTypename{std::move(traitTypename)},
+                methods{std::move(methods)} {}
 
-        ~GivenStmt() override = default;
+        ~ImplStmt() override = default;
 
         std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitGivenStmt(*this);
+            return visitor->visitImplStmt(*this);
         }
 
         void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitGivenStmt(*this);
-        }
-    };
-
-    class IfStmt : public Stmt {
-    public:
-        std::unique_ptr<Expr> condition;
-        std::vector<std::unique_ptr<Stmt>> thenBlock;
-        std::vector<std::unique_ptr<Stmt>> elseBlock;
-        Token keyword;
-
-        IfStmt(std::unique_ptr<Expr> condition, std::vector<std::unique_ptr<Stmt>> thenBlock,
-               std::vector<std::unique_ptr<Stmt>> elseBlock, Token keyword) :
-                condition{std::move(condition)},
-                thenBlock{std::move(thenBlock)},
-                elseBlock{std::move(elseBlock)},
-                keyword{keyword} {}
-
-        ~IfStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitIfStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitIfStmt(*this);
+            return visitor->visitImplStmt(*this);
         }
     };
 
@@ -261,7 +193,7 @@ namespace enact {
         std::unique_ptr<Expr> value;
 
         ReturnStmt(Token keyword, std::unique_ptr<Expr> value) :
-                keyword{keyword},
+                keyword{std::move(keyword)},
                 value{std::move(value)} {}
 
         ~ReturnStmt() override = default;
@@ -277,23 +209,17 @@ namespace enact {
 
     class StructStmt : public Stmt {
     public:
-        Token name;
-        std::vector<Token> traits;
-        std::vector<Field> fields;
-        std::vector<std::unique_ptr<FunctionStmt>> methods;
-        std::vector<std::unique_ptr<FunctionStmt>> assocFunctions;
-        std::shared_ptr<const ConstructorType> constructorType;
+        struct Field {
+            Token name;
+            std::unique_ptr<const Typename> typename_;
+        };
 
-        StructStmt(Token name, std::vector<Token> traits, std::vector<Field> &&fields,
-                   std::vector<std::unique_ptr<FunctionStmt>> methods,
-                   std::vector<std::unique_ptr<FunctionStmt>> assocFunctions,
-                   std::shared_ptr<const ConstructorType> constructorType) :
-                name{name},
-                traits{traits},
-                fields{std::move(fields)},
-                methods{std::move(methods)},
-                assocFunctions{std::move(assocFunctions)},
-                constructorType{constructorType} {}
+        Token name;
+        std::vector<Field> fields;
+
+        StructStmt(Token name, std::vector<Field>&& fields) :
+                name{std::move(name)},
+                fields{std::move(fields)} {}
 
         ~StructStmt() override = default;
 
@@ -312,7 +238,7 @@ namespace enact {
         std::vector<std::unique_ptr<FunctionStmt>> methods;
 
         TraitStmt(Token name, std::vector<std::unique_ptr<FunctionStmt>> methods) :
-                name{name},
+                name{std::move(name)},
                 methods{std::move(methods)} {}
 
         ~TraitStmt() override = default;
@@ -326,47 +252,22 @@ namespace enact {
         }
     };
 
-    class WhileStmt : public Stmt {
-    public:
-        std::unique_ptr<Expr> condition;
-        std::vector<std::unique_ptr<Stmt>> body;
-        Token keyword;
-
-        WhileStmt(std::unique_ptr<Expr> condition, std::vector<std::unique_ptr<Stmt>> body, Token keyword) :
-                condition{std::move(condition)},
-                body{std::move(body)},
-                keyword{keyword} {}
-
-        ~WhileStmt() override = default;
-
-        std::string accept(StmtVisitor<std::string> *visitor) override {
-            return visitor->visitWhileStmt(*this);
-        }
-
-        void accept(StmtVisitor<void> *visitor) override {
-            return visitor->visitWhileStmt(*this);
-        }
-    };
-
-    enum class Mutability {
-        NONE,  // 'val'
-        BOXED, // 'let'
-        FULL   // 'var'
-    };
-
     class VariableStmt : public Stmt {
     public:
+        Token keyword;
         Token name;
         std::unique_ptr<const Typename> typeName;
         std::unique_ptr<Expr> initializer;
-        Mutability mutability;
 
-        VariableStmt(Token name, std::unique_ptr<const Typename> typeName, std::unique_ptr<Expr> initializer,
-                     Mutability mutability) :
-                name{name},
+        VariableStmt(
+                Token keyword,
+                Token name,
+                std::unique_ptr<const Typename> typeName,
+                std::unique_ptr<Expr> initializer) :
+                keyword{std::move(keyword)},
+                name{std::move(name)},
                 typeName{std::move(typeName)},
-                initializer{std::move(initializer)},
-                mutability{mutability} {}
+                initializer{std::move(initializer)} {}
 
         ~VariableStmt() override = default;
 

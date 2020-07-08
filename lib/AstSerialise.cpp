@@ -125,6 +125,7 @@ namespace enact {
 
         s << m_ident << "(Stmt::Variable ";
         s << stmt.keyword.lexeme << ' ';
+        s << stmt.typeName->name() << (stmt.typeName->name().empty() ? "" : " ");
         s << stmt.name.lexeme + " " + visitExpr(*stmt.initializer) << ")";
 
         return s.str();

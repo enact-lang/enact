@@ -739,11 +739,6 @@ namespace enact {
                     std::move(referringTypename));
         }
 
-        // Function typename?
-        else if (consume(TokenType::FUNC)) {
-            typename_ = expectFunctionTypename(msg);
-        }
-
         // Basic typename
         else if (consume(TokenType::IDENTIFIER)) {
             typename_ = std::make_unique<BasicTypename>(m_previous);
@@ -759,6 +754,24 @@ namespace enact {
                 expect(TokenType::RIGHT_SQUARE, "Expected ']' after typename parameters.");
                 typename_ = std::make_unique<ParametricTypename>(std::move(typename_), std::move(parameterTypenames));
             }
+        }
+
+        // Function typename
+        if (typename_ != nullptr && consume(TokenType::EQUAL_GREATER)) {
+            std::vector<std::unique_ptr<const Typename>> parameterTypenames;
+            if (typename_->kind() == Typename::Kind::TUPLE) {
+                parameterTypenames = cloneAll(
+                        static_unique_ptr_cast<const TupleTypename>(
+                                std::move(typename_))
+                                ->elementTypenames());
+            } else {
+                parameterTypenames.push_back(std::move(typename_));
+            }
+
+            std::unique_ptr<const Typename> returnTypename =
+                    expectTypename("Expected return typename after '=>'.");
+
+            typename_ = std::make_unique<FunctionTypename>(std::move(returnTypename), std::move(parameterTypenames));
         }
 
         // Empty typename?

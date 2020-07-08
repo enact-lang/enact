@@ -31,10 +31,11 @@ namespace enact {
         // Reserved words.
         AND, AS, ASSOC, BREAK, CASE,
         CONTINUE, DEFAULT, ELSE, ENUM, FALSE,
-        FUNC, FOR, IF, IMM, IMPL,
-        IN, IS, MUT, NOT, OR,
-        PUB, RETURN, STRUCT, SWITCH, TRAIT,
-        TRUE, WHEN, WHILE,
+        GC, FUNC, FOR, IF, IMM,
+        IMPL, IN, IS, MUT, NOT,
+        OR, PUB, RC, RETURN, SO,
+        STRUCT, SWITCH, TRAIT, TRUE, WHEN,
+        WHILE,
 
         ERROR, END_OF_FILE, ENUM_MAX,
     };

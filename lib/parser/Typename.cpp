@@ -105,6 +105,10 @@ namespace enact {
         return std::make_unique<TupleTypename>(*this);
     }
 
+    Typename::Kind TupleTypename::kind() const {
+        return Kind::TUPLE;
+    }
+
     const std::string& TupleTypename::name() const {
         return m_name;
     }
@@ -170,13 +174,17 @@ namespace enact {
         return m_returnTypename->where();
     }
 
-    ReferenceTypename::ReferenceTypename(Token permission, Token region,
-                                         std::unique_ptr<const Typename> referringTypename) :
+    ReferenceTypename::ReferenceTypename(
+            std::optional<Token> permission,
+            std::optional<Token> region,
+            std::unique_ptr<const Typename> referringTypename) :
             m_permission{std::move(permission)},
             m_region{std::move(region)},
             m_referringTypename{std::move(referringTypename)},
-            m_name{"&" + m_permission.lexeme + " " + m_region.lexeme} {
-
+            m_name{
+                    "&" +
+                    (m_permission ? m_permission->lexeme : "") + " " +
+                    (m_region ? m_region->lexeme : "")} {
     }
 
     ReferenceTypename::ReferenceTypename(const ReferenceTypename& typename_) :
@@ -199,14 +207,14 @@ namespace enact {
     }
 
     const Token& ReferenceTypename::where() const {
+        return m_referringTypename->where();
+    }
+
+    const std::optional<Token>& ReferenceTypename::permission() const {
         return m_permission;
     }
 
-    const Token& ReferenceTypename::permission() const {
-        return m_permission;
-    }
-
-    const Token& ReferenceTypename::region() const {
+    const std::optional<Token>& ReferenceTypename::region() const {
         return m_region;
     }
 
@@ -225,6 +233,10 @@ namespace enact {
 
     std::unique_ptr<Typename> OptionalTypename::clone() const {
         return std::make_unique<OptionalTypename>(*this);
+    }
+
+    Typename::Kind OptionalTypename::kind() const {
+        return Kind::OPTIONAL;
     }
 
     const std::string& OptionalTypename::name() const {

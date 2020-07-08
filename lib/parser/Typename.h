@@ -1,6 +1,7 @@
 #ifndef ENACT_TYPENAME_H
 #define ENACT_TYPENAME_H
 
+#include <optional>
 #include <string>
 
 #include "Token.h"
@@ -119,7 +120,10 @@ namespace enact {
 
     class ReferenceTypename : public Typename {
     public:
-        ReferenceTypename(Token permission, Token region, std::unique_ptr<const Typename> referringTypename);
+        ReferenceTypename(
+                std::optional<Token> permission,
+                std::optional<Token> region,
+                std::unique_ptr<const Typename> referringTypename);
         ReferenceTypename(const ReferenceTypename& typename_);
 
         ~ReferenceTypename() override = default;
@@ -130,13 +134,13 @@ namespace enact {
         const std::string& name() const override;
         const Token& where() const override;
 
-        const Token& permission() const;
-        const Token& region() const;
+        const std::optional<Token>& permission() const;
+        const std::optional<Token>& region() const;
         const std::unique_ptr<const Typename>& referringTypename() const;
 
     private:
-        Token m_permission;
-        Token m_region;
+        std::optional<Token> m_permission;
+        std::optional<Token> m_region;
         std::unique_ptr<const Typename> m_referringTypename;
         std::string m_name;
     };

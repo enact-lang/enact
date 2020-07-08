@@ -714,9 +714,10 @@ namespace enact {
             }
         }
 
-        // Optional typename?
-        else if (consume(TokenType::QUESTION)) {
-            typename_ = std::make_unique<OptionalTypename>(expectTypename("Expected typename after '?'."));
+        // Variable typename?
+        else if (consume(TokenType::DOLLAR)) {
+            expect(TokenType::IDENTIFIER, "Expected type variable name after '$'.");
+            typename_ = std::make_unique<VariableTypename>(m_previous);
         }
 
         // Reference typename?
@@ -737,6 +738,11 @@ namespace enact {
                     std::move(permission),
                     std::move(region),
                     std::move(referringTypename));
+        }
+
+        // Optional typename?
+        else if (consume(TokenType::QUESTION)) {
+            typename_ = std::make_unique<OptionalTypename>(expectTypename("Expected typename after '?'."));
         }
 
         // Basic typename

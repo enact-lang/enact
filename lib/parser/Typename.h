@@ -11,6 +11,7 @@ namespace enact {
     public:
         enum class Kind {
             BASIC,
+            VARIABLE,
             PARAMETRIC,
             TUPLE,
             FUNCTION,
@@ -31,7 +32,7 @@ namespace enact {
     public:
         explicit BasicTypename(Token name);
         explicit BasicTypename(std::string name, Token where);
-        BasicTypename(const BasicTypename& typeName);
+        BasicTypename(const BasicTypename& typename_);
 
         ~BasicTypename() override = default;
 
@@ -44,6 +45,25 @@ namespace enact {
     private:
         std::string m_name;
         Token m_where;
+    };
+
+    class VariableTypename : public Typename {
+    public:
+        explicit VariableTypename(Token identifier);
+        VariableTypename(const VariableTypename& typename_);
+
+        ~VariableTypename() override = default;
+
+        std::unique_ptr<Typename> clone() const override;
+        Kind kind() const override;
+
+        const std::string& name() const override;
+        const Token& where() const override;
+
+    private:
+        Token m_identifier;
+
+        std::string m_name;
     };
 
     class ParametricTypename : public Typename {

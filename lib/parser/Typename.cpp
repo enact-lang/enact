@@ -30,6 +30,31 @@ namespace enact {
         return m_where;
     }
 
+    VariableTypename::VariableTypename(Token identifier) :
+            m_identifier{std::move(identifier)},
+            m_name{"$" + m_identifier.lexeme} {
+    }
+
+    VariableTypename::VariableTypename(const VariableTypename &typename_) :
+            VariableTypename{typename_.m_identifier} {
+    }
+
+    std::unique_ptr<Typename> VariableTypename::clone() const {
+        return std::make_unique<VariableTypename>(*this);
+    }
+
+    Typename::Kind VariableTypename::kind() const {
+        return Kind::VARIABLE;
+    }
+
+    const std::string& VariableTypename::name() const {
+        return m_name;
+    }
+
+    const Token& VariableTypename::where() const {
+        return m_identifier;
+    }
+
     ParametricTypename::ParametricTypename(
             std::unique_ptr<const Typename> constructorTypename,
             std::vector<std::unique_ptr<const Typename> > parameterTypenames) :

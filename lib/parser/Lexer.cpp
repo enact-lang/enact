@@ -41,6 +41,8 @@ namespace enact {
                 return makeToken(TokenType::CARAT);
             case ',':
                 return makeToken(TokenType::COMMA);
+            case '$':
+                return makeToken(TokenType::DOLLAR);
             case '#':
                 return makeToken(TokenType::HASH);
             case '-':

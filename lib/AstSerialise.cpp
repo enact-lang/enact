@@ -223,6 +223,13 @@ namespace enact {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
     }
 
+    std::string AstSerialise::visitReferenceExpr(ReferenceExpr &expr) {
+        return "(&" +
+                (expr.permission ? expr.permission->lexeme : "") + " " +
+                (expr.region ? expr.region->lexeme : "") + " " +
+                visitExpr(*expr.expr) + ")";
+    }
+
     std::string AstSerialise::visitStringExpr(StringExpr &expr) {
         std::stringstream s;
         s << "\"" << expr.value << "\"";

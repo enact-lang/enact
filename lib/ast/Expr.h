@@ -43,6 +43,7 @@ namespace enact {
     class IntegerExpr;
     class InterpolationExpr;
     class LogicalExpr;
+    class ReferenceExpr;
     class StringExpr;
     class SwitchExpr;
     class SymbolExpr;
@@ -71,6 +72,7 @@ namespace enact {
         virtual R visitIntegerExpr(IntegerExpr& expr) = 0;
         virtual R visitInterpolationExpr(InterpolationExpr& expr) = 0;
         virtual R visitLogicalExpr(LogicalExpr& expr) = 0;
+        virtual R visitReferenceExpr(ReferenceExpr& expr) = 0;
         virtual R visitStringExpr(StringExpr& expr) = 0;
         virtual R visitSwitchExpr(SwitchExpr& expr) = 0;
         virtual R visitSymbolExpr(SymbolExpr& expr) = 0;
@@ -364,6 +366,34 @@ namespace enact {
 
         void accept(ExprVisitor<void> *visitor) override {
             return visitor->visitLogicalExpr(*this);
+        }
+    };
+
+    class ReferenceExpr : public Expr {
+    public:
+        std::unique_ptr<Expr> expr;
+        Token oper;
+        std::optional<Token> permission;
+        std::optional<Token> region;
+
+        ReferenceExpr(
+                std::unique_ptr<Expr> expr,
+                Token oper,
+                std::optional<Token> permission,
+                std::optional<Token> region) :
+                expr{std::move(expr)},
+                oper{std::move(oper)},
+                permission{std::move(permission)},
+                region{std::move(region)} {}
+
+        ~ReferenceExpr() override = default;
+
+        std::string accept(ExprVisitor<std::string> *visitor) override {
+            return visitor->visitReferenceExpr(*this);
+        }
+
+        void accept(ExprVisitor<void> *visitor) override {
+            return visitor->visitReferenceExpr(*this);
         }
     };
 

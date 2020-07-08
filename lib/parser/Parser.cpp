@@ -530,7 +530,25 @@ namespace enact {
         }
 
         if (consume(TokenType::AMPERSAND)) {
-            throw error("Reference expressions are not yet implemented.");
+            Token oper = m_previous;
+
+            std::optional<Token> permission;
+            if (consume(TokenType::MUT) || consume(TokenType::IMM)) {
+                permission = m_previous;
+            }
+
+            std::optional<Token> region;
+            if (consume(TokenType::SO) || consume(TokenType::RC) || consume(TokenType::GC)) {
+                region = m_previous;
+            }
+
+            std::unique_ptr<Expr> expr = parsePrecUnary(); // Right recursion
+
+            return std::make_unique<ReferenceExpr>(
+                    std::move(expr),
+                    std::move(oper),
+                    std::move(permission),
+                    std::move(region));
         }
 
         return parsePrecCall();

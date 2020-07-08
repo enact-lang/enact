@@ -163,7 +163,7 @@ namespace enact {
         std::stringstream s;
 
         s << "(() " << visitExpr(*expr.callee);
-        for (auto &arg : expr.arguments) {
+        for (auto &arg : expr.args) {
             s << " " << visitExpr(*arg);
         }
         s << ")";
@@ -221,6 +221,21 @@ namespace enact {
 
     std::string AstSerialise::visitLogicalExpr(LogicalExpr &expr) {
         return "(" + expr.oper.lexeme + " " + visitExpr(*expr.left) + " " + visitExpr(*expr.right) + ")";
+    }
+
+    std::string AstSerialise::visitSpecificationExpr(SpecificationExpr &expr) {
+        std::ostringstream s;
+        std::string separator;
+
+        s << "([] " << visitExpr(*expr.expr) << ' ';
+        for (const auto& typeArg : expr.args) {
+            s << separator;
+            s << '(' << typeArg.name->name() << ' ' << typeArg.value->name() << ')';
+            separator = ", ";
+        }
+        s << ')';
+
+        return s.str();
     }
 
     std::string AstSerialise::visitStringExpr(StringExpr &expr) {

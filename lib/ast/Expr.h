@@ -372,6 +372,11 @@ namespace enact {
     class SpecificationExpr : public Expr {
     public:
         struct TypeArg {
+            TypeArg(std::unique_ptr<const VariableTypename> name, std::unique_ptr<const Typename> value) :
+                    name{std::move(name)},
+                    value{std::move(value)} {
+            }
+
             std::unique_ptr<const VariableTypename> name;
             std::unique_ptr<const Typename> value;
         };

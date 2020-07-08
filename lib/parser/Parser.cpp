@@ -540,7 +540,27 @@ namespace enact {
         std::unique_ptr<Expr> expr = parsePrecPrimary();
 
         while (true) {
-            if (consume(TokenType::LEFT_PAREN)) {
+            if (consume(TokenType::LEFT_SQUARE)) {
+                std::vector<SpecificationExpr::TypeArg> args;
+                while (true) {
+                    std::unique_ptr<const VariableTypename> name;
+                    if (!(name = dynamic_unique_ptr_cast<const VariableTypename>(
+                            expectTypenamePrecPrimary("Expected type variable name before ']'.")))) {
+                        throw error("Expected type variable name before ']'.");
+                    }
+
+                    std::unique_ptr<const Typename> value = expectTypename(
+                            "Expected value after type variable name.");
+
+                    args.emplace_back(std::move(name), std::move(value));
+
+                    if (!consume(TokenType::COMMA)) break;
+                }
+
+                expect(TokenType::RIGHT_SQUARE, "Expected ']' after type arguments.");
+
+                expr = std::make_unique<SpecificationExpr>(std::move(expr), std::move(args), m_previous);
+            } else if (consume(TokenType::LEFT_PAREN)) {
                 std::vector<std::unique_ptr<Expr>> args;
                 if (!check(TokenType::RIGHT_PAREN)) {
                     do {

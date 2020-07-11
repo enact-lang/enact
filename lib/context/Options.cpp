@@ -1,6 +1,6 @@
-#include <iostream>
+#include <enact/context/Options.h>
 
-#include "Options.h"
+#include <iostream>
 
 namespace enact {
     Options::Options(std::string filename, std::vector<std::string> programArgs, std::unordered_set<Flag> flags) :

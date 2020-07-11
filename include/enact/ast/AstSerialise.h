@@ -1,7 +1,7 @@
 #ifndef ENACT_ASTSERIALISE_H
 #define ENACT_ASTSERIALISE_H
 
-#include "ast/AstVisitor.h"
+#include <enact/ast/AstVisitor.h>
 
 namespace enact {
     // A functor which takes an AST node (Stmt/Decl/Expr), serializes it,

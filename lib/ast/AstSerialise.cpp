@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include "AstSerialise.h"
+#include <enact/ast/AstSerialise.h>
 
 namespace enact {
     std::string AstSerialise::operator()(Stmt &stmt) {

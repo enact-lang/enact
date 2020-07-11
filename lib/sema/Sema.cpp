@@ -1,4 +1,4 @@
-#include "Sema.h"
+#include <enact/sema/Sema.h>
 
 namespace enact {
     Sema::Sema(Context& context) : m_context{context} {

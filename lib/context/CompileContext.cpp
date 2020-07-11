@@ -1,8 +1,8 @@
-#include "CompileContext.h"
+#include <enact/context/CompileContext.h>
 
 #include <sstream>
 
-#include "../AstSerialise.h"
+#include <enact/AstSerialise.h>
 
 namespace enact {
     CompileContext::CompileContext(Options options) : m_options{std::move(options)} {

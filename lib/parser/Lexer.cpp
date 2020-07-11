@@ -1,6 +1,6 @@
-#include <sstream>
+#include <enact/parser/Lexer.h>
 
-#include "Lexer.h"
+#include <sstream>
 
 namespace enact {
     Lexer::Lexer(std::string source) : m_source{std::move(source)} {}

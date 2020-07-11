@@ -1,6 +1,7 @@
-#include "../context/CompileContext.h"
+#include <enact/parser/Parser.h>
 
-#include "Token.h"
+#include <enact/context/CompileContext.h>
+#include <enact/parser/Token.h>
 
 namespace enact {
     Parser::Parser(CompileContext &context) : m_context{context} {

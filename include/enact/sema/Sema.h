@@ -1,9 +1,17 @@
 #ifndef ENACT_SEMA_H
 #define ENACT_SEMA_H
 
+#include <vector>
+
+#include <enact/InsertionOrderMap.h>
+#include <enact/sema/VariableInfo.h>
+
 namespace enact {
-    // Forward declared from "../context/Context.h"
+    // Forward declared from <enact/context/Context.h>
     class Context;
+
+    // Forward declared from <enact/ast/Stmt.h>
+    class Stmt;
 
     class Sema {
     private:

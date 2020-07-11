@@ -1,6 +1,6 @@
-#include <sstream>
+#include <enact/parser/Typename.h>
 
-#include "Typename.h"
+#include <sstream>
 
 namespace enact {
     BasicTypename::BasicTypename(Token name) :

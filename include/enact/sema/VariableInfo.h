@@ -2,15 +2,9 @@
 #define ENACT_VARIABLEINFO_H
 
 namespace enact {
-    enum class Mutability {
-        NONE,  // 'val'
-        BOXED, // 'let'
-        FULL   // 'var'
-    };
-
     struct VariableInfo {
         Type type;
-        Mutability mutability;
+        bool isMut;
         bool isInitialised;
     };
 }

@@ -7,9 +7,9 @@
 #include <memory>
 #include <vector>
 
-#include "../parser/Typename.h"
-
-#include "Pattern.h"
+#include <enact/ast/Pattern.h>
+#include <enact/parser/Typename.h>
+#include <enact/sema/SemaInfo.h>
 
 namespace enact {
     // From "Stmt.h":
@@ -20,14 +20,16 @@ namespace enact {
 
     class Expr {
     public:
-        //SemaInfo semaInfo{};
-
         virtual ~Expr() = default;
 
         // We need to overload for every possible visitor return type here, as we cannot
         // have a templated virtual member function.
         virtual std::string accept(ExprVisitor<std::string> *visitor) = 0;
         virtual void accept(ExprVisitor<void> *visitor) = 0;
+
+        // Written and read during the Sema passes, to track type, region and permission
+        // information.
+        std::optional<SemaInfo> semaInfo{};
     };
 
     class AssignExpr;

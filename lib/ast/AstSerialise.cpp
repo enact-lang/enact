@@ -43,7 +43,7 @@ namespace enact {
     std::string AstSerialise::visitFunctionStmt(FunctionStmt &stmt) {
         std::stringstream s;
 
-        s << "(Stmt::Function " << stmt.name.lexeme << " (";
+        s << m_ident << "(Stmt::Function " << stmt.name.lexeme << " (";
 
         std::string separator;
         for (auto &param : stmt.params) {
@@ -75,6 +75,21 @@ namespace enact {
 
         for (const std::unique_ptr<FunctionStmt>& method : stmt.methods) {
             s << visitFunctionStmt(*method);
+        }
+
+        m_ident.erase(0, 4);
+        s << ")";
+
+        return s.str();
+    }
+
+    std::string AstSerialise::visitModuleStmt(ModuleStmt& stmt) {
+        std::stringstream s;
+        s << m_ident << "(Stmt::Module _ (\n";
+        m_ident += "    ";
+
+        for (const std::unique_ptr<Stmt>& decl : stmt.decls) {
+            s << visitStmt(*decl);
         }
 
         m_ident.erase(0, 4);

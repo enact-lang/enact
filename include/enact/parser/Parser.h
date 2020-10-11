@@ -5,46 +5,17 @@
 #include <memory>
 #include <string>
 
-#include "../ast/Stmt.h"
-#include "../bytecode/Chunk.h"
+#include <enact/ast/Stmt.h>
 
-#include "Lexer.h"
-#include "Token.h"
-#include "Typename.h"
+#include <enact/parser/Lexer.h>
+#include <enact/parser/Typename.h>
 
 namespace enact {
     class CompileContext;
 
-    enum class Precedence {
-        NONE,
-        ASSIGNMENT,    // =
-        LOGICAL_OR,    // or
-        LOGICAL_AND,   // and
-        EQUALITY,      // == !=
-        COMPARISON,    // < > <= >=
-        CAST,          // as is
-        RANGE,         // .. ...
-        BITWISE_OR,    // |
-        BITWISE_XOR,   // ^
-        BITWISE_AND,   // &
-        ADD,           // + -
-        MULTIPLY,      // * / %
-        BITWISE_SHIFT, // << >>
-        UNARY,         // - not ~ & *
-        CALL,          // () .
-        PRIMARY,
-    };
-
-    class Parser;
-
-    // For our Pratt parse table
-    typedef std::unique_ptr<Expr> (Parser::*PrefixFn)();
-    typedef std::unique_ptr<Expr> (Parser::*InfixFn)(std::unique_ptr<Expr>);
-
-    struct ParseRule {
-        PrefixFn prefix;
-        InfixFn infix;
-        Precedence parsePrecedence;
+    struct Declaration {
+        std::unique_ptr<Stmt> definition;
+        std::vector<Declaration*> children;
     };
 
     class ParseError : public std::runtime_error {
@@ -57,7 +28,7 @@ namespace enact {
         explicit Parser(CompileContext &context);
         ~Parser() = default;
 
-        std::vector<std::unique_ptr<Stmt>> parse();
+        std::unique_ptr<ModuleStmt> parseModule();
 
         bool hadError() const;
 

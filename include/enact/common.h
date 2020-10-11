@@ -34,14 +34,14 @@ namespace enact {
             std::cerr << "Assertion failed: " << msg << "\n"
                       << "Expected:         " << exprString << "\n"
                       << "Source:           " << file << ", line " << line << "\n";
-            abort();
+            std::abort();
         }
     }
 
     inline void _abort(std::string msg, std::string file, int line) {
-        std::cerr << "Aborted:    " << msg << "\n"
-                  << "Source:        " << file << ", line " << line << "\n";
-        abort();
+        std::cerr << "Aborted: " << msg << "\n"
+                  << "Source:  " << file << ", line " << line << "\n";
+        std::abort();
     }
 
     template <typename R, typename T>
@@ -61,6 +61,15 @@ namespace enact {
             cloned.push_back(cloneable->clone());
         }
         return cloned;
+    }
+
+    template <typename T>
+    inline std::vector<std::reference_wrapper<T>> toRefWraps(std::vector<std::unique_ptr<T>> ptrs) {
+        std::vector<std::reference_wrapper<T>> refWraps;
+        for (const std::unique_ptr<T>& ptr : ptrs) {
+            refWraps.emplace_back(*ptr);
+        }
+        return refWraps;
     }
 }
 

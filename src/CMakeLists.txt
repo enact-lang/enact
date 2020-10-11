@@ -3,3 +3,4 @@ add_executable(enact-cli
 target_link_libraries(enact-cli enact)
 
 set_target_properties(enact-cli PROPERTIES OUTPUT_NAME enact)
+target_include_directories(enact-cli PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)

@@ -1,0 +1,95 @@
+// Assign
+x = 2;
+
+// Binary
+2 + 4;
+
+// Block
+{
+    "yeet";
+    2
+}
+=> "yote";
+
+// Boolean
+true;
+
+// Call
+print("yessum");
+
+// Cast
+x as float;
+
+// Float
+2.5;
+
+// For
+for x in xs => x + 1;
+for y in ys {
+    print(y);
+}
+
+// Field
+x.length;
+
+// If
+if x == => 4 else => 0;
+if y == 5 {
+    print("five");
+} else {
+    print("not five");
+}
+
+// Int
+5;
+
+// Interpolation
+"\(x) + \(y) = \(x + y)";
+
+// Logical
+true or false;
+x and y;
+
+// Reference
+&x;
+&mut so x;
+&imm gc y;
+&gc a;
+&rc b;
+&mut c;
+
+// String
+"yeet";
+
+// Switch
+switch 50 {
+    case 1 => "1"
+    case 5 {
+        yeet();
+        "five"
+    }
+    default => "no match"
+}
+
+// Symbol
+abc;
+yeet;
+Food;
+
+// Tuple
+(1, 2, "e");
+
+// Unary
+not true;
+*ref;
+~10;
+-60;
+
+// Unit
+();
+
+// While
+while true => 3;
+while true {
+    print("y");
+}

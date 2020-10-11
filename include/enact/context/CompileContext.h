@@ -14,6 +14,10 @@ namespace enact {
         RUNTIME_ERROR,
     };
 
+    struct Module {
+
+    };
+
     class CompileContext {
     public:
         explicit CompileContext(Options options);

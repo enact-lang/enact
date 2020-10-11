@@ -7,7 +7,7 @@ namespace enact {
     Parser::Parser(CompileContext &context) : m_context{context} {
     }
 
-    std::vector<std::unique_ptr<Stmt>> Parser::parse() {
+    std::unique_ptr<ModuleStmt> Parser::parseModule() {
         m_scanner = Lexer{m_context.getSource()};
         advance();
 
@@ -17,7 +17,7 @@ namespace enact {
             if (stmt) ast.push_back(std::move(stmt));
         }
 
-        return ast;
+        return std::make_unique<ModuleStmt>(std::move(ast));
     }
 
     bool Parser::hadError() const {

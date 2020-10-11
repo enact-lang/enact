@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include <enact/AstSerialise.h>
+#include <enact/ast/AstSerialise.h>
 
 namespace enact {
     CompileContext::CompileContext(Options options) : m_options{std::move(options)} {
@@ -11,13 +11,12 @@ namespace enact {
     CompileResult CompileContext::compile(std::string source) {
         m_source = std::move(source);
 
-        std::vector<std::unique_ptr<Stmt>> ast = m_parser.parse();
-        // TODO: serialise and print AST
+        std::unique_ptr<ModuleStmt> root = m_parser.parseModule();
 
         AstSerialise serialise{};
-        for (const std::unique_ptr<Stmt>& stmt : ast) {
-            std::cout << serialise(*stmt) << '\n';
-        }
+        std::cout << serialise(*root) << '\n';
+
+        return CompileResult::OK;
     }
 
     std::string CompileContext::getSourceLine(line_t line) {

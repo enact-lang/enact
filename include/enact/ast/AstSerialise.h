@@ -15,6 +15,7 @@ namespace enact {
         std::string visitExpressionStmt(ExpressionStmt& stmt) override;
         std::string visitFunctionStmt(FunctionStmt& stmt) override;
         std::string visitImplStmt(ImplStmt& stmt) override;
+        std::string visitModuleStmt(ModuleStmt& stmt) override;
         std::string visitReturnStmt(ReturnStmt& stmt) override;
         std::string visitStructStmt(StructStmt& stmt) override;
         std::string visitTraitStmt(TraitStmt& stmt) override;

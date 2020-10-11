@@ -1,6 +1,8 @@
 #ifndef ENACT_SEMADEFS_H
 #define ENACT_SEMADEFS_H
 
+#include <enact/ast/AstVisitor.h>
+
 namespace enact {
     // Forward declared from "Sema.h"
     class Sema;
@@ -15,13 +17,49 @@ namespace enact {
 
     // If we come across a declaration that has not yet been defined, we first attempt to
     // define it, and if that is unsuccessful, we report an error.
-    class SemaDefs {
+    class SemaDefs : private AstVisitor<void> {
     public:
         explicit SemaDefs(Sema& sema);
 
-        std::vector<std::unique_ptr<Decl>> define(std::vector<std::unique_ptr<Decl> ast);
+        void walk();
 
     private:
+        void visitBreakStmt(BreakStmt& stmt) override;
+        void visitContinueStmt(ContinueStmt& stmt) override;
+        void visitEnumStmt(EnumStmt& stmt) override;
+        void visitExpressionStmt(ExpressionStmt& stmt) override;
+        void visitFunctionStmt(FunctionStmt& stmt) override;
+        void visitImplStmt(ImplStmt& stmt) override;
+        void visitReturnStmt(ReturnStmt& stmt) override;
+        void visitStructStmt(StructStmt& stmt) override;
+        void visitTraitStmt(TraitStmt& stmt) override;
+        void visitVariableStmt(VariableStmt& stmt) override;
+
+        void visitAssignExpr(AssignExpr& expr) override;
+        void visitBinaryExpr(BinaryExpr& expr) override;
+        void visitBlockExpr(BlockExpr& expr) override;
+        void visitBooleanExpr(BooleanExpr& expr) override;
+        void visitCallExpr(CallExpr& expr) override;
+        void visitCastExpr(CastExpr& expr) override;
+        void visitFloatExpr(FloatExpr& expr) override;
+        void visitForExpr(ForExpr& expr) override;
+        void visitGetExpr(FieldExpr& expr) override;
+        void visitIfExpr(IfExpr& expr) override;
+        void visitIntegerExpr(IntegerExpr& expr) override;
+        void visitInterpolationExpr(InterpolationExpr& expr) override;
+        void visitLogicalExpr(LogicalExpr& expr) override;
+        void visitReferenceExpr(ReferenceExpr& expr) override;
+        void visitStringExpr(StringExpr& expr) override;
+        void visitSwitchExpr(SwitchExpr& expr) override;
+        void visitSymbolExpr(SymbolExpr& expr) override;
+        void visitTupleExpr(TupleExpr& expr) override;
+        void visitUnaryExpr(UnaryExpr& expr) override;
+        void visitUnitExpr(UnitExpr& expr) override;
+        void visitWhileExpr(WhileExpr& expr) override;
+
+        void visitValuePattern(ValuePattern& pattern) override;
+        void visitWildcardPattern(WildcardPattern& pattern) override;
+
         Sema& m_sema;
 
         // All local variables and their corresponding types and semantic info. Each element

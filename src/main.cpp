@@ -1,5 +1,5 @@
 //#include "../include/Enact.h"
-#include "../lib/context/CompileContext.h"
+#include "../include/enact/context/CompileContext.h"
 
 int main(int argc, char *argv[]) {
     //enact::Options options{argc, argv};

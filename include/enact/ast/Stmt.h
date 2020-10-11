@@ -1,6 +1,3 @@
-// This file was automatically generated.
-// "See generate.py" for details.
-
 #ifndef ENACT_STMT_H
 #define ENACT_STMT_H
 
@@ -28,6 +25,7 @@ namespace enact {
     class ExpressionStmt;
     class FunctionStmt;
     class ImplStmt;
+    class ModuleStmt;
     class ReturnStmt;
     class StructStmt;
     class TraitStmt;
@@ -46,6 +44,7 @@ namespace enact {
         virtual R visitExpressionStmt(ExpressionStmt &stmt) = 0;
         virtual R visitFunctionStmt(FunctionStmt &stmt) = 0;
         virtual R visitImplStmt(ImplStmt& stmt) = 0;
+        virtual R visitModuleStmt(ModuleStmt& stmt) = 0;
         virtual R visitReturnStmt(ReturnStmt &stmt) = 0;
         virtual R visitStructStmt(StructStmt &stmt) = 0;
         virtual R visitTraitStmt(TraitStmt &stmt) = 0;
@@ -184,6 +183,23 @@ namespace enact {
 
         void accept(StmtVisitor<void> *visitor) override {
             return visitor->visitImplStmt(*this);
+        }
+    };
+
+    class ModuleStmt : public Stmt {
+    public:
+        // std::vector<std::unique_ptr<ImportStmt>> imports;
+        std::vector<std::unique_ptr<Stmt>> decls;
+
+        ModuleStmt(std::vector<std::unique_ptr<Stmt>> decls) :
+                decls{std::move(decls)} {}
+
+        std::string accept(StmtVisitor<std::string> *visitor) override {
+            return visitor->visitModuleStmt(*this);
+        }
+
+        void accept(StmtVisitor<void> *visitor) override {
+            return visitor->visitModuleStmt(*this);
         }
     };
 

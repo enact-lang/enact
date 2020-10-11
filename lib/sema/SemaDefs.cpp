@@ -1,4 +1,4 @@
-#include "SemaDefs.h"
+#include <enact/sema/SemaDefs.h>
 
 namespace enact {
 
